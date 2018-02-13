@@ -1,0 +1,16 @@
+MD3
+MDd3
+MT0
+MT3
+MTd3
+x64
+test
+*.sdf
+*.opensdf
+*.exe
+*.pdb
+doc
+*.lib
+*.suo
+
+\mk_svn.bat

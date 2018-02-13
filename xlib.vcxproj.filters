@@ -1,0 +1,299 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="aes.cc">
+      <Filter>algorithm\aes</Filter>
+    </ClCompile>
+    <ClCompile Include="crc.cc">
+      <Filter>algorithm\crc</Filter>
+    </ClCompile>
+    <ClCompile Include="des.cc">
+      <Filter>algorithm\des</Filter>
+    </ClCompile>
+    <ClCompile Include="md5.cc">
+      <Filter>algorithm\md5</Filter>
+    </ClCompile>
+    <ClCompile Include="xrand.cc">
+      <Filter>algorithm\xrand</Filter>
+    </ClCompile>
+    <ClCompile Include="xlib_base.cc">
+      <Filter>base\base</Filter>
+    </ClCompile>
+    <ClCompile Include="xlib_nt.cc">
+      <Filter>base\nt</Filter>
+    </ClCompile>
+    <ClCompile Include="pe.cc">
+      <Filter>memory\pe</Filter>
+    </ClCompile>
+    <ClCompile Include="caller.cc">
+      <Filter>memory\caller</Filter>
+    </ClCompile>
+    <ClCompile Include="hook.cc">
+      <Filter>memory\hook</Filter>
+    </ClCompile>
+    <ClCompile Include="xblk.cc">
+      <Filter>memory\xblk</Filter>
+    </ClCompile>
+    <ClCompile Include="xSock.cc">
+      <Filter>sock\xsock</Filter>
+    </ClCompile>
+    <ClCompile Include="ws_s.cc">
+      <Filter>string\ws&amp;s</Filter>
+    </ClCompile>
+    <ClCompile Include="ws_utf8.cc">
+      <Filter>string\ws&amp;utf8</Filter>
+    </ClCompile>
+    <ClCompile Include="xmsg.cc">
+      <Filter>string\xmsg</Filter>
+    </ClCompile>
+    <ClCompile Include="swap.cc">
+      <Filter>memory\swap</Filter>
+    </ClCompile>
+    <ClCompile Include="xlib_test.cc">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="xlog.cc">
+      <Filter>string\xlog</Filter>
+    </ClCompile>
+    <ClCompile Include="xline.cc">
+      <Filter>container\xline</Filter>
+    </ClCompile>
+    <ClCompile Include="syssnap.cc">
+      <Filter>system_object\syssnap</Filter>
+    </ClCompile>
+    <ClCompile Include="signaturematcher.cc">
+      <Filter>memory\signaturematcher</Filter>
+    </ClCompile>
+    <ClCompile Include="xevent.cc">
+      <Filter>system_object\event</Filter>
+    </ClCompile>
+    <ClCompile Include="tea.cc">
+      <Filter>algorithm\tea</Filter>
+    </ClCompile>
+    <ClCompile Include="hex_bin.cc">
+      <Filter>string\hex&amp;bin</Filter>
+    </ClCompile>
+    <ClCompile Include="vline.cc">
+      <Filter>container\vline</Filter>
+    </ClCompile>
+    <ClCompile Include="varint.cc">
+      <Filter>algorithm\varint</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="xlib.h" />
+    <ClInclude Include="aes.h">
+      <Filter>algorithm\aes</Filter>
+    </ClInclude>
+    <ClInclude Include="caller.h">
+      <Filter>memory\caller</Filter>
+    </ClInclude>
+    <ClInclude Include="crc.h">
+      <Filter>algorithm\crc</Filter>
+    </ClInclude>
+    <ClInclude Include="signaturematcher.h">
+      <Filter>memory\signaturematcher</Filter>
+    </ClInclude>
+    <ClInclude Include="des.h">
+      <Filter>algorithm\des</Filter>
+    </ClInclude>
+    <ClInclude Include="hook.h">
+      <Filter>memory\hook</Filter>
+    </ClInclude>
+    <ClInclude Include="md5.h">
+      <Filter>algorithm\md5</Filter>
+    </ClInclude>
+    <ClInclude Include="syssnap.h">
+      <Filter>system_object\syssnap</Filter>
+    </ClInclude>
+    <ClInclude Include="xevent.h">
+      <Filter>system_object\event</Filter>
+    </ClInclude>
+    <ClInclude Include="xmsg.h">
+      <Filter>string\xmsg</Filter>
+    </ClInclude>
+    <ClInclude Include="xlog.h">
+      <Filter>string\xlog</Filter>
+    </ClInclude>
+    <ClInclude Include="ws_utf8.h">
+      <Filter>string\ws&amp;utf8</Filter>
+    </ClInclude>
+    <ClInclude Include="ws_s.h">
+      <Filter>string\ws&amp;s</Filter>
+    </ClInclude>
+    <ClInclude Include="xSock.h">
+      <Filter>sock\xsock</Filter>
+    </ClInclude>
+    <ClInclude Include="xblk.h">
+      <Filter>memory\xblk</Filter>
+    </ClInclude>
+    <ClInclude Include="swap.h">
+      <Filter>memory\swap</Filter>
+    </ClInclude>
+    <ClInclude Include="pe.h">
+      <Filter>memory\pe</Filter>
+    </ClInclude>
+    <ClInclude Include="xline.h">
+      <Filter>container\xline</Filter>
+    </ClInclude>
+    <ClInclude Include="singleton.h">
+      <Filter>container\singleton</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_struct_ring3.h">
+      <Filter>base\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_struct_ring0.h">
+      <Filter>base\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_struct.h">
+      <Filter>base\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_nt.h">
+      <Filter>base\nt</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_link.h">
+      <Filter>base\link</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_def.h">
+      <Filter>base\def</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_base.h">
+      <Filter>base\base</Filter>
+    </ClInclude>
+    <ClInclude Include="xrand.h">
+      <Filter>algorithm\xrand</Filter>
+    </ClInclude>
+    <ClInclude Include="xlib_test.h">
+      <Filter>test</Filter>
+    </ClInclude>
+    <ClInclude Include="tea.h">
+      <Filter>algorithm\tea</Filter>
+    </ClInclude>
+    <ClInclude Include="hex_bin.h">
+      <Filter>string\hex&amp;bin</Filter>
+    </ClInclude>
+    <ClInclude Include="vline.h">
+      <Filter>container\vline</Filter>
+    </ClInclude>
+    <ClInclude Include="varint.h">
+      <Filter>algorithm\varint</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="base">
+      <UniqueIdentifier>{24bec494-4c1e-4a9c-b50a-3b6e7223b772}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\base">
+      <UniqueIdentifier>{e88ba817-b9c1-4426-8366-996bbfa0d8af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\def">
+      <UniqueIdentifier>{64085ded-5ae7-4b39-8883-f42447ab1f91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\link">
+      <UniqueIdentifier>{51809cba-6d82-42cf-b103-f1eff1030e4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\nt">
+      <UniqueIdentifier>{0fb50c72-b0cb-4a31-a7c7-b869b3cca15d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\struct">
+      <UniqueIdentifier>{ad78a222-a8e7-4ec9-aecd-e126cdc99487}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm">
+      <UniqueIdentifier>{6664e058-278c-4d45-9c29-526caa7e3d35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm\crc">
+      <UniqueIdentifier>{cf254ef1-8bc9-4d4f-8b9f-0c3a8b59bc39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="container">
+      <UniqueIdentifier>{b66b2b0c-7180-40e6-ac6a-76a6fc08a70b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="container\singleton">
+      <UniqueIdentifier>{95514c4b-317b-4f84-8184-5b910ff00cf4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory">
+      <UniqueIdentifier>{37a60024-bdd8-428f-a6fc-f5b960eb7aeb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory\swap">
+      <UniqueIdentifier>{0c5d2619-ef0a-44fe-80ea-1cd717c5ebc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory\xblk">
+      <UniqueIdentifier>{afb6c637-c4bf-4baa-9908-a979c860e299}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system_object">
+      <UniqueIdentifier>{2aa39890-c5a3-4c93-86c8-64883df80495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system_object\event">
+      <UniqueIdentifier>{88593bb1-50ca-407c-9264-bf9ab82942db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm\xrand">
+      <UniqueIdentifier>{bb6d2e77-88b7-4ddd-9d15-db96aa0a2baf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="string">
+      <UniqueIdentifier>{9bbd615f-5fbd-43cf-8d4a-d71d58244908}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="string\ws&amp;s">
+      <UniqueIdentifier>{858e36d8-c2c0-4620-9d32-f971a8f62415}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="string\ws&amp;utf8">
+      <UniqueIdentifier>{39c42222-6bed-40f7-9494-9de5da6e8c1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="string\xmsg">
+      <UniqueIdentifier>{c2413311-de23-433c-a7d9-5d553a4d1d0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="string\xlog">
+      <UniqueIdentifier>{d76a8470-2ac5-4bc5-9d4e-2c6925183b9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="container\xline">
+      <UniqueIdentifier>{b6d0d635-fce3-4b23-83d2-a1ed68a40ded}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm\md5">
+      <UniqueIdentifier>{708a5ca7-ce5c-4a2c-9459-3c36931a066c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm\aes">
+      <UniqueIdentifier>{bfac8a0d-9fa3-4b2e-921b-fbd2e8e8418b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory\hook">
+      <UniqueIdentifier>{d07ea045-deba-4191-99a6-1849ddb999bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sock">
+      <UniqueIdentifier>{0df31281-fe3b-4287-873a-04be4abb162c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sock\xsock">
+      <UniqueIdentifier>{37441eb5-6472-4b5e-bd41-ccc915d3d5c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system_object\syssnap">
+      <UniqueIdentifier>{56a03ee7-947a-45da-8cea-a3ead8333c12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory\caller">
+      <UniqueIdentifier>{1a4da387-ed61-43fd-b939-a85bc1430722}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm\des">
+      <UniqueIdentifier>{6df2143e-aa01-43f3-a9dd-e700b4c64905}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{88d56bd2-5eee-4922-b5c9-60e3b7ad5e57}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory\signaturematcher">
+      <UniqueIdentifier>{cf1c0af7-d4be-4eaa-944c-60378ba766ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="memory\pe">
+      <UniqueIdentifier>{f2594172-a826-4a11-9c26-70ffb1a30b24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm\tea">
+      <UniqueIdentifier>{02ef3cad-ebc1-4585-82e5-cdf19d7f3270}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="string\hex&amp;bin">
+      <UniqueIdentifier>{bb0c7409-f83a-420b-b950-ba273dd1d921}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="algorithm\varint">
+      <UniqueIdentifier>{b6df4571-48a9-48b3-94c4-08d0bdc78368}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="container\vline">
+      <UniqueIdentifier>{4c47dc27-ee3e-4c9d-9896-8687da7af123}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+    <None Include="HISTORY.md" />
+  </ItemGroup>
+</Project>

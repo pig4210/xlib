@@ -1,8 +1,14 @@
 ﻿# xlib
 
+这里提供的[Makefile.bat](./Makefile.bat)，使用VS2017命令行编译项目
+
+如需要使用其它VS编译，请修改如下配置：
+
+    set VCPATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build
+    
 xlib封装了一些常用的函数，用以自用简化编程
 
-xlib使用**UTF-8 编码**，工程适配`VS2013 x64/x86 ring0/ring3`。同时适配`g++`
+xlib使用**UTF-8 编码**，工程适配`VS x64/x86 ring0/ring3`。同时适配`g++`
 
 xlib使用C++ 11**部分**语法
 

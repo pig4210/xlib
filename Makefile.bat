@@ -26,6 +26,9 @@
 
     if not "%1" == "" set MyCFLAGS=%MyCFLAGS% /D "_USING_V110_SDK71_"
 
+:arflags
+    set ARFLAGS= /LTCG /MACHINE:%PLAT% /ERRORREPORT:NONE /NOLOGO
+
 :linkflags
     if "%1" == "" (
         set LFLAGS_PLAT_CONSOLE= /SUBSYSTEM:CONSOLE
@@ -36,9 +39,14 @@
     set LFLAGS= /MANIFEST:NO /LTCG /NXCOMPAT /DYNAMICBASE "kernel32.lib" "user32.lib" "gdi32.lib" "winspool.lib" "comdlg32.lib" "advapi32.lib" "shell32.lib" "ole32.lib" "oleaut32.lib" "uuid.lib" "odbc32.lib" "odbccp32.lib" /MACHINE:%PLAT% /OPT:REF /INCREMENTAL:NO /OPT:ICF /ERRORREPORT:NONE /NOLOGO
 
 :start
-    echo ==== ==== ==== ==== Start compiling %PLAT%...
+    echo ==== ==== ==== ==== Prepare dest folder(%PLAT%)...
+
+    rd /S /Q "%GPATH%" >nul
+    if exist "%GPATH%" goto fail
+    mkdir "%GPATH%" >nul
 
     echo ==== ==== ==== ==== Prepare environment(%PLAT%)...
+
     cd /d %VCPATH%
     if "%1" == "" (
         call vcvarsall.bat amd64 >nul
@@ -46,14 +54,11 @@
         call vcvarsall.bat x86 >nul
     )
 
-    echo ==== ==== ==== ==== Prepare dest folder(%PLAT%)...
-    if not exist "%GPATH%" mkdir %GPATH%
-    del /q "%GPATH%\\*.*"
-
     cd /d %VPATH%
 
 :test
     echo ==== ==== ==== ==== Building TEST(%PLAT%)...
+
     %CC% %CFLAGS% %MyCFLAGS% /EHa /Fd"%GPATH%\\test.pdb" /D "_XLIB_TEST_" "%VPATH%\\*.cc" >nul
     if not %errorlevel%==0 goto compile_error
     
@@ -62,8 +67,11 @@
 
     del "%GPATH%\\*.obj"
 
-    "%GPATH%\\test.exe"
-    pause >nul
+    "%GPATH%\\test.exe" >nul
+    if not %errorlevel%==0 (
+        "%GPATH%\\test.exe"
+        goto end
+    )
 
 :lib
     echo ==== ==== ==== ==== Building LIB(%PLAT%)...
@@ -71,7 +79,7 @@
     %CC% %CFLAGS% %MyCFLAGS% /EHa /Fd"%GPATH%\\xlib.pdb" /D "_LIB" "%VPATH%\\*.cc" >nul
     if not %errorlevel%==0 goto compile_error
 
-    %AR% /OUT:"%GPATH%\\xlib.lib" /LTCG /MACHINE:%PLAT% /NOLOGO "%GPATH%\\*.obj" >nul
+    %AR% %ARFLAGS% /OUT:"%GPATH%\\xlib.lib" "%GPATH%\\*.obj" >nul
     if not %errorlevel%==0 goto link_error
 
     del "%GPATH%\\*.obj"
@@ -97,7 +105,6 @@ goto done
 
 :done
     echo.
-
     endlocal
 
     if "%1" == "" (
@@ -107,7 +114,6 @@ goto done
     )
 
     echo done.
-
     goto end
 
 :compile_error
@@ -116,6 +122,10 @@ goto done
 
 :link_error
     echo !!!!!!!!Link error!!!!!!!!
+    goto end
+
+:fail
+    echo !!!!!!!!Fail!!!!!!!!
     goto end
 
 :end

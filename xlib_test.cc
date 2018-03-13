@@ -26,6 +26,7 @@ int _tmain(int , _TCHAR* )
 int main()
 #endif
   {
+  int ret = 0;
   for(const auto& r : routines())
     {
     try
@@ -34,11 +35,12 @@ int main()
       }
     catch(...)
       {
+      ++ret;
       cout << endl << "========exception !!!" << endl;
       }
     }
   cout << endl << "done." << endl;
-  return 0;
+  return ret;
   }
 
 #endif  // _XLIB_TEST_

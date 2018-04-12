@@ -12,7 +12,7 @@ xlog::~xlog()
 #if defined(_XLIB_TEST_) || !defined(_WIN32)
 
 #include <iostream>
-using std::clog;
+using std::cout;
 using std::endl;
 
 #endif
@@ -27,7 +27,7 @@ void xlog::out()
   DbgPrint("%s\n",c_str());
 #   endif
 #else
-  clog << c_str() << endl;
+  cout << c_str() << endl;
 #endif
   clear();
   }

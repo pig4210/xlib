@@ -2,9 +2,15 @@
 
 这里提供的[Makefile.bat](./Makefile.bat)，使用VS2017命令行编译项目
 
-如需要使用其它VS编译，请修改如下配置：
+如需要使用其它VS，请修改如下配置：
 
     set VCPATH=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build
+
+在已有VC命令行环境下运行脚本，只编译当前平台相符的库，并且输出编译信息
+
+无VC命令行环境时，脚本静默编译x64 & x86
+
+---- ---- ---- ----
     
 xlib封装了一些常用的函数，用以自用简化编程
 

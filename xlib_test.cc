@@ -36,7 +36,7 @@ int main()
     catch(...)
       {
       ++ret;
-      cout << endl << "========exception !!!" << endl;
+      std::cerr << endl << "========exception !!!" << endl;
       }
     }
   cout << endl << "done." << endl;

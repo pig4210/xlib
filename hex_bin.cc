@@ -3,14 +3,12 @@
 #include <string.h>
 
 #include "xmsg.h"
-#include "ws_s.h"
-#include "ws_utf8.h"
 
 using std::string;
 
-//! 十六进制转换，小写索引
+/// 十六进制转换，小写索引。
 static const char* const gk_NumFmt_Low  = "0123456789abcdef";
-//! 十六进制转换，大写索引
+/// 十六进制转换，大写索引。
 static const char* const gk_NumFmt_Up   = "0123456789ABCDEF";
 
 string bin2hex(const void* bin, const size_t size, bool isup)
@@ -60,7 +58,7 @@ size_t hex2value(const void*    hex,
       case 'a':      case 'b':      case 'c':      case 'd':
       case 'e':      case 'f':
         {
-        tmpC += 9;  //注意这里没有break
+        tmpC += 9;  // 注意这里没有 break 。
         }
       case '0':      case '1':      case '2':      case '3':
       case '4':      case '5':      case '6':      case '7':
@@ -106,9 +104,9 @@ string hex2bin(const void*    hex,
 
   if(hex == nullptr || size == 0)  return rets;
 
-  bool pick_high = true;      //指示当前提取的是高位还是低位
-  uint8 readch = 0;           //存放临时的提取值
-  size_t realreadlen = 0;     //存放实际读取数
+  bool pick_high = true;      // 指示当前提取的是高位还是低位。
+  uint8 readch = 0;           // 存放临时的提取值。
+  size_t realreadlen = 0;     // 存放实际读取数。
 
   const char* lp = (const char*)hex;
   for(size_t i = 0; i < size; ++i)
@@ -122,7 +120,7 @@ string hex2bin(const void*    hex,
       case 'a':      case 'b':      case 'c':      case 'd':
       case 'e':      case 'f':
         {
-        tmpC += 9;  //注意这里没有break
+        tmpC += 9;  // 注意这里没有 break 。
         }
       case '0':      case '1':      case '2':      case '3':
       case '4':      case '5':      case '6':      case '7':
@@ -151,7 +149,7 @@ string hex2bin(const void*    hex,
           }
         if(errbreak)
           {
-          //读取不完整
+          // 读取不完整。
           if(!pick_high)
             {
             *(lpreadlen) = realreadlen;
@@ -223,30 +221,35 @@ string escape(const void* strs, const size_t size)
     }
   return msg;
   }
+
+string escape(const string& strs)
+  {
+  return escape((void*)strs.c_str(), strs.size());
+  }
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-//! 每行显示数据个数
+/// 每行显示数据个数。
 static const size_t gk_max_line_byte = 0x10;
 
-//! 输出hex2show的前缀格式化数据
+/// 输出 hex2show 的前缀格式化数据。
 static void showbin_prefix(xmsg&          msg,
                            const uint8*   data,
                            const size_t   size,
                            const char*    fmt,
                            const size_t   prews)
   {
-  msg.append(prews, ' ');  //空格前缀
-  msg << (void*)data;      //地址前缀
-  msg.append("┃");        //地址与16进制数据分隔符
+  msg.append(prews, ' ');  // 空格前缀。
+  msg << (void*)data;      // 地址前缀。
+  msg.append("┃");         // 地址与 16 进制数据分隔符。
 
   for(size_t i = 0; i < gk_max_line_byte; ++i)
     {
-    if(i < size)    // HEX格式化输出
+    if(i < size)    // HEX 格式化输出。
       {
       msg.push_back(fmt[(data[i] >> 4) & 0xF]);
       msg.push_back(fmt[(data[i] >> 0) & 0xF]);
       }
-    else            // 无数据补齐
+    else            // 无数据补齐。
       {
       msg.append("  ");
       }
@@ -262,24 +265,24 @@ static void showbin_prefix(xmsg&          msg,
     }
   }
 
-//! 使unicode字符输出可视化，返回true表示接受字符，否则不接受，一律输出'.'
+/// 使 UNICODE 字符输出可视化，返回 true 表示接受字符，否则不接受，一律输出 '.' 。
 static bool showbin_check_unicode_visualization(xmsg& msg, const charucs2_t wc)
   {
-  //控制字符一律输出'.'
+  // 控制字符一律输出 '.' 。
   if(wc < L' ' || (wc >= 0x7F && wc <= 0xA0))
     {
     msg.push_back('.');
     return true;
     }
 
-  //对于'?'做特殊预处理以应对转换无法识别字符
+  // 对于 '?' 做特殊预处理以应对转换无法识别字符。
   if(wc == L'?')
     {
     msg.push_back('?');
     return true;
     }
 
-  //尝试转换ASCII，失败则输出'.'
+  // 尝试转换 ASCII ，失败则输出 '.' 。
   const auto ch(ws2s(&wc, 1));
   if(ch.empty())
     {
@@ -287,14 +290,14 @@ static bool showbin_check_unicode_visualization(xmsg& msg, const charucs2_t wc)
     return false;
     }
 
-  //转换成功，但无法显示，也输出'.'
+  // 转换成功，但无法显示，也输出 '.' 。
   if(*ch.begin() == '?')
     {
     msg.push_back('.');
     return false;
     }
 
-  //正常输出
+  // 正常输出。
   msg << ch;
   return true;
   }
@@ -308,7 +311,7 @@ static size_t showbin_fix_unicode(xmsg&           msg,
 
   while(used < fix_len)
     {
-    //在数据最后一行的最后一个byte，无法进行向后匹配完整字符，一律输出'.'
+    // 在数据最后一行的最后一个 byte ，无法进行向后匹配完整字符，一律输出 '.' 。
     if(last && (used + 1) >= fix_len)
       {
       msg.push_back('.');
@@ -339,11 +342,11 @@ static size_t showbin_fix_utf8(xmsg&            msg,
 
   while(used < fix_len)
     {
-    //尝试转换unicode
+    // 尝试转换 UNICODE 。
     uint32 unicode;
     const size_t k = utf8_byte2unicode_byte(&unicode, (const p_utf8)&data[used]);
 
-    //转换失败一律输出'.'
+    // 转换失败一律输出 '.' 。
     if(k == 0)
       {
       msg.push_back('.');
@@ -351,7 +354,7 @@ static size_t showbin_fix_utf8(xmsg&            msg,
       continue;
       }
 
-    //在数据最后一行，无法进行向后匹配完整字符，一律输出'.'
+    // 在数据最后一行，无法进行向后匹配完整字符，一律输出 '.' 。
     if(last && (used + k) > fix_len)
       {
       msg.append(fix_len - used, '.');
@@ -359,7 +362,7 @@ static size_t showbin_fix_utf8(xmsg&            msg,
       break;
       }
 
-    //转换超出正常unicode范围，一律输出'.'
+    // 转换超出正常 UNICODE 范围，一律输出 '.' 。
     if(unicode > 0xFFFF)
       {
       msg.push_back('.');
@@ -392,7 +395,7 @@ static size_t showbin_fix_ascii(xmsg&           msg,
     {
     const uint8 ch = *(uint8*)&data[used];
 
-    //控制字符一律输出'.'
+    // 控制字符一律输出 '.' 。
     if(ch < ' ' || ch == 0x7F)
       {
       msg.push_back('.');
@@ -400,7 +403,7 @@ static size_t showbin_fix_ascii(xmsg&           msg,
       continue;
       }
 
-    //可显示字符输出
+    // 可显示字符输出。
     if(ch < 0x7F)
       {
       msg.push_back(ch);
@@ -408,7 +411,7 @@ static size_t showbin_fix_ascii(xmsg&           msg,
       continue;
       }
 
-    //在数据最后一行的最后一个byte，无法进行向后匹配完整字符，一律输出'.'
+    // 在数据最后一行的最后一个 byte ，无法进行向后匹配完整字符，一律输出 '.' 。
     if(last && (used + 1) >= fix_len)
       {
       msg.push_back('.');
@@ -416,7 +419,7 @@ static size_t showbin_fix_ascii(xmsg&           msg,
       break;
       }
 
-    //尝试转换unicode，转换失败一律输出'.'
+    // 尝试转换 UNICODE ，转换失败一律输出 '.' 。
     const auto unicode(s2ws(string((const char*)&data[used], sizeof(charucs2_t))));
     if(unicode.empty())
       {

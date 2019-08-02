@@ -16,7 +16,7 @@ xblk::xblk(void* starts, void* ends)
   }
 
 xblk::xblk(void* starts, const intptr_t sizes)
-:_start(starts),_size(sizes)
+:_start(starts)
   {
   _end = (void*)((intptr_t)starts + sizes);
   seqswap(_start, _end);
@@ -47,13 +47,13 @@ xblk::PosDcrpt xblk::checkin(void* starts, void* ends) const
   seqswap(ss, ee);
   if(ss < s)
     {
-    if(ee < s)  return PD_NoIn;
-    if(ee > e)  return PD_SubIn;
-    return PD_TailIn;
+    if(ee < s)  return NoIn;
+    if(ee > e)  return SubIn;
+    return TailIn;
     }
-  if(ss > e)  return PD_NoIn;
-  if(ee > e)  return PD_HeadIn;
-  return PD_WholeIn;
+  if(ss > e)  return NoIn;
+  if(ee > e)  return HeadIn;
+  return WholeIn;
   }
 
 xblk::PosDcrpt xblk::checkin(void* starts, const intptr_t sizes) const
@@ -95,24 +95,24 @@ ADD_XLIB_TEST(XBLK)
   done = (blk.start() == s) && (blk.end() == e) && (blk.size() == size);
   SHOW_TEST_RESULT(done);
 
-  SHOW_TEST_HEAD("xblk checkin PD_NoIn");
-  done = blk.checkin((void*)0x1111) == xblk::PD_NoIn;
+  SHOW_TEST_HEAD("xblk checkin NoIn");
+  done = blk.checkin((void*)0x1111) == xblk::NoIn;
   SHOW_TEST_RESULT(done);
 
-  SHOW_TEST_HEAD("xblk checkin PD_WholeIn");
-  done = blk.checkin((void*)0x1005) == xblk::PD_WholeIn;
+  SHOW_TEST_HEAD("xblk checkin WholeIn");
+  done = blk.checkin((void*)0x1005) == xblk::WholeIn;
   SHOW_TEST_RESULT(done);
 
-  SHOW_TEST_HEAD("xblk checkin PD_HeadIn");
-  done = blk.checkin((void*)0x10FF, 3) == xblk::PD_HeadIn;
+  SHOW_TEST_HEAD("xblk checkin HeadIn");
+  done = blk.checkin((void*)0x10FF, 3) == xblk::HeadIn;
   SHOW_TEST_RESULT(done);
 
-  SHOW_TEST_HEAD("xblk checkin PD_TailIn");
-  done = blk.checkin((void*)0x0FFF, 3) == xblk::PD_TailIn;
+  SHOW_TEST_HEAD("xblk checkin TailIn");
+  done = blk.checkin((void*)0x0FFF, 3) == xblk::TailIn;
   SHOW_TEST_RESULT(done);
 
-  SHOW_TEST_HEAD("xblk checkin PD_SubIn");
-  done = blk.checkin((void*)0x0FFF, 0x1101) == xblk::PD_SubIn;
+  SHOW_TEST_HEAD("xblk checkin SubIn");
+  done = blk.checkin((void*)0x0FFF, 0x1101) == xblk::SubIn;
   SHOW_TEST_RESULT(done);
   }
 

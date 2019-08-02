@@ -24,7 +24,7 @@ xmsg::xmsg(const ucs2string& s)
 
 #ifdef _WIN32
 #   pragma warning(push)
-#   pragma warning(disable:4127)  //warning C4127: 条件表达式是常量
+#   pragma warning(disable:4127)  // warning C4127: 条件表达式是常量。
 #endif
 xmsg& xmsg::prt(const char* const fmt, ...)
   {
@@ -48,13 +48,13 @@ xmsg& xmsg::prt(const char* const fmt, ...)
 #endif
 #ifdef _WIN32
 #   if defined(FOR_RING0) && !defined(_WIN64)
-    //目前WIN7以下Ring0只能使用不安全的函数，否则编译出现链接错误
-    const size_t rt = _vsnprintf(lpend, rst, fmt, ap);  //数据不足，返回-1
+    // 目前 WIN7 以下 Ring0 只能使用不安全的函数，否则编译出现链接错误。
+    const size_t rt = _vsnprintf(lpend, rst, fmt, ap);  // 数据不足，返回 -1 。
 #   else
     const size_t rt = _vsnprintf_s(lpend, rst, rst - 1, fmt, ap);
 #   endif
 #else
-    const size_t rt = vsnprintf(lpend, rst, fmt, ap);  //数据不足，返回-1
+    const size_t rt = vsnprintf(lpend, rst, fmt, ap);  // 数据不足，返回 -1 。
 #endif
     if(rt < rst)
       {
@@ -74,7 +74,7 @@ xmsg& xmsg::operator<<(const void* v)
   {
 #ifdef _WIN32
   return prt("%p", v);
-#else     //g++输出%p不填充0，故不采用%p
+#else     // g++ 输出 %p 不填充0，故不采用 %p 。
 #   ifdef __amd64
   return operator<<((uint64)v);
 #   else
@@ -146,7 +146,7 @@ xmsg& xmsg::operator<<(const uint8& v)
 
 xmsg& xmsg::operator<<(const int16& v)
   {
-  //在g++下，需要两个参数才正常，原因不明
+  // 在 g++ 下，需要两个参数才正常，原因不明。
   return prt("%hd", v, v);
   }
 

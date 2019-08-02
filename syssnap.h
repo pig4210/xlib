@@ -1,15 +1,20 @@
-﻿/*!
+﻿/**
   \file  syssnap.h
-  \brief syssnap.h用于枚举系统信息
+  \brief 用于枚举系统信息。
 
-  - SysXXXSnap使用ZwQuerySystemInformation获取系统信息
-  - XXXSnap使用CreateToolhelp32Snapshot获取系统信息
+  - SysXXXSnap 使用 ZwQuerySystemInformation 获取系统信息。
+  - XXXSnap 使用 CreateToolhelp32Snapshot 获取系统信息。
 
-  \version    2.0.1402.1917
+  \version    1.1.0.140219
   \note       For All
 
   \author     triones
   \date       2013-08-06
+
+  \section history 版本记录
+  
+  - 2013-08-06 新建 sysinfo 。 1.0 。
+  - 2014-02-19 改变 sysinfo 为 syssnap ；融合 Snapshot 。 1.1 。
 */
 #ifndef _XLIB_SYSSNAP_H_
 #define _XLIB_SYSSNAP_H_
@@ -20,15 +25,15 @@
 
 #ifdef _WIN32
 
-//! 用于基本Snapshot
+/// 用于基本 Snapshot 。
 class SysSnap : public std::string
   {
   public:
     SysSnap(SYSTEM_INFORMATION_CLASS SystemInformationClass);
   };
  
-/*!
-  用于进程枚举
+/**
+  用于进程枚举。
 
   \code
     SysProcessSnap sps;
@@ -60,8 +65,8 @@ class SysProcessSnap : public SysSnap
     const_iterator end() const;
   };
 
-/*!
-  用于线程枚举
+/**
+  用于线程枚举。
 
   \code
     SysThreadSnap sts(GetCurrentProcess());
@@ -81,8 +86,8 @@ class SysThreadSnap : public SysProcessSnap
     const SYSTEM_PROCESS_INFORMATION* _p;
   };
 
-/*!
-  用于驱动枚举
+/**
+  用于驱动枚举。
 
   \code
     SysDriverSnap sds;
@@ -103,8 +108,9 @@ class SysDriverSnap : public SysSnap
 #ifndef FOR_RING0
 
 #include <Tlhelp32.h>
-//! 快照枚举模版，仿标准容器操作
-/*!
+
+/**
+  快照枚举模版，仿标准容器操作。
 
   \code
     ProcessSnap ps;
@@ -125,7 +131,7 @@ class Snapshot
   public:
     typedef typename BOOL(WINAPI *func_snap)(HANDLE hSnapshot, ST* lpst);
   public:
-    //! 内嵌类，用以实现仿迭代操作
+    /// 内嵌类，用以实现仿迭代操作。
     class const_iterator
       {
       public:
@@ -194,21 +200,21 @@ class Snapshot
     ST st;
   };
 
-//! 进程快照
+/// 进程快照。
 typedef Snapshot<
   PROCESSENTRY32,
   Process32First,
   Process32Next,
   TH32CS_SNAPPROCESS>     ProcessSnap;
 
-//! 线程快照
+/// 线程快照。
 typedef Snapshot<
   THREADENTRY32,
   Thread32First,
   Thread32Next,
   TH32CS_SNAPTHREAD>      ThreadSnap;
 
-//! 模块快照
+/// 模块快照。
 typedef Snapshot<
   MODULEENTRY32,
   Module32First,

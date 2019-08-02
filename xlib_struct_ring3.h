@@ -1,8 +1,6 @@
-﻿/*!
+﻿/**
   \file  xlib_struct_ring3.h
-  \brief xlib_struct_ring3.h定义Ring0下已提供，但Ring3下没有提供的结构，供Ring3使用
-
-  - 结构来自于Ring0的windows定义，每个结构前列举了加入时间
+  \brief 定义 Ring0 下已提供，但 Ring3 下没有提供的结构，供 Ring3 使用。
 
   \author   triones
   \date     2011-4-8
@@ -10,27 +8,28 @@
 #ifndef _XLIB_STRUCT_RING3_H_
 #define _XLIB_STRUCT_RING3_H_
 
+// 结构来自于Ring0的windows定义，每个结构前列举了加入时间
 #if defined(_WIN32) && !defined(FOR_RING0)
 
-//20120518 1201
+// 20120518 1201 。
 typedef LONG NTSTATUS;
 
-//20120323  1144
+// 20120323 1144 。
 #define STATUS_SUCCESS  ((NTSTATUS)0x00000000L)
 
-//20130702  1053
+// 20130702 1053 。
 #define STATUS_INFO_LENGTH_MISMATCH      ((NTSTATUS)0xC0000004L)
 
-//20120517 1019
+// 20120517 1019 。
 #define ERROR_SUCCESS 0L
 
-//20120522  1144
+// 20120522 1144 。
 #define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
 
-//20120517 1019
+// 20120517 1019 。
 #define STATUS_INFO_LENGTH_MISMATCH ((NTSTATUS)0xC0000004L)
 
-//20120522  1144
+// 20120522 1144 。
 typedef struct _UNICODE_STRING {
   USHORT Length;
   USHORT MaximumLength;
@@ -43,7 +42,7 @@ typedef struct _UNICODE_STRING {
 typedef UNICODE_STRING *PUNICODE_STRING;
 typedef const UNICODE_STRING *PCUNICODE_STRING;
 
-//20120522  1144
+// 20120522 1144 。
 typedef struct _STRING {
   __maybevalid USHORT Length;
   __maybevalid USHORT MaximumLength;
@@ -59,13 +58,13 @@ typedef PSTRING PCANSI_STRING;
 typedef CHAR *PSZ;
 typedef CONST char *PCSZ;
 
-//20120517 1019
+// 20120517 1019 。
 #pragma warning(push)
 
 #ifdef __INTEL_COMPILER
-#   pragma warning(disable:94)//the size of an array must be greater than zero
+#   pragma warning(disable:94)  // the size of an array must be greater than zero
 #else
-#   pragma warning(disable:4200)//使用了非标准扩展 : 结构/联合中的零大小数组
+#   pragma warning(disable:4200)// 使用了非标准扩展 : 结构/联合中的零大小数组。
 #endif
 
 typedef struct _OBJECT_NAME_INFORMATION {
@@ -77,7 +76,7 @@ typedef struct _OBJECT_NAME_INFORMATION {
 
 #pragma warning(pop)
 
-//20120517 1019
+// 20120517 1019 。
 typedef struct _OBJECT_BASIC_INFORMATION {
 
   ULONG                   Attributes;
@@ -94,13 +93,13 @@ typedef struct _OBJECT_BASIC_INFORMATION {
 
   } OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;
 
-//20130702 1119
+// 20130702 1119 。
 typedef struct _PEB *PPEB;
 
-//20130702 1120
+// 20130702 1120 。
 typedef TLONG KPRIORITY;
 
-//20130702 1117
+// 20130702 1117 。
 typedef struct _PROCESS_BASIC_INFORMATION {
   NTSTATUS ExitStatus;
   PPEB PebBaseAddress;
@@ -110,7 +109,7 @@ typedef struct _PROCESS_BASIC_INFORMATION {
   ULONG_PTR InheritedFromUniqueProcessId;
   } PROCESS_BASIC_INFORMATION,*PPROCESS_BASIC_INFORMATION;
 
-//20130702 1121
+// 20130702 1121 。
 typedef enum _PROCESSINFOCLASS {
   ProcessBasicInformation,
   ProcessQuotaLimits,
@@ -166,9 +165,9 @@ typedef enum _PROCESSINFOCLASS {
   MaxProcessInfoClass             // MaxProcessInfoClass should always be the last enum
   } PROCESSINFOCLASS;
 
-//系统对象信息枚举  20120517 1019
-//http://msdn.microsoft.com/zh-cn/library/windows/hardware/ff550964(v=vs.85).aspx
-//http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/NT%20Objects/Type%20independed/OBJECT_INFORMATION_CLASS.html
+// 系统对象信息枚举  20120517 1019 。
+// http://msdn.microsoft.com/zh-cn/library/windows/hardware/ff550964(v=vs.85).aspx
+// http://undocumented.ntinternals.net/UserMode/Undocumented%20Functions/NT%20Objects/Type%20independed/OBJECT_INFORMATION_CLASS.html
 typedef enum _OBJECT_INFORMATION_CLASS
   {
   ObjectBasicInformation,
@@ -178,7 +177,7 @@ typedef enum _OBJECT_INFORMATION_CLASS
   ObjectHandleInformation
   } OBJECT_INFORMATION_CLASS;
 
-//CLIENT_ID 20140218 1112
+// 20140218 1112 。
 typedef struct _CLIENT_ID
   {
   HANDLE UniqueProcess;
@@ -186,7 +185,7 @@ typedef struct _CLIENT_ID
   } CLIENT_ID;
 typedef CLIENT_ID *PCLIENT_ID;
 
-//KWAIT_REASON 20140218 1115
+// 20140218 1115 。
 typedef enum _KWAIT_REASON
   {
   Executive,
@@ -231,7 +230,7 @@ typedef enum _KWAIT_REASON
   MaximumWaitReason
   } KWAIT_REASON;
 
-//VM_COUNTERS 20140218 1117
+// 20140218 1117 。
 typedef struct _VM_COUNTERS
   {
   SIZE_T PeakVirtualSize;

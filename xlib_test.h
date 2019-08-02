@@ -1,8 +1,8 @@
-﻿/*!
+﻿/**
   \file  xlib_test.h
-  \brief xlib_test.h定义了xlib测试环境
+  \brief 定义了 xlib 测试环境。
 
-  \version    0.1.1611.1510
+  \version    1.0.0.161115
   \note       Only For Ring3
 
   \author     triones
@@ -14,7 +14,7 @@
 #ifdef _XLIB_TEST_
 
 #ifdef FOR_RING0
-#   pragma message("RING0下不能使用_XLIB_TEST_")
+#   pragma message("RING0 下不能使用 _XLIB_TEST_")
 #   error "不兼容的编译选项"
 #endif
 

@@ -2,11 +2,11 @@
 
 #if defined(_WIN32) && defined(FOR_RING0)
 
-// 注意#undef POOL_TAGGING无效，并不能还原API定义
+// 注意 #undef POOL_TAGGING 无效，并不能还原 API 定义。
 #ifdef POOL_TAGGING
-#   undef ExAllocatePool
-#   undef ExAllocatePoolWithQuota
-#   undef ExFreePool
+  #undef ExAllocatePool
+  #undef ExAllocatePoolWithQuota
+  #undef ExFreePool
 #endif
 
 void* __cdecl operator new(size_t size)

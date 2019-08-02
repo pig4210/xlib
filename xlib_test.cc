@@ -4,12 +4,10 @@
 
 #include <map>
 
-using std::map;
-
-//! 做成函数即保证初始化，也保证内部访问
-static map<string, xlib_test_routine>& routines()
+/// 做成函数即保证初始化，也保证内部访问
+static std::map<string, xlib_test_routine>& routines()
   {
-  static map<string, xlib_test_routine> xlib_test_routines;
+  static std::map<string, xlib_test_routine> xlib_test_routines;
   return xlib_test_routines;
   }
 
@@ -36,10 +34,10 @@ int main()
     catch(...)
       {
       ++ret;
-      std::cerr << endl << "========exception !!!" << endl;
+      std::cerr << endl << "======== exception !!!" << endl;
       }
     }
-  cout << endl << "done." << endl;
+  cout << endl << "xlib test done." << endl;
   return ret;
   }
 

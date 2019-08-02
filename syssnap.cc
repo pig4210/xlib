@@ -133,8 +133,9 @@ const SYSTEM_MODULE* SysDriverSnap::end() const
 
 #pragma warning(push)
 
-#pragma warning(disable:4127)  //C4127: 条件表达式是常量
-#define sysnap_test_out if(false) cout            // 默认不输出
+#pragma warning(disable:4127)  // C4127: 条件表达式是常量 。
+#pragma warning(disable:4312)  // C4312: “类型强制转换”: 从“const DWORD”转换到更大的“void *” 。
+#define sysnap_test_out if(false) cout    // 默认不输出。
 
 ADD_XLIB_TEST(SYSSNAP)
   {

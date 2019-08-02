@@ -1,17 +1,23 @@
-﻿/*!
+﻿/**
   \file  vline.h
-  \brief vline.h定义了便捷数据组织的类，常用于封包的组织与解析
+  \brief 定义了便捷数据组织的类，常用于封包的组织与解析。
 
-  - 数据不足的情况下读取数据默认将抛出runtime_error异常
-  - 如不愿意抛出异常，请在包含前#define vline_noexcept。注意，此时将读出未知数据
-  - Ring0不使用异常机制
-  - 注意与xline的区别。vline可用于protobuf
-
-  \version    1.0.1709.0609
+  \version    1.0.0.170906
   \note       For All
 
   \author     triones
   \date       2017-09-06
+  
+  \section more 额外说明
+
+  - 数据不足的情况下读取数据默认将抛出 runtime_error 异常。
+  - 如不愿意抛出异常，请在包含前 #define vline_noexcept 。注意，此时将读出未知数据。
+  - Ring0 不使用异常机制。
+  - 注意与 xline 的区别。 vline 可用于 protobuf 。
+
+  \section history 版本记录
+  
+  - 2017-09-06 从 xline 衍生出操作 varint 的 vline 。 1.0 。
 */
 #ifndef _XLIB_VLINE_H_
 #define _XLIB_VLINE_H_
@@ -22,9 +28,7 @@
 
 #include "varint.h"
 
-/*!
-  vline用于便捷的数据组织操作
-  */
+/// vline 用于便捷的数据组织操作。
 class vline : public std::basic_string<uint8>
   {
   public:
@@ -32,7 +36,7 @@ class vline : public std::basic_string<uint8>
     typedef std::basic_string<uint8>  _Mybase;
   public:
     /*========================  数据输入  ========================*/
-    /*!
+    /**
       \code
         vline << (void*)p;
       \endcode
@@ -41,7 +45,7 @@ class vline : public std::basic_string<uint8>
       {
       return this->operator<<((size_t)p);
       }
-    /*!
+    /**
       \code
         vline << true;
       \endcode
@@ -50,9 +54,8 @@ class vline : public std::basic_string<uint8>
       {
       return this->operator<<((uint8)b);
       }
-    /*!
-      格式串输入\n
-      注意：输入数据内容，不处理结尾0
+    /**
+      格式串输入。注意：输入数据内容，不处理结尾 0 。
 
       \code
         vline << "2121321";
@@ -70,9 +73,8 @@ class vline : public std::basic_string<uint8>
 
       return *this;
       }
-    /*!
-      先输入数据长度，再输入数据内容\n
-      注意：当操作自身时，相当于mkhead()
+    /**
+      先输入数据长度，再输入数据内容。注意：当操作自身时，相当于 mkhead() 。
 
       \code
         vline << vline;
@@ -90,8 +92,8 @@ class vline : public std::basic_string<uint8>
 
       return *this;
       }
-    /*!
-      模板适用于标准库字符串
+    /**
+      模板适用于标准库字符串。
 
       \code
         vline << string("12345678");
@@ -103,8 +105,8 @@ class vline : public std::basic_string<uint8>
 
       return *this;
       }
-    /*!
-      模板适用于内置类型，结构体等
+    /**
+      模板适用于内置类型，结构体等。
 
       \code
         vline << dword << word << byte;
@@ -155,12 +157,12 @@ class vline : public std::basic_string<uint8>
       this->operator<<(tovarint(argvs));
       return *this;
       }
-    //! 扩展功能，使得line可以执行一个函数
+    /// 扩展功能，使得 vline 可以执行一个函数。
     _Myt& operator<<(_Myt& (*pfn)(_Myt&))
       {
       return pfn(*this);
       }
-    //! 扩展功能，使得不借助两个line就能完成头部添加
+    /// 扩展功能，使得不借助两个 vline 就能完成头部添加。
     _Myt& mkhead()
       {
       const auto s = tovarint(_Mybase::size());
@@ -171,7 +173,7 @@ class vline : public std::basic_string<uint8>
       }
   public:
     /*========================  数据输出  ========================*/
-    /*!
+    /**
       \code
         vline >> (void*)p;
       \endcode
@@ -180,7 +182,7 @@ class vline : public std::basic_string<uint8>
       {
       return this->operator>>((size_t&)p);
       }
-    /*!
+    /**
       \code
         vline >> (bool)b;
       \endcode
@@ -189,15 +191,15 @@ class vline : public std::basic_string<uint8>
       {
       return this->operator>>((uint8&)b);
       }
-    /*!
-      格式串输出，注意不能特化void* !\n
-      输出数据内容，根据标志处理结尾0\n
-      允许空指针，这样将丢弃一串指定类型的数据
+    /**
+      格式串输出，注意不能特化 void* !\n
+      输出数据内容，根据标志处理结尾 0 。\n
+      允许空指针，这样将丢弃一串指定类型的数据。
 
       \code
         vline >> (unsigned char*)lpstr;
       \endcode
-      \exception 数据不足时，抛出runtime_error异常
+      \exception 数据不足时，抛出 runtime_error 异常
     */
     template<typename T> _Myt& operator>>(T* str)
       {
@@ -207,7 +209,7 @@ class vline : public std::basic_string<uint8>
       while(lpstr[strlen])++strlen;
       strlen *= sizeof(T);
 
-#if !defined(FOR_RING0) && !defined(xline_noexcept)
+#if !defined(FOR_RING0) && !defined(vline_noexcept)
       if(strlen > _Mybase::size())
         {
         throw std::runtime_error("vline >> T* 数据不足");
@@ -221,25 +223,25 @@ class vline : public std::basic_string<uint8>
 
       return *this;
       }
-    /*!
-      将重置参数line\n
-      执行后line缓冲存放数据内容，line的缓冲长度即为数据长度。\n
-      注意：当操作自身时，按数据头长度截断
+    /**
+      将重置参数 vline 。\n
+      执行后 vline 缓冲存放数据内容， vline 的缓冲长度即为数据长度。\n
+      注意：当操作自身时，按数据头长度截断。
 
       \code
         vline >> vline;
       \endcode
-      \exception 数据不足时，抛出runtime_error异常
+      \exception 数据不足时，抛出 runtime_error 异常。
     */
     _Myt& operator>>(_Myt& nline)
       {
       size_type nlen;
       this->operator>>(nlen);
 
-#if !defined(FOR_RING0) && !defined(xline_noexcept)
+#if !defined(FOR_RING0) && !defined(vline_noexcept)
       if(nlen > _Mybase::size())
         {
-        throw std::runtime_error("xline >> _Myt& 数据不足");
+        throw std::runtime_error("vline >> _Myt& 数据不足");
         }
 #endif
 
@@ -255,8 +257,8 @@ class vline : public std::basic_string<uint8>
 
       return *this;
       }
-    /*!
-      模板适用于标准库字符串。数据倾倒
+    /**
+      模板适用于标准库字符串。数据倾倒。
 
       \code
         vline >> string;
@@ -269,13 +271,13 @@ class vline : public std::basic_string<uint8>
 
       return *this;
       }
-    /*!
-      模板适用于内置类型，结构体等
+    /**
+      模板适用于内置类型，结构体等。
 
       \code
         vline >> dword >> word >> byte;
       \endcode
-      \exception 数据不足时，抛出runtime_error异常
+      \exception 数据不足时，抛出 runtime_error 异常。
       */
     template<typename T>
     typename std::enable_if<std::is_class<T>::value, _Myt>::type&
@@ -320,7 +322,7 @@ class vline : public std::basic_string<uint8>
       operator>>(T& argvs)
       {
       size_type typesize = getvarint(argvs, *this);
-#if !defined(FOR_RING0) && !defined(xline_noexcept)
+#if !defined(FOR_RING0) && !defined(vline_noexcept)
       if(typesize == 0 || typesize > _Mybase::size())
         {
         throw std::runtime_error("vline >> T& 数据错误/不足");
@@ -329,13 +331,13 @@ class vline : public std::basic_string<uint8>
       _Mybase::erase(0, typesize);
       return *this;
       }
-    /*!
-      目的用以跳过某些不需要的数据
+    /**
+      目的用以跳过某些不需要的数据。
 
       \code
         vline >> cnull >> snull >> 0;
       \endcode
-      \exception 数据不足时，抛出runtime_error异常
+      \exception 数据不足时，抛出 runtime_error 异常。
     */
     template<typename T> _Myt& operator>>(T const&)
       {

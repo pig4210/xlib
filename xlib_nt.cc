@@ -1,10 +1,6 @@
 ﻿#include "xlib_nt.h"
 
-#ifdef _WIN32
-
-#ifdef FOR_RING0
-
-#else   // FOR_RING0
+#if defined(_WIN32) && !defined(FOR_RING0)
 
 #define DEFINE_FUNCTION_START(rettype, calltype, funcname, ...) \
   rettype calltype funcname(__VA_ARGS__)\
@@ -83,7 +79,7 @@ DEFINE_FUNCTION_START(VOID, XLIB_NTAPI, RtlFreeUnicodeString,
 DEFINE_FUNCTION_END(UnicodeString)
 
 
-// 注意Ring3下不提供RtlFreeAnsiString
+// 注意 Ring3 下不提供 RtlFreeAnsiString 。
 VOID XLIB_NTAPI RtlFreeAnsiString(
   __inout PANSI_STRING AnsiString
   )
@@ -128,6 +124,20 @@ DEFINE_FUNCTION_END(hSourceProcessHandle, hSourceHandle,
   hTargetProcessHandle, lpTargetHandle, dwDesiredAccess,
   bInheritHandle, dwOptions)
 
-#endif  // FOR_RING0
 
-#endif  // _WIN32
+DEFINE_FUNCTION_START(NTSTATUS, XLIB_NTAPI, LdrLoadDll,
+  IN  PWCHAR            PathToFile,
+  IN  ULONG             Flags,
+  IN  PUNICODE_STRING   ModuleFileName,
+  OUT PHANDLE           ModuleHandle
+  )
+DEFINE_FUNCTION_END(PathToFile, Flags, ModuleFileName, ModuleHandle)
+
+
+DEFINE_FUNCTION_START(NTSTATUS, XLIB_NTAPI, LdrUnloadDll, IN HANDLE ModuleHandle)
+DEFINE_FUNCTION_END(ModuleHandle);
+
+#undef DEFINE_FUNCTION_START
+#undef DEFINE_FUNCTION_END
+
+#endif  // _WIN32 && !FOR_RING0

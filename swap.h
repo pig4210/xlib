@@ -1,14 +1,19 @@
-﻿/*!
+﻿/**
   \file  swap.h
-  \brief swap.h定义了swap的相关模版。
+  \brief 定义了 swap 的相关模版。
 
-  - bswap在开启完全优化情况下，会被编译成只有一条bswap的汇编指令
-
-  \version    2.0.1611.1410
+  \version    1.1.0.161114
   \note       For All
 
   \author     triones
   \date       2014-01-07
+
+  \details    bswap 在开启完全优化情况下，会被编译成只有一条 bswap 的汇编指令。
+  
+  \section history 版本记录
+
+  - 2014-01-07 从 mkmem 移植入 xlib ，虽然 C++0x 可以实现模版定义与实现分离，但不适用于 LIB ，为记。 1.0 。
+  - 2016-11-14 适配 Linux g++ 。 1.1 。
 */
 #ifndef _XLIB_SWAP_H_
 #define _XLIB_SWAP_H_
@@ -23,7 +28,7 @@
 #include <byteswap.h>
 #endif
 
-//! bswap模板，是bswap函数的实现细节
+/// bswap 模板，是 bswap 函数的实现细节。
 template<size_t N> inline void bswap_type(uint8* mem)
   {
   size_t len = N;
@@ -63,9 +68,9 @@ template<> inline void bswap_type<8>(uint8* mem)
   uint64* lp = (uint64*)mem;
   *lp = bswap_64(*lp);
   }
-
-//! 用于翻转数据。
-/*!
+ 
+/**
+  用于翻转数据。
   \param    values  任意类型数据。
   \return           翻转后的原类型数据。
 
@@ -81,16 +86,16 @@ template<typename T> inline T bswap(T const& values)
   return v;
   }
 
-//! 当A > B时，对调两值，返回真，否则不变，返回假
-/*!
-  \param    a   任意类型非常量值
-  \param    b   任意类型非常量值
-  \return       返回是否对调两值
+/**
+  当 A > B 时，对调两值，并返回真。否则不变，返回假。
+  \param    a   任意类型非常量值。
+  \param    b   任意类型非常量值。
+  \return       返回是否对调两值。
 
   \code
     void* a = 0x5;
     void* b = 0x1;
-    seqswap(a, b); //返回true，并且a == 1，b == 5
+    seqswap(a, b); // 返回 true ，并且 a == 1，b == 5 。
   \endcode
 */
 template<typename T> inline bool seqswap(T& a, T& b)

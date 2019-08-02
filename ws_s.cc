@@ -20,7 +20,7 @@ string ws2s(const charucs2_t* const ws, const size_t size)
   while(wused < wlen)
     {
     size_t wnow = wlen - wused;
-    if(wnow > 0xFFFE) wnow = 0xFFFE;    // 一次只能处理这么多字符
+    if(wnow > 0xFFFC) wnow = 0xFFFC;    // 一次只能处理这么多字符。
 
     UNICODE_STRING us;
     us.Length = (USHORT)wnow;
@@ -58,7 +58,7 @@ ucs2string s2ws(const char* const s, const size_t size)
   while(sused < slen)
     {
     size_t snow = slen - sused;
-    if(snow > 0x7FFE) snow = 0x7FFE;    // 一次只能处理这么多字符
+    if(snow > 0x7FFE) snow = 0x7FFE;    // 一次只能处理这么多字符。
 
     ANSI_STRING as;
     as.Length = (USHORT)snow;
@@ -188,29 +188,20 @@ ADD_XLIB_TEST(WS_S)
 
   auto done = false;
 
-  //AA转换测试BB
+  // 测试字符串："AA转换测试BB" 。
   const char* const sbuf = "\x41\x41\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42";
   const size_t sbuflen = 12;
   const char* const wbuf = "\x41\x00\x41\x00\x6C\x8F\x62\x63\x4B\x6D\xD5\x8B\x42\x00\x42\x00";
   const size_t wbuflen = 8;
   const size_t wbufreallen = wbuflen * sizeof(charucs2_t);
 
-  string s;
-  ucs2string ws;
-  
   SHOW_TEST_HEAD("ws2s");
-  ws.clear();
-  s.clear();
-  ws.assign((const charucs2_t*)wbuf, wbuflen);
-  s = ws2s(ws);
+  const auto s = ws2s(ucs2string((const charucs2_t*)wbuf, wbuflen));
   done = (s.size() == sbuflen) && (0 == memcmp(sbuf, s.c_str(), sbuflen));
   SHOW_TEST_RESULT(done);
 
   SHOW_TEST_HEAD("s2ws");
-  ws.clear();
-  s.clear();
-  s.assign(sbuf, sbuflen);
-  ws = s2ws(s);
+  const auto ws = s2ws(string(sbuf, sbuflen));
   done = (ws.size() == wbuflen) && (0 == memcmp(wbuf, ws.c_str(), wbufreallen));
   SHOW_TEST_RESULT(done);
   }

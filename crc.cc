@@ -51,8 +51,6 @@ uint16 crcccitt(const void* data, const size_t size)
 
 #ifdef _XLIB_TEST_
 
-using std::string;
-
 ADD_XLIB_TEST(CRC)
   {
   SHOW_TEST_INIT;

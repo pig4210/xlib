@@ -1,8 +1,6 @@
-﻿/*!
+﻿/**
   \file  xlib_struct_ring0.h
-  \brief xlib_struct_ring0.h定义Ring3下已提供，但Ring0下没有提供的结构，供Ring0使用
-
-  - 结构来自于Ring3的windows定义，每个结构前列举了加入时间
+  \brief 定义 Ring3 下已提供，但 Ring0 下没有提供的结构，供 Ring0 使用。
 
   \author   triones
   \date     2011-4-8
@@ -10,9 +8,10 @@
 #ifndef _XLIB_STRUCT_RING0_H_
 #define _XLIB_STRUCT_RING0_H_
 
+// 结构来自于 Ring3 的 Windows 定义，每个结构前列举了加入时间。
 #if defined(_WIN32) && defined(FOR_RING0)
 
-//20120906 1115
+// 20120906 1115 。
 typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
   WORD   e_magic;                     // Magic number
   WORD   e_cblp;                      // Bytes on last page of file
@@ -35,7 +34,7 @@ typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
   LONG   e_lfanew;                    // File address of new exe header
   } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 
-//20120906 1115
+// 20120906 1115 。
 typedef struct _IMAGE_DATA_DIRECTORY {
   DWORD   VirtualAddress;
   DWORD   Size;
@@ -43,7 +42,7 @@ typedef struct _IMAGE_DATA_DIRECTORY {
 
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES    16
 
-//20120906 1115。x64 20131211 1640
+// 20120906 1115 。x64 20131211 1640 。
 typedef struct _IMAGE_OPTIONAL_HEADER {
   //
   // Standard fields.
@@ -87,7 +86,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
   IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
   } IMAGE_OPTIONAL_HEADER, *PIMAGE_OPTIONAL_HEADER;
 
-//20120906 1115
+// 20120906 1115。
 typedef struct _IMAGE_FILE_HEADER {
   WORD    Machine;
   WORD    NumberOfSections;
@@ -98,7 +97,7 @@ typedef struct _IMAGE_FILE_HEADER {
   WORD    Characteristics;
   } IMAGE_FILE_HEADER;
 
-//20120906 1115。x64 20131211 1640
+// 20120906 1115 。x64 20131211 1640 。
 typedef struct _IMAGE_NT_HEADERS {
   DWORD Signature;
   IMAGE_FILE_HEADER FileHeader;
@@ -106,7 +105,7 @@ typedef struct _IMAGE_NT_HEADERS {
   } IMAGE_NT_HEADERS;
 
 
-//20170904 1629 源于c++标准库
+// 20170904 1629 源于 c++ 标准库。
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 namespace std {

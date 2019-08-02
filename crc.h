@@ -1,12 +1,21 @@
-﻿/*!
+﻿/**
   \file  crc.h
-  \brief crc.h定义了crc16算法、crc32算法、crc64、crc ccitt算法
+  \brief 定义了 crc16 、 crc32 、 crc64 、crcccitt 算法。
 
-  \version    5.0.1707.2418
+  \version    1.1.0.170724
   \note       For All
 
   \author     triones
   \date       2013-03-19
+
+  \section history 版本记录
+  
+  - 2013-03-19 新建 crc32 函数。 0.1 。
+  - 2013-03-20 修正溢出 Bug 及优化。 0.2 。
+  - 2013-11-30 新增 crc64 函数。 0.3 。
+  - 2014-02-18 新增 crc16 函数。 0.4 。
+  - 2016-12-16 适配 Linux g++ 。新增 crcccitt 函数。 1.0 。
+  - 2017-07-24 改进函数定义。 1.1 。
 */
 #ifndef _XLIB_CRC_H_
 #define _XLIB_CRC_H_
@@ -15,10 +24,10 @@
 
 #include "xlib_base.h"
 
-/*!
-  生成指定数据的crc16
-  \param    data    指定需要计算crc16的数据
-  \return           返回crc16值
+/**
+  生成指定数据的 crc16 。
+  \param    data    指定需要计算 crc16 的数据。
+  \return           返回 crc16 值。
 
   \code
     std::cout << crc16(std::string("012345"));
@@ -26,10 +35,10 @@
 */
 uint16 crc16(const void* data, const size_t size);
 
-/*!
-  生成指定数据的crc32
-  \param    data    指定需要计算crc32的数据
-  \return           返回crc32值
+/**
+  生成指定数据的 crc32 。
+  \param    data    指定需要计算 crc32 的数据。
+  \return           返回 crc32 值。
 
   \code
     std::cout << crc32(std::string("012345"));
@@ -37,10 +46,10 @@ uint16 crc16(const void* data, const size_t size);
 */
 uint32 crc32(const void* data, const size_t size);
 
-/*!
-  生成指定数据的crc64
-  \param    data    指定需要计算crc64的数据
-  \return           返回crc64值
+/**
+  生成指定数据的 crc64 。
+  \param    data    指定需要计算 crc64 的数据。
+  \return           返回 crc64 值。
 
   \code
     std::cout << crc64(std::string("012345"));
@@ -48,10 +57,10 @@ uint32 crc32(const void* data, const size_t size);
 */
 uint64 crc64(const void* data, const size_t size);
 
-/*!
-  生成指定数据的crc ccitt
-  \param    data    指定需要计算crc ccitt的数据
-  \return           返回crc ccitt值
+/**
+  生成指定数据的 crcccitt 。
+  \param    data    指定需要计算 crcccitt 的数据。
+  \return           返回 crcccitt 值。
 
   \code
     std::cout << crcccitt(std::string("012345"));

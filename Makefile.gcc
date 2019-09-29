@@ -1,0 +1,42 @@
+﻿# 这个 Makefile 用于使用 make & g++ 编译 xlib 。
+# make -f Makefile.gcc
+
+.PHONY : all
+all : test.exe
+	@echo make done.
+
+include Makefile.inc
+
+DESTPATH   := gcc
+
+CC         := g++
+
+######## CFLAGS
+CFLAGS     = -lc -O3 -Wall -lstdc++ -std=c++17
+
+CFLAGS     += $(MyCFLAGS)
+
+# 源文件搜索路径
+vpath %.cc  $(SRCPATH)
+vpath %.h   $(SRCPATH)
+
+# 最终目标文件搜索路径
+vpath %.o   $(DESTPATH)
+vpath %.exe $(DESTPATH)
+
+######## 格式匹配规则
+# 编译
+%.o : %.cc $(XLIB_BASE_H) | $(DESTPATH)
+	$(CC) -c $(CFLAGS) -o"$(DESTPATH)/$(@F)" "$<"
+
+
+$(DESTPATH) :
+	@mkdir -p "$@"
+
+test.exe : $(OBJS) | $(DESTPATH)
+	$(CC) $(CFLAGS) -o"$(DESTPATH)/$(@F)" $(addprefix $(DESTPATH)/,$(^F))
+	@"$(DESTPATH)/$(@F)"
+
+.PHONY : clean
+clean :
+	@rm -rf $(DESTPATH)

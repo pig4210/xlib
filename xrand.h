@@ -2,7 +2,7 @@
   \file  xrand.h
   \brief 定义了随机数的生成模板。（随机平均率无法保证、刻意忽略非线程安全。）
 
-  \version    2.0.0.190920
+  \version    3.0.0.190929
   \note       For All
 
   \author     triones
@@ -15,6 +15,7 @@
   - 2016-07-19 优化 xrand 。 1.1 。
   - 2016-11-14 适配 Linux g++ 。 1.2 。
   - 2019-09-20 重构 xrand 。允许 x86 下获取 64 bit 随机值。 2.0 。
+  - 2019-09-29 再次重构 xrand 。放弃单例。 3.0 。
 */
 #ifndef _XLIB_XRAND_H_
 #define _XLIB_XRAND_H_
@@ -28,51 +29,6 @@
 #include <climits>
 #include <cstdint>
 
-/// 简单单例 XRAND 对象，共用唯一的 seed 。
-class XRAND
-  {
-  private:
-    XRAND():seed(__rdtsc()) {}
-    XRAND(const XRAND&) = delete;
-    XRAND& operator=(const XRAND&) = delete;
-  public:
-    static XRAND& instance()
-      {
-      static XRAND obj;
-      return obj;
-      }
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif
-    template<typename T> T operator()(T const& mod)
-      {
-      const auto r = __rdtsc();
-      const int l = r % (CHAR_BIT * sizeof(size_t));
-      seed += (r << 32) + _lrotr(r, l);
-      return (0 != mod) ? (seed % mod) : (seed);
-      }
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
-    /// 允许 `T v = xrand();` 的写法。
-    template<typename T> T operator()()
-      {
-      return operator()<T>(0);
-      }
-    /// 允许 `auto v = xrand();` 的写法。
-    size_t operator()()
-      {
-      return operator()<size_t>(0);
-      }
-    /// 允许 `T v = xrand;` 的写法。
-    template<typename T> operator T()
-      {
-      return operator()<T>();
-      }
-  private:
-    uint64_t seed;
-  };
 /**
   用于生成随机数
   \param in mod   指定取模。默认为 0 ，不取模。
@@ -82,6 +38,13 @@ class XRAND
     auto randvalue = xrand();
   \endcode
 */
-#define xrand (XRAND::instance())
+inline uint64_t xrand(const uint64_t mod = 0)
+  {
+  static auto seed = __rdtsc();
+  const auto r = __rdtsc();
+  const int l = r % (CHAR_BIT * sizeof(size_t));
+  seed += (r << 32) + _lrotr((unsigned long)r, l);
+  return (0 != mod) ? (seed % mod) : (seed);
+  }
 
 #endif  // _XLIB_XRAND_H_

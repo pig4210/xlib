@@ -41,6 +41,7 @@
 #ifndef _XLIB_HEXBIN_H_
 #define _XLIB_HEXBIN_H_
 
+#include <climits>
 #include <string>
 
 /**
@@ -210,7 +211,6 @@ T hex2value(const void* const hex,
   \return           成功转换则为十六进制 ASCII 串对应的 HEX 值。\n
                     判定转换失败，应该通过 lpreadlen 的返回结果判定。
 */
-
 template<typename T>
 std::string hex2bin(const std::basic_string<T>& hex,
                     size_t*                     lpreadlen = nullptr,
@@ -291,6 +291,66 @@ inline std::string hex2bin(const void*  hex,
     std::string((const char*)hex, (nullptr == hex) ? 0 : size),
     lpreadlen, errexit, errbreak);
   }
+
+template<typename R, typename T>
+size_t escape_hex(std::basic_string<T>& ret,
+                  const T* const s,
+                  const T* const e,
+                  const T defch)
+  {
+  size_t k = 0;
+  uint32_t tmpC = 0;
+  bool valid = false;
+  for(size_t i = 0; i < sizeof(R) * sizeof(HEX_VALUE_STRUCT); ++i)
+    {
+    if(&s[k] >= e) break;
+    uint8_t ch = (uint8_t)s[k] & 0xF;
+    switch(s[k])
+      {
+      case 'A':      case 'B':      case 'C':      case 'D':
+      case 'E':      case 'F':
+      case 'a':      case 'b':      case 'c':      case 'd':
+      case 'e':      case 'f':
+        {
+        ch += 9;  // 注意这里没有 break 。
+        }
+      case '0':      case '1':      case '2':      case '3':
+      case '4':      case '5':      case '6':      case '7':
+      case '8':      case '9':
+        break;
+      default:
+        ch = 0xFF;
+        break;
+      }
+    if(ch >= 16) break;
+    tmpC = tmpC * 0x10 + ch;
+    ++k;
+    valid = true;
+    }
+  if(!valid)
+    {
+    ret.push_back((T)defch);
+    return k;
+    }
+  ret.push_back((T)tmpC);
+  for(size_t i = 1; i < (sizeof(R) / sizeof(T)); ++i)
+    {
+    tmpC >>= (sizeof(T) * CHAR_BIT);
+    ret.push_back((T)tmpC);
+    }
+  return k;
+  }
+/**
+  指定分析转义字符。
+
+  可转义的字符及相关说明参考 <https://zh.cppreference.com/w/cpp/language/escape> 。
+
+  注意： \u \U 不进行对应编码转换。
+  
+  \param    str     源字符串。
+  \param    strs    源字符串大小。
+  \return           返回转换后的字符串。
+*/
 template<typename T>
 std::basic_string<T> escape(const std::basic_string<T>& str)
   {
@@ -305,13 +365,18 @@ std::basic_string<T> escape(const std::basic_string<T>& str)
       continue;
       }
     ++s;
+    if(s >= e)
+      {
+      ret.push_back('\\');
+      break;
+      }
     switch(*s)
       {
       case '\0':  ret.push_back('\\'); --s; break;
-      case '\'':  ret.push_back('\'');break;
-      case '\"':  ret.push_back('\"');break;
-      case '\?':  ret.push_back('\?');break;
-      case '\\':  ret.push_back('\\');break;
+      case '\'':  ret.push_back('\'');  break;
+      case '\"':  ret.push_back('\"');  break;
+      case '\?':  ret.push_back('\?');  break;
+      case '\\':  ret.push_back('\\');  break;
       case 'a':   ret.push_back('\a');  break;
       case 'b':   ret.push_back('\b');  break;
       case 'f':   ret.push_back('\f');  break;
@@ -322,14 +387,39 @@ std::basic_string<T> escape(const std::basic_string<T>& str)
       case '0':      case '1':      case '2':      case '3':
       case '4':      case '5':      case '6':      case '7':
         {
-
+        uint32_t tmpC = 0;
+        for(auto i = 0; i < 3; ++i)
+          {
+          if((s >= e) ||
+             (*s < '0') || (*s > '7') ||
+             (tmpC * 8 + (*s & 0x7) > 0xFF))
+            {
+            break;
+            }
+          tmpC = tmpC * 8 + (*s & 0x7);
+          ++s;
+          }
+        ret.push_back((uint8_t)tmpC);
+        --s;
         }
         break;
-      default:
+      case 'x':
+        s += escape_hex<T>(ret, ++s, e, 'x') - 1;
         break;
+      case 'u':
+        s += escape_hex<char16_t>(ret, ++s, e, 'u') - 1;
+        break;
+      case 'U':
+        s += escape_hex<char32_t  >(ret, ++s, e, 'U') - 1;
+        break;
+      default:    ret.push_back('\\'); --s; break;
       }
     }
   return ret;
+  }
+inline std::string escape(const void* str, const size_t size);
+  {
+  return escape(std::string((const char*)str, (nullptr == str) ? 0 : size)));
   }
 
 #endif  // _XLIB_HEXBIN_H_

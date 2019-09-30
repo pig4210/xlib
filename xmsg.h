@@ -160,4 +160,5 @@ class xmsg : public std::string
       return *this;
       }
   };
+
 #endif  // _XLIB_XMSG_H_

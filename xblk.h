@@ -38,18 +38,18 @@ class xblk
     const size_t  size;     ///< 块大小。
   public:
     /// 默认构造表示非法块。
-    xblk():start(nullptr), end(nullptr), size(0)
+    constexpr xblk():start(nullptr), end(nullptr), size(0)
       {
       }
     /// 允许设置起始与结束位置初始化，自动识别起始与结束。
-    xblk(void* a, void* b):
+    constexpr xblk(void* a, void* b):
       start(((size_t)a < (size_t)b) ? a : b),
       end(((size_t)a > (size_t)b) ? a : b),
       size((size_t)end - (size_t)start)
       {
       }
     /// 允许设置起始位置与大小初始化，允许 diff 为负值。
-    xblk(void* a, const intptr_t diff):xblk(a, (void*)((intptr_t)a + diff))
+    constexpr xblk(void* a, const intptr_t diff):xblk(a, (void*)((intptr_t)a + diff))
       {
       }
     /// 判定目标块与本块的关系。

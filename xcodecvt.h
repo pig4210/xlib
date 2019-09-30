@@ -36,7 +36,7 @@ class xcodecvt
     using T = std::codecvt<wchar_t, char, std::mbstate_t>;
   public:
     // 注意 mbstate_t 必须用列表初始化，不能使用默认初始化。否则会在转换时出错。
-    explicit xcodecvt(const char* loc):
+    explicit xcodecvt(const char* const loc):
       locale(loc), state{}, result(T::ok)
       {
       }

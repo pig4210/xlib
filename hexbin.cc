@@ -32,6 +32,12 @@ SHOW_TEST_HEAD(hex2bin ws);
 done = (hex2bin(std::wstring(L"12345678")) == "\x12\x34\x56\x78");
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(escape);
+done = (escape(std::string(
+  R"(12\'\"\?\\\a\b\f\n\r\t\v\041\41K\x41\u4E2D\U41424344\410\x414\xK)")) ==
+    "12\'\"\?\\\a\b\f\n\r\t\v\041\41K\x41-NDCBA!0A4xK");
+SHOW_TEST_RESULT;
+
 /*
   const char* const buf = "12345678";
   const char* const hex = "3132333435363738";

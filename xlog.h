@@ -48,18 +48,6 @@
 #pragma warning(disable:4127)  // 条件表达式是常量。
 #endif
 
-enum xlog_level
-  {
-  off,    ///< 屏蔽输出。
-  fatal,  ///< 致命错误，程序无法继续执行。
-  error,  ///< 反映错误，例如一些 API 的调用失败。
-  warn,   ///< 反映某些需要注意的可能有潜在危险的情况，可能会造成崩溃或逻辑错误之类。
-  info,   ///< 表示程序进程的信息。
-  debug,  ///< 普通的调试信息，这类信息发布时一般不输出。
-  trace,  ///< 最精细的调试信息，多用于定位错误，查看某些变量的值。
-  on,     ///< 全输出。
-  };
-
 // XLOG_MAX_BYTES 宏用于消息过长分段输出。
 #ifndef XLOG_MAX_BYTES
 #define XLOG_MAX_BYTES 0
@@ -75,6 +63,18 @@ enum xlog_level
 class xlog : public xmsg
   {
   public:
+    enum xlog_level
+      {
+      off,    ///< 屏蔽输出。
+      fatal,  ///< 致命错误，程序无法继续执行。
+      error,  ///< 反映错误，例如一些 API 的调用失败。
+      warn,   ///< 反映某些需要注意的可能有潜在危险的情况，可能会造成崩溃或逻辑错误之类。
+      info,   ///< 表示程序进程的信息。
+      debug,  ///< 普通的调试信息，这类信息发布时一般不输出。
+      trace,  ///< 最精细的调试信息，多用于定位错误，查看某些变量的值。
+      on,     ///< 全输出。
+      };
+  public:
     virtual ~xlog()
       {
       do_out();
@@ -82,18 +82,27 @@ class xlog : public xmsg
     virtual xlog& do_out()
       {
       if(empty())  return *this;
-      if((XLOG_MAX_BYTES) == 0)
+      if(0 == (XLOG_MAX_BYTES))
         {
         XLOGOUT(c_str());
+        clear();
+        return *this;
         }
-      else
+      const std::wstring tmp(as2ws(*this));
+      for(size_t i = 0; i < tmp.size();)
         {
-        std::wstring tmp(as2ws(*this));
-        for(auto it = tmp.begin(); it < tmp.end(); it += (XLOG_MAX_BYTES))
+        const auto it = tmp.begin() + i;
+        const auto pos = tmp.find(L'\n', i);
+        if((tmp.npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
           {
-          const auto xit = (it + (XLOG_MAX_BYTES) < tmp.end()) ? it + (XLOG_MAX_BYTES) : tmp.end();
+          const auto xit = tmp.begin() + pos + 1;
           XLOGOUT(ws2as(std::wstring(it, xit)));
+          i = pos + 1;
+          continue;
           }
+        const auto xit = (it + (XLOG_MAX_BYTES) < tmp.end()) ? it + (XLOG_MAX_BYTES) : tmp.end();
+        XLOGOUT(ws2as(std::wstring(it, xit)));
+        i += (XLOG_MAX_BYTES);
         }
       clear();
       return *this;
@@ -102,7 +111,7 @@ class xlog : public xmsg
       {
       return pfn(*this);
       }
-    template<typename T> xlog& operator<<(T v)
+    template<typename T> xlog& operator<<(T const& v)
       {
       ((xmsg*)this)->operator<<(v);
       return *this;
@@ -132,7 +141,7 @@ class xlog : public xmsg
   \endcode
 */
 #ifndef xlog_static_lvl
-#define xlog_static_lvl xlog::lvl_on
+#define xlog_static_lvl xlog::on
 #endif
 
 /**
@@ -146,12 +155,12 @@ class xlog : public xmsg
 */
 #define xlog_do(v) if((v) <= xlog_static_lvl) xlog()
 
-#define xtrace  xlog_do(xlog::lvl_trace)
-#define xdbg    xlog_do(xlog::lvl_debug)
-#define xinfo   xlog_do(xlog::lvl_info)
-#define xwarn   xlog_do(xlog::lvl_warn)
-#define xerr    xlog_do(xlog::lvl_error)
-#define xfail   xlog_do(xlog::lvl_fatal)
+#define xtrace  xlog_do(xlog::trace)
+#define xdbg    xlog_do(xlog::debug)
+#define xinfo   xlog_do(xlog::info)
+#define xwarn   xlog_do(xlog::warn)
+#define xerr    xlog_do(xlog::error)
+#define xfail   xlog_do(xlog::fatal)
 
 /**
   便捷宏，用于便捷插入函数名及行号。

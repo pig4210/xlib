@@ -33,6 +33,7 @@
 
 #include "xmsg.h"
 
+/// 允许设置 XLOGOUT 改变 xlog 默认输出行为。
 #ifndef XLOGOUT
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -48,7 +49,7 @@
 #pragma warning(disable:4127)  // 条件表达式是常量。
 #endif
 
-// XLOG_MAX_BYTES 宏用于消息过长分段输出。
+// 允许设置 XLOG_MAX_BYTES 用于消息过长分段输出。
 #ifndef XLOG_MAX_BYTES
 #define XLOG_MAX_BYTES 0
 #endif
@@ -88,9 +89,11 @@ class xlog : public xmsg
         clear();
         return *this;
         }
+      // 转换成定长的 UNICODE 以避免多字节字符串切分出现截断现象。
       const std::wstring tmp(as2ws(*this));
       for(size_t i = 0; i < tmp.size();)
         {
+        // 如果内部自带换行，则避免过多的切分。
         const auto it = tmp.begin() + i;
         const auto pos = tmp.find(L'\n', i);
         if((tmp.npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
@@ -136,7 +139,7 @@ class xlog : public xmsg
   如果需要设置全局静态控制等级，需要在 “预处理器选项” 中设置 “xlog_static_lvl=[1..7]” ，如此控制全局静态编译结果。
 
   \code
-    #define xlog_static_lvl 1 // 静态控制等级为 lvl_fatal ，只输出最严重的错误。
+    #define xlog_static_lvl 1 // 静态控制等级为 fatal ，只输出最严重的错误。
     #include "xlog.h"
   \endcode
 */
@@ -169,7 +172,7 @@ class xlog : public xmsg
     xerr << xfuninfo << "这里出错";
   \endcode
 */
-#define xfuninfo " [" << __FUNCTION__ << "][" << __LINE__ << "]: "
+#define xfuninfo " [" __FUNCTION__ "][" __LINE__ "]: "
 /**
   便捷宏，用于便捷插入异常产生的函数。
 
@@ -177,6 +180,6 @@ class xlog : public xmsg
     xerr << xfunexpt;
   \endcode
 */
-#define xfunexpt " [" << __FUNCTION__ << "]: exception."
+#define xfunexpt " [" __FUNCTION__ "]: exception."
 
 #endif  // _XLIB_XLOG_H_

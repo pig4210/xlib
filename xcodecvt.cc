@@ -5,6 +5,7 @@
 SHOW_TEST_INIT(XCODECVT)
 
 // 测试字符串："AA转换测试BB\0CC" 。 g++ 默认编码 UTF8 ，为了通用， ASCII 书写使用硬编码。
+// 特意加上 0 编码用于完整转换测试。
 const std::string  asbuf("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42\0CC", 15);
 const std::wstring wsbuf(L"AA转换测试BB\0CC", 11);
 const std::string  u8buf(u8"AA转换测试BB\0CC", 19);

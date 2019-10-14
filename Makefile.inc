@@ -8,7 +8,7 @@ xblk.o              : xblk.cc               xblk.h xlib_test.h
 xcodecvt.o          : xcodecvt.cc           xcodecvt.h xlib_test.h
 xmsg.o              : xmsg.cc               xmsg.h xcodecvt.h xlib_test.h
 xlog.o              : xlog.cc               xlog.h xmsg.h xcodecvt.h xlib_test.h
-hexbin.o            : hexbin.cc             hexbin.h xmsg.h xcodecvt.h xlib_test.h
+hexbin.o            : hexbin.cc             hexbin.h xcodecvt.h xlib_test.h
 
 OBJS    := xlib_test.o \
            xcrc.o \

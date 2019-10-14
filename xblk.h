@@ -42,14 +42,19 @@ class xblk
       {
       }
     /// 允许设置起始与结束位置初始化，自动识别起始与结束。
-    constexpr xblk(void* a, void* b):
+    template<typename T> constexpr xblk(const T* const a, const T* const b):
       start(((size_t)a < (size_t)b) ? a : b),
       end(((size_t)a > (size_t)b) ? a : b),
       size((size_t)end - (size_t)start)
       {
       }
     /// 允许设置起始位置与大小初始化，允许 diff 为负值。
-    constexpr xblk(void* a, const intptr_t diff):xblk(a, (void*)((intptr_t)a + diff))
+    template<typename T> constexpr xblk(const T* const a, const intptr_t diff):
+      xblk(a, a + diff)
+      {
+      }
+    constexpr xblk(const void* const a, const intptr_t diff):
+      xblk((const char*)a, (const char*)a + diff)
       {
       }
     /// 判定目标块与本块的关系。
@@ -69,11 +74,11 @@ class xblk
       if(ee > e)  return HeadIn;
       return WholeIn;
       }
-    PosDcrpt checkin(void* a, void* b) const
+    template<typename T> PosDcrpt checkin(const T* const a, const T* const b) const
       {
       return checkin(xblk(a, b));
       }
-    PosDcrpt checkin(void* a, const intptr_t diff = 1) const
+    template<typename T> PosDcrpt checkin(const T* const a, const intptr_t diff = 1) const
       {
       return checkin(xblk(a, diff));
       }

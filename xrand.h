@@ -40,7 +40,7 @@
 */
 inline uint64_t xrand(const uint64_t mod = 0)
   {
-  static auto seed = __rdtsc();
+  static auto seed = __rdtsc();   // 经验证 seed 全局唯一。
   const auto r = __rdtsc();
   const int l = r % (CHAR_BIT * sizeof(size_t));
   seed += (r << 32) + _lrotr((unsigned long)r, l);

@@ -29,6 +29,7 @@
 #include <string>
 #include <cstdio>
 #include <cstdarg>
+#include <climits>
 
 #include "xcodecvt.h"
 
@@ -95,7 +96,7 @@ class xmsg : public std::string
     /// 输出 hex(XXXXXXXXXXXXXXXX)。
     xmsg& operator<<(const uint64_t& v)
       {
-      return prt("%08X%08X", (uint32_t)(v >> 32), (uint32_t)v);
+      return prt("%08X%08X", (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
       }
     /// 输出 hex 指针。
     xmsg& operator<<(const void* v)

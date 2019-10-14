@@ -59,22 +59,27 @@ template<typename T, T N> const T CrcTable[0x100]{
 #undef XCV
 
 /// CRC 基本模板。
-template<typename T, T N, T V, bool R>
-T XCRC(const void* data, size_t size)
+template<typename T, T N, T V, bool R, typename P>
+T XCRC(const P* const data, const size_t size)
   {
   T ret = V;
-  size = (nullptr == data) ? 0 : size;
+  const size_t len = (nullptr == data) ? 0 : (size * sizeof(P));
   const uint8_t* const buf = (const uint8_t*)data;
-  for(size_t i = 0; i < size; ++i)
+  for(size_t i = 0; i < len; ++i)
     {
     ret = CrcTable<T, N>[(ret & 0xFF) ^ buf[i]] ^ (ret >> 8);
     }
   return R ? ~ret : ret;
   }
+template<typename T, T N, T V, bool R>
+T XCRC(const void* const data, const size_t size)
+  {
+  return XCRC<T, N, V, R>((const char*)data, size);
+  }
 template<typename T, T N, T V, bool R, typename S>
 T XCRC(const std::basic_string<S>& s)
   {
-  return XCRC<T, N, V, R>(s.c_str(), s.size() * sizeof(S));
+  return XCRC<T, N, V, R>(s.c_str(), s.size());
   }
 
 //////////////////////////////////////////////////////////////////////////

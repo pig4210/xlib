@@ -11,27 +11,27 @@ const std::wstring wsbuf(L"AA转换测试BB\0CC", 11);
 const std::string  u8buf(u8"AA转换测试BB\0CC", 19);
 
 SHOW_TEST_HEAD(as2ws);
-done = (wsbuf == as2ws(asbuf));
+done = wsbuf == as2ws(asbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(ws2as);
-done = (asbuf == ws2as(wsbuf));
+done = asbuf == ws2as(wsbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(u82ws);
-done = (wsbuf == u82ws(u8buf));
+done = wsbuf == u82ws(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(ws2u8);
-done = (u8buf == ws2u8(wsbuf));
+done = u8buf == ws2u8(wsbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(as2u8);
-done = (u8buf == as2u8(asbuf));
+done = u8buf == as2u8(asbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(u82as);
-done = (asbuf == u82as(u8buf));
+done = asbuf == u82as(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

@@ -5,7 +5,7 @@
 SHOW_TEST_INIT(XRAND)
 
 SHOW_TEST_HEAD(xrand);
-done = (xrand(0x10000) < 0x10000);
+done = xrand(0x10000) < 0x10000;
 SHOW_TEST_RESULT;
 
 std::cout << xrand() << std::endl;

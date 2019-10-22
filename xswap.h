@@ -74,7 +74,7 @@ template<> inline void bswap_type<8>(uint8_t* mem)
   {
   *(uint64_t*)mem = bswap64(*(const uint64_t*)mem);
   }
- 
+
 /**
   用于翻转数据。
   \param    values  任意类型数据。

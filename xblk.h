@@ -85,9 +85,7 @@ class xblk
     /// 比较操作。
     bool operator==(const xblk& blk) const
       {
-      if(start != blk.start) return false;
-      if(end != blk.end)  return false;
-      return true;
+      return (start == blk.start) && (end == blk.end);
       }
     bool operator!=(const xblk& blk) const
       {

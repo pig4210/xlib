@@ -80,14 +80,20 @@ class xlog : public xmsg
       {
       do_out();
       }
+#ifdef _WIN32
+#pragma warning(push)
+#pragma warning(disable:4834)
+#endif
     virtual xlog& do_out()
       {
       if(empty())  return *this;
-      if(0 == (XLOG_MAX_BYTES))
+      switch(XLOG_MAX_BYTES)
         {
-        XLOGOUT(c_str());
-        clear();
-        return *this;
+        case 0:
+          XLOGOUT(c_str());
+          clear();
+          return *this;
+        default: break;
         }
       // 转换成定长的 UNICODE 以避免多字节字符串切分出现截断现象。
       const std::wstring tmp(as2ws(*this));
@@ -110,6 +116,9 @@ class xlog : public xmsg
       clear();
       return *this;
       }
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
     xlog& operator<<(xlog& (*pfn)(xlog&))
       {
       return pfn(*this);

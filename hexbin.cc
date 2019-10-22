@@ -2,43 +2,42 @@
 
 #include "xlib_test.h"
 
-
 SHOW_TEST_INIT(HEXBIN)
 
 SHOW_TEST_HEAD(bin2hex as);
-done = (bin2hex(std::string("12345678")) == "3132333435363738");
+done = "3132333435363738" == bin2hex(std::string("12345678"));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(bin2hex ws);
 #ifdef _WIN32
-done = (bin2hex(std::wstring(L"1234")) == "3100320033003400");
+done = "3100320033003400" == bin2hex(std::wstring(L"1234"));
 #else
-done = (bin2hex(std::wstring(L"12")) == "3100000032000000");
+done = "3100000032000000" == bin2hex(std::wstring(L"12"));
 #endif
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(hex2value as);
-done = (hex2value<uint32_t>(std::string("12345678")) == 0x12345678);
+done = 0x12345678 == hex2value<uint32_t>(std::string("12345678"));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(hex2value ws);
-done = (hex2value<uint64_t>(std::wstring(L"123 456MM78")) == 0x12345678);
+done = 0x12345678 == hex2value<uint64_t>(std::wstring(L"123 456MM78"));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(hex2bin as);
-done = (hex2bin(std::string("12345678")) == "\x12\x34\x56\x78");
+done = "\x12\x34\x56\x78" == hex2bin(std::string("12345678"));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(hex2bin ws);
-done = (hex2bin(std::wstring(L"12345678")) == "\x12\x34\x56\x78");
+done = "\x12\x34\x56\x78" == hex2bin(std::wstring(L"12345678"));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(escape);
-done = (escape(std::string(
-  R"(12\'\"\?\\\a\b\f\n\r\t\v\041\41K\x41\u4E2D\U41424344\410\x414\xK)")) ==
-    "12\'\"\?\\\a\b\f\n\r\t\v\041\41K\x41-NDCBA!0A4xK");
+done = "12\'\"\?\\\a\b\f\n\r\t\v\041\41K\x41-NDCBA!0A4xK" == escape(std::string(
+  R"(12\'\"\?\\\a\b\f\n\r\t\v\041\41K\x41\u4E2D\U41424344\410\x414\xK)"));
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(showbin as);
 const std::string as("HIJKLMNOPQRSTUV\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42\0CC", 0x1C);
 const char* const lpas0 = bswap(as.data());
 const char* const lpas1 = bswap(as.data() + 0x10);
@@ -47,11 +46,10 @@ const std::string asshowbin =
   "┃48 49 4A 4B|4C 4D 4E 4F|50 51 52 53|54 55 56 D7┃HIJKLMNOPQRSTUV转\r\n" +
   bin2hex((void*)&lpas1, sizeof(lpas1)) +
   "┃AA BB BB B2|E2 CA D4 42|42 00 43 43|           ┃换测试BB.CC\r\n";
-
-SHOW_TEST_HEAD(showbin as);
-done = (asshowbin == showbin(as, SBC_ANSI));
+done = asshowbin == showbin(as, SBC_ANSI);
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(showbin u8);
 const std::string us(u8"HIJKLMNOPQRSTUV转换测试BB\0CC", 0x20);
 const char* const lpus0 = bswap(us.data());
 const char* const lpus1 = bswap(us.data() + 0x10);
@@ -60,11 +58,10 @@ const std::string usshowbin =
   "┃48 49 4A 4B|4C 4D 4E 4F|50 51 52 53|54 55 56 E8┃HIJKLMNOPQRSTUV转\r\n" +
   bin2hex((void*)&lpus1, sizeof(lpus1)) +
   "┃BD AC E6 8D|A2 E6 B5 8B|E8 AF 95 42|42 00 43 43┃换测试BB.CC\r\n";
-
-SHOW_TEST_HEAD(showbin u8);
-done = (usshowbin == showbin(us, SBC_UTF8));
+done = usshowbin == showbin(us, SBC_UTF8);
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(showbin ws);
 #ifdef _WIN32
 const std::wstring ws0(L"1234567");
 const std::wstring ws1(L"拿转换测试");
@@ -89,9 +86,7 @@ const std::string wsshowbin =
   bin2hex((void*)&lpws1, sizeof(lpws1)) +
   "┃62 63 00 00|4B 6D 00 00|D5 8B 00 00|00 00 00 00┃换测试.\r\n";
 #endif
-
-SHOW_TEST_HEAD(showbin ws);
-done = (wsshowbin == showbin(ws, SBC_UNICODE));
+done = wsshowbin == showbin(ws, SBC_UNICODE);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

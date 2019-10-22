@@ -209,7 +209,6 @@ inline std::string as2u8(const std::string& as, size_t* readed = nullptr)
 /**
   UTF8 串转换 ANSI 串。
   \param    u8    需要转换的 UTF8 串。
-  \param    size  需要转换的 UTF8 串长度（以 byte 计）。
   \return         转换后的对应 ANSI 串对象。
 
   \code

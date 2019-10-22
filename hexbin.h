@@ -71,11 +71,11 @@ struct HEX_VALUE_STRUCT
   };
 
 /**
-  指定 BIN 串转换为 HEX(ASCII) 格式。
+  指定 BIN 串转换为 HEX(ANSI) 格式。
   \param  bin   源 BIN 串。
   \param  size  源 BIN 串大小。
-  \param  isup  指定转换后的 ASCII 大小写，默认小写。
-  \return       返回转换后的 ASCII 串对象。
+  \param  isup  指定转换后的 ANSI 大小写，默认小写。
+  \return       返回转换后的 ANSI 串对象。
 
   \code
     string asc = bin2hex(string("\xAB\xCD\xEF"));
@@ -313,7 +313,7 @@ std::string hex2bin(const std::basic_string<T>& hex,
   注意： \u \U 不强制长度，不进行对应编码转换。
   
   \param    str     源字符串。
-  \param    size    源字符串大小。
+  \param    size    源字符串大小（以字类型大小计）。
   \return           返回转换后的字符串。
 */
 template<typename T>
@@ -337,7 +337,6 @@ std::basic_string<T> escape(const T* const str, const size_t size)
       }
     switch(*s)
       {
-      case '\0':  ret.push_back('\\'); --s; break;
       case '\'':  ret.push_back('\'');  break;
       case '\"':  ret.push_back('\"');  break;
       case '\?':  ret.push_back('\?');  break;

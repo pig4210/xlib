@@ -86,6 +86,7 @@ T XCRC(const std::basic_string<S>& s)
 /**
   生成指定数据的 crc16 。
   \param    data    指定需要计算 crc16 的数据。
+  \param    size    指定需要计算 crc16 的数据长度（以相应类型字计）。
   \return           返回 crc16 值。
 
   \code
@@ -96,6 +97,7 @@ T XCRC(const std::basic_string<S>& s)
 /**
   生成指定数据的 crc32 。
   \param    data    指定需要计算 crc32 的数据。
+  \param    size    指定需要计算 crc32 的数据长度（以相应类型字计）。
   \return           返回 crc32 值。
 
   \code
@@ -106,6 +108,7 @@ T XCRC(const std::basic_string<S>& s)
 /**
   生成指定数据的 crc64 。
   \param    data    指定需要计算 crc64 的数据。
+  \param    size    指定需要计算 crc64 的数据长度（以相应类型字计）。
   \return           返回 crc64 值。
 
   \code
@@ -116,6 +119,7 @@ T XCRC(const std::basic_string<S>& s)
 /**
   生成指定数据的 crcccitt 。
   \param    data    指定需要计算 crcccitt 的数据。
+  \param    size    指定需要计算 crcccitt 的数据长度（以相应类型字计）。
   \return           返回 crcccitt 值。
 
   \code

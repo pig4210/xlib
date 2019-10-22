@@ -43,7 +43,10 @@ inline uint64_t xrand(const uint64_t mod = 0)
   static auto seed = __rdtsc();   // 经验证 seed 全局唯一。
   const auto r = __rdtsc();
   const int l = r % (CHAR_BIT * sizeof(size_t));
-  seed += (r << 32) + _lrotr((unsigned long)r, l);
+  // x86 下的 _lrotr 行为一致。
+  // x64 下的 _lrotr ， windows 使用 32 bit ， linux 使用 64 bit 。
+  // x64 下的 unsigned long ， windows 使用 32 bit ， linux 使用 64 bit 。
+  seed += (r << (sizeof(uint32_t) * CHAR_BIT)) + _lrotr((unsigned long)r, l);
   return (0 != mod) ? (seed % mod) : (seed);
   }
 

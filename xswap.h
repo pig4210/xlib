@@ -2,8 +2,7 @@
   \file  xswap.h
   \brief 定义了 swap 的相关模板。
 
-  \version    2.0.0.190920
-  \note       For All
+  \version    2.1.0.191105
 
   \author     triones
   \date       2014-01-07
@@ -15,6 +14,7 @@
   - 2014-01-07 从 mkmem 移植入 xlib ，虽然 C++0x 可以实现模版定义与实现分离，但不适用于 LIB ，为记。 1.0 。
   - 2016-11-14 适配 Linux g++ 。 1.1 。
   - 2019-09-20 重构 bswap 。 2.0 。
+  - 2019-11-05 升级声明。 2.1 。
 */
 #ifndef _XLIB_XSWAP_H_
 #define _XLIB_XSWAP_H_
@@ -76,16 +76,18 @@ template<> inline void bswap_type<8>(uint8_t* mem)
   }
 
 /**
-  用于翻转数据。
-  \param    values  任意类型数据。
-  \return           翻转后的原类型数据。
+  用于翻转数值。
+  \param    values  数值。
+  \return           翻转后的原类型数值。
 
   \code
     bswap(0x12345678) == 0x78563412;
     bswap((short)0x1234) == 0x3412;
   \endcode
 */
-template<typename T> inline T bswap(T const& values)
+template<typename T>
+inline std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, T>
+  bswap(const T& values)
   {
   T v = values;
   bswap_type<sizeof(T)>((uint8_t*)&v);
@@ -107,9 +109,7 @@ template<typename T> inline T bswap(T const& values)
 template<typename T> inline bool seqswap(T& a, T& b)
   {
   if(std::max(a, b) == b) return false;
-  T t = a;
-  a = b;
-  b = t;
+  std::swap(a, b);
   return true;
   }
 

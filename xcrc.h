@@ -3,7 +3,6 @@
   \brief 定义了 CRC 算法模板。支持 crc16 、 crc32 、 crc64 、crcccitt 。
 
   \version    3.0.0.190929
-  \note       For All
 
   \author     triones
   \date       2013-03-19
@@ -36,8 +35,10 @@ template<typename T, T N> constexpr T GetCrcTableValue(const T i)
   return crc;
   }
 
-// C++14 模板变量。编译期初始化、全局唯一、不使用不编译。
+// 除了 define ，别无他法。
 #define XCV GetCrcTableValue<T, N>
+
+// C++14 模板变量。编译期初始化、全局唯一、不使用不编译。
 template<typename T, T N> const T CrcTable[0x100]{
   XCV(0x00), XCV(0x01), XCV(0x02), XCV(0x03), XCV(0x04), XCV(0x05), XCV(0x06), XCV(0x07), XCV(0x08), XCV(0x09), XCV(0x0A), XCV(0x0B), XCV(0x0C), XCV(0x0D), XCV(0x0E), XCV(0x0F),
   XCV(0x10), XCV(0x11), XCV(0x12), XCV(0x13), XCV(0x14), XCV(0x15), XCV(0x16), XCV(0x17), XCV(0x18), XCV(0x19), XCV(0x1A), XCV(0x1B), XCV(0x1C), XCV(0x1D), XCV(0x1E), XCV(0x1F),
@@ -56,6 +57,7 @@ template<typename T, T N> const T CrcTable[0x100]{
   XCV(0xE0), XCV(0xE1), XCV(0xE2), XCV(0xE3), XCV(0xE4), XCV(0xE5), XCV(0xE6), XCV(0xE7), XCV(0xE8), XCV(0xE9), XCV(0xEA), XCV(0xEB), XCV(0xEC), XCV(0xED), XCV(0xEE), XCV(0xEF),
   XCV(0xF0), XCV(0xF1), XCV(0xF2), XCV(0xF3), XCV(0xF4), XCV(0xF5), XCV(0xF6), XCV(0xF7), XCV(0xF8), XCV(0xF9), XCV(0xFA), XCV(0xFB), XCV(0xFC), XCV(0xFD), XCV(0xFE), XCV(0xFF)
   };
+
 #undef XCV
 
 /// CRC 基本模板。
@@ -83,6 +85,7 @@ T XCRC(const std::basic_string<S>& s)
   }
 
 //////////////////////////////////////////////////////////////////////////
+// 因需要使用重载，除了 define ，别无他法。
 /**
   生成指定数据的 crc16 。
   \param    data    指定需要计算 crc16 的数据。

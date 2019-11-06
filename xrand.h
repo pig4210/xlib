@@ -3,7 +3,6 @@
   \brief 定义了随机数的生成模板。（随机平均率无法保证、刻意忽略非线程安全。）
 
   \version    3.0.0.190929
-  \note       For All
 
   \author     triones
   \date       2013-01-08

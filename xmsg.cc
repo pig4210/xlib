@@ -4,20 +4,20 @@
 
 SHOW_TEST_INIT(XMSG)
 
-SHOW_TEST_HEAD(string constructor as);
+SHOW_TEST_HEAD(constructor as);
 done = (xmsg("123") == std::string("123"));
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(string constructor utf8);
-done = xmsg(u8"AA转换测试BB", true) == std::string("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42");
+SHOW_TEST_HEAD(constructor ws);
+done = xmsg(L"AA转换测试BB") == std::string("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42");
 SHOW_TEST_RESULT;
 
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4310)  // 类型强制转换截断常量值。
-#endif
+SHOW_TEST_HEAD(constructor u8);
+done = xmsg(u8"AA转换测试BB") == std::string("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42");
+SHOW_TEST_RESULT;
+
 SHOW_TEST_HEAD(int8_t);
-done = (xmsg() << (int8_t)255) == std::string("-1");
+done = (xmsg() << (int8_t)-1) == std::string("-1");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(uint8_t);
@@ -25,7 +25,7 @@ done = (xmsg() << (uint8_t)1) == std::string("01");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(int16_t);
-done = (xmsg() << (int8_t)65535) == std::string("-1");
+done = (xmsg() << (int16_t)-1) == std::string("-1");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(uint16_t);
@@ -47,9 +47,6 @@ SHOW_TEST_RESULT;
 SHOW_TEST_HEAD(uint64_t);
 done = (xmsg() << (uint64_t)1234567890123456789) == std::string("112210F47DE98115");
 SHOW_TEST_RESULT;
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
 
 SHOW_TEST_HEAD(void*);
 #if defined(_WIN64) || defined(__amd64)
@@ -57,6 +54,10 @@ SHOW_TEST_HEAD(void*);
 #else
   done = (xmsg() << (void*)0x12345678) == std::string("12345678");
 #endif
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(bool);
+done = (xmsg() << true) == std::string(":true");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(char);
@@ -67,8 +68,8 @@ SHOW_TEST_HEAD(char*);
 done = (xmsg() << "123") == std::string("123");
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(bool);
-done = (xmsg() << true) == std::string(":true");
+SHOW_TEST_HEAD(string);
+done = (xmsg() << std::string("123")) == std::string("123");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(wchar_t);
@@ -83,16 +84,24 @@ SHOW_TEST_HEAD(wstring);
 done = (xmsg() << std::wstring(L"123")) == std::string("123");
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(char8_t);
+done = (xmsg() << u8'1') == std::string("1");
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(char8_t*);
+done = (xmsg() << u8"123") == std::string("123");
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(u8string);
+done = (xmsg() << std::u8string(u8"123")) == std::string("123");
+SHOW_TEST_RESULT;
+
 SHOW_TEST_HEAD(float);
 done = (xmsg() << (float)1.0) == std::string("1.000000");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(double);
 done = (xmsg() << (double)1.0) == std::string("1.000000");
-SHOW_TEST_RESULT;
-
-SHOW_TEST_HEAD(string);
-done = (xmsg() << std::string("123")) == std::string("123");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xmsg);

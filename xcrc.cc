@@ -7,11 +7,11 @@ SHOW_TEST_INIT(CRC)
 const std::string data("1234567890");
 
 SHOW_TEST_HEAD(crc16);
-done = 50554 == crc16(data);
+done = 0xC57A == crc16(data);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(crc32);
-done = 639479525 == crc32(data);
+done = 0x261DAEE5 == crc32(data);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(crc64);

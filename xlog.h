@@ -2,8 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.0.0.190926
-  \note       For All
+  \version    2.1.0.191105
 
   \author     triones
   \date       2011-07-22
@@ -27,6 +26,7 @@
   - 2016-11-15 适配 Linux g++ 。 1.1 。
   - 2019-07-05 添加消息分段功能，以应对 DebugView 在多条消息过长时，出现卡顿。 1.1.1 。
   - 2019-09-26 重构 xlog 。去除动态控制与类型控制。 2.0 。
+  - 2019-11-05 改进声明。 2.1 。
 */
 #ifndef _XLIB_XLOG_H_
 #define _XLIB_XLOG_H_
@@ -45,21 +45,16 @@
 #endif
 #endif
 
-#ifdef _WIN32
-#pragma warning(disable:4127)  // 条件表达式是常量。
-#endif
-
 // 允许设置 XLOG_MAX_BYTES 用于消息过长分段输出。
 #ifndef XLOG_MAX_BYTES
 #define XLOG_MAX_BYTES 0
 #endif
 /**
-  xlog 用于基本的调试信息输出。\n
-  一般不直接使用，而是通过宏定义间接使用。\n
-  \b 注意 类本身没有输出控制，需要通过宏完成。(节省资源，加快运行)\n
-  如果需要扩展功能，如输出到文件等，可选择继承之，或仿造实现之。\n
-  推荐继承 xlog 而不是仿造之。\n
-  宏的具体操作参见之后说明。
+  xlog 用于基本的调试信息输出。
+  
+  - 一般不直接使用，而是通过宏定义间接使用。\n
+  - **注意** 类本身没有输出控制（节省资源，加快运行），需要通过宏完成。（宏的具体操作参见之后说明）
+  - 如果需要扩展功能，如输出到文件等，可选择继承之，或仿造实现之。
 */
 class xlog : public xmsg
   {
@@ -80,20 +75,14 @@ class xlog : public xmsg
       {
       do_out();
       }
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4834)
-#endif
-    virtual xlog& do_out()
+    xlog& do_out()
       {
       if(empty())  return *this;
-      switch(XLOG_MAX_BYTES)
+      if constexpr (0 == XLOG_MAX_BYTES)
         {
-        case 0:
-          XLOGOUT(c_str());
-          clear();
-          return *this;
-        default: break;
+        XLOGOUT(c_str());
+        clear();
+        return *this;
         }
       // 转换成定长的 UNICODE 以避免多字节字符串切分出现截断现象。
       const std::wstring tmp(as2ws(*this));
@@ -105,51 +94,33 @@ class xlog : public xmsg
         if((tmp.npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
           {
           const auto xit = tmp.begin() + pos + 1;
-          XLOGOUT(ws2as(std::wstring(it, xit)));
+          XLOGOUT(ws2as(std::wstring(it, xit)).c_str());
           i = pos + 1;
           continue;
           }
         const auto xit = (it + (XLOG_MAX_BYTES) < tmp.end()) ? it + (XLOG_MAX_BYTES) : tmp.end();
-        XLOGOUT(ws2as(std::wstring(it, xit)));
+        XLOGOUT(ws2as(std::wstring(it, xit)).c_str());
         i += (XLOG_MAX_BYTES);
         }
       clear();
       return *this;
       }
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
-    xlog& operator<<(xlog& (*pfn)(xlog&))
-      {
-      return pfn(*this);
-      }
-    template<typename T> xlog& operator<<(T const& v)
-      {
-      ((xmsg*)this)->operator<<(v);
-      return *this;
-      }
-    /**
-      用于控制即时输出。
-      \code
-        xlog() << "第一行消息" << "紧接第一行消息";
-        xlog() << "第一行消息" << xlog::out << "第二行消息";
-      \endcode
-    */
-    static xlog& out(xlog& x)
-      {
-      return x.do_out();
-      }
   };
 
 /**
-  xlog_static_lvl 宏用于控制静态编译结果。\n
-  \b 注意 宏的作用是局部的，不同 CPP 可以设置不同的静态控制等级。\n
-  由于需要在包含之前定义宏，故无法使用枚举值，请参考枚举值自定数值。\n
-  如果需要设置全局静态控制等级，需要在 “预处理器选项” 中设置 “xlog_static_lvl=[1..7]” ，如此控制全局静态编译结果。
+  控制静态编译结果。**注意** 宏的作用是局部的，不同 CPP 可以设置不同的静态控制等级。
 
+  - 前置设置控制等级：
   \code
     #define xlog_static_lvl 1 // 静态控制等级为 fatal ，只输出最严重的错误。
     #include "xlog.h"
+  \endcode
+  
+  - 后置修改控制等级：
+  \code
+    #include "xlog.h"
+    #undef xlog_static_lvl
+    #define xlog_static_lvl xlog::warn
   \endcode
 */
 #ifndef xlog_static_lvl
@@ -158,14 +129,13 @@ class xlog : public xmsg
 
 /**
   以下宏用于分级静态控制编译结果，根据 xlog_static_lvl 以决定指定调试信息是否被编译。
-  也是最简单最常见的应用。
 
   \code
-    xerr << "xerr";   // 当 xlog_static_lvl < xlog_base::lvl_error 时，此句不被编译。
-    xfail << "xfail"; // 除非 xlog_static_lvl == 0 ，否则此句输出。
+    xerr << "xerr";   // 当 xlog_static_lvl < xlog::error 时，此句不被编译。
+    xfail << "xfail"; // 除非 xlog_static_lvl == xlog::off ，否则此句输出。
   \endcode
 */
-#define xlog_do(v) if((v) <= xlog_static_lvl) xlog()
+#define xlog_do(v) if constexpr ((v) <= xlog_static_lvl) xlog()
 
 #define xtrace  xlog_do(xlog::trace)
 #define xdbg    xlog_do(xlog::debug)
@@ -181,7 +151,7 @@ class xlog : public xmsg
     xerr << xfuninfo << "这里出错";
   \endcode
 */
-#define xfuninfo " [" __FUNCTION__ "][" __LINE__ "]: "
+#define xfuninfo "[" __FUNCTION__ "][" __LINE__ "]: "
 /**
   便捷宏，用于便捷插入异常产生的函数。
 
@@ -189,6 +159,6 @@ class xlog : public xmsg
     xerr << xfunexpt;
   \endcode
 */
-#define xfunexpt " [" __FUNCTION__ "]: exception."
+#define xfunexpt "[" __FUNCTION__ "]: exception."
 
 #endif  // _XLIB_XLOG_H_

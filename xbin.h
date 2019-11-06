@@ -2,8 +2,7 @@
   \file  xbin.h
   \brief 定义了便捷数据组织的类，常用于封包的组织与解析。
 
-  \version    2.0.0.191017
-  \note       For All
+  \version    2.1.0.191106
 
   \author     triones
   \date       2010-03-26
@@ -85,6 +84,7 @@
   - 2016-11-15 适配 Linux g++ 。添加接口。 1.3 。
   - 2017-09-06 改进处理 >>(T*) 。 1.3.1 。
   - 2019-10-17 重构，升级为 xbin 。 2.0 。
+  - 2019-11-06 再次重构，合并 vbin 。2.1 。
 */
 #ifndef _XLIB_XBIN_H_
 #define _XLIB_XBIN_H_
@@ -94,6 +94,7 @@
 #include <stdexcept>
 
 #include "xswap.h"
+#include "varint.h"
 
 /**
   xbin 用于便捷的数据组织操作。
@@ -103,10 +104,10 @@
   \param  zeroend     指示处理流时是否追加处理结尾 0 。
 */
 template<
-          typename  headtype,
-          bool      headself,
-          bool      bigendian,
-          bool      zeroend
+        typename  headtype,
+        bool      headself,
+        bool      bigendian,
+        bool      zeroend
         >
 class xbin : public std::basic_string<uint8_t>
   {
@@ -121,14 +122,9 @@ class xbin : public std::basic_string<uint8_t>
       {
       return operator<<((size_t)p);
       }
-    /**
-      \code
-        xbin << true;
-      \endcode
-    */
-    xbin& operator<<(const bool b)
+    xbin& operator<<(void* const p)
       {
-      return operator<<((uint8_t)b);
+      return operator<<((size_t)p);
       }
     /**
       \code
@@ -142,11 +138,9 @@ class xbin : public std::basic_string<uint8_t>
 
       size_t len = 0;
       while(str[len]) ++len;
+      if constexpr (!std::is_void<headtype>::value) len += zeroend ? 1 : 0;
 
-      len += zeroend ? 1 : 0;
-
-      append((const uint8_t*)str, len * sizeof(T));
-
+      append((xbin::const_pointer)str, len * sizeof(T));
       return *this;
       }
     /**
@@ -156,15 +150,18 @@ class xbin : public std::basic_string<uint8_t>
     */
     xbin& operator<<(const xbin& bin)
       {
-      if(&bin == this)
+      if(&bin == this)  return mkhead();
+
+      if constexpr (!std::is_void<headtype>::value)
         {
-        return mkhead();
+        const size_t nlen = bin.size() + (headself ? sizeof(headtype) : 0);
+        operator<<((headtype)nlen);
         }
-      const size_t nlen = bin.size() + (headself ? sizeof(headtype) : 0);
-
-      operator<<((headtype)nlen);
+      else
+        {
+        operator<<(bin.size());
+        }
       append(bin.begin(), bin.end());
-
       return *this;
       }
     /**
@@ -174,8 +171,7 @@ class xbin : public std::basic_string<uint8_t>
     */
     template<typename T> xbin& operator<<(const std::basic_string<T>& s)
       {
-      append((const uint8_t*)s.c_str(), s.size() * sizeof(T));
-
+      append((xbin::const_pointer)s.c_str(), s.size() * sizeof(T));
       return *this;
       }
     /**
@@ -183,23 +179,35 @@ class xbin : public std::basic_string<uint8_t>
         xbin << dword << word << byte;
       \endcode
     */
-    template<typename T> xbin& operator<<(const T& argvs)
+    template<typename T>
+    inline std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, xbin>&
+      operator<<(const T& argvs)
       {
-      const T v = bigendian ? bswap(argvs) :argvs;
-      append((const uint8_t*)&v, sizeof(v));
+      if constexpr (!std::is_void<headtype>::value)
+        {
+        const auto v = bigendian ? bswap(argvs) :argvs;
+        append((xbin::const_pointer)&v, sizeof(v));
+        }
+      else
+        {
+        operator<<(tovarint(argvs));
+        }
       return *this;
-      }
-
-    xbin& operator<<(xbin& (*pfn)(xbin&))
-      {
-      return pfn(*this);
       }
 
     xbin& mkhead()
       {
-      const size_t nlen = size() + (headself ? sizeof(headtype) : 0);
-      const headtype v = (bigendian ? bswap((headtype)nlen) : (headtype)nlen);
-      insert(0, (const uint8_t*)&v, sizeof(v));
+      if constexpr (!std::is_void<headtype>::value)
+        {
+        const auto nlen = size() + (headself ? sizeof(headtype) : 0);
+        const auto v = (bigendian ? bswap((headtype)nlen) : (headtype)nlen);
+        insert(0, (xbin::const_pointer)&v, sizeof(v));
+        }
+      else
+        {
+        const auto s = tovarint(size());
+        insert(0, (xbin::const_pointer)s.c_str(), s.size());
+        }
       return *this;
       }
   public:
@@ -211,7 +219,7 @@ class xbin : public std::basic_string<uint8_t>
     */
     xbin& operator>>(void*& p)
       {
-      return this->operator>>((size_t&)p);
+      return operator>>((size_t&)p);
       }
     /**
       \code
@@ -226,7 +234,7 @@ class xbin : public std::basic_string<uint8_t>
 
       size_t strlen = 0;
       while(lpstr[strlen]) ++strlen;
-      strlen += zeroend ? 1 : 0;
+      if constexpr (!std::is_void<headtype>::value) strlen += zeroend ? 1 : 0;
       strlen *= sizeof(T);
 
 #ifndef XBIN_NOEXCEPT
@@ -251,11 +259,19 @@ class xbin : public std::basic_string<uint8_t>
     */
     xbin& operator>>(xbin& bin)
       {
-      headtype xlen;
-      this->operator>>(xlen);
+      size_t nlen;
+      if constexpr (!std::is_void<headtype>::value)
+        {
+        headtype xlen;
+        operator>>(xlen);
 
-      size_t nlen = (headtype)xlen;
-      nlen -= (headself ? sizeof(headtype) : 0);
+        nlen = (headtype)xlen;
+        nlen -= (headself ? sizeof(headtype) : 0);
+        }
+      else
+        {
+        operator>>(nlen);
+        }
 
 #ifndef XBIN_NOEXCEPT
       if(nlen > size())
@@ -286,7 +302,6 @@ class xbin : public std::basic_string<uint8_t>
       {
       s.assign((const T*)c_str(), size() / sizeof(T));
       clear();
-
       return *this;
       }
     /**
@@ -297,18 +312,33 @@ class xbin : public std::basic_string<uint8_t>
       \endcode
       \exception 数据不足时，抛出 runtime_error 异常。
     */
-    template<typename T> xbin& operator>>(T& argvs)
+    template<typename T>
+    inline std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, xbin>&
+      operator>>(T& argvs)
       {
-#ifndef XBIN_NOEXCEPT
-      if(sizeof(T) > size())
+      if constexpr (!std::is_void<headtype>::value)
         {
-        throw std::runtime_error("xbin >> T& 数据不足");
-        }
+#ifndef XBIN_NOEXCEPT
+        if(sizeof(T) > size())
+          {
+          throw std::runtime_error("xbin >> T& 数据不足");
+          }
 #endif
-
-      memcpy(&argvs, c_str(), sizeof(T));
-      erase(0, sizeof(T));
-      argvs = bigendian ? bswap(argvs) : argvs;
+        memcpy(&argvs, c_str(), sizeof(T));
+        erase(0, sizeof(T));
+        argvs = bigendian ? bswap(argvs) : argvs;
+        }
+      else
+        {
+        size_t typesize = getvarint(argvs, *this);
+#ifndef XBIN_NOEXCEPT
+        if(typesize == 0 || typesize > size())
+          {
+          throw std::runtime_error("xbin >> T& 数据错误/不足");
+          }
+#endif
+        erase(0, typesize);
+        }
 
       return *this;
       }
@@ -320,23 +350,33 @@ class xbin : public std::basic_string<uint8_t>
       \endcode
       \exception 数据不足时，抛出 runtime_error 异常。
     */
-    template<typename T> xbin& operator>>(T const&)
+    template<typename T> xbin& operator>>(const T&)
       {
-#ifndef XBIN_NOEXCEPT
-      if(sizeof(T) > size())
+      if constexpr (!std::is_void<headtype>::value)
         {
-        throw std::runtime_error("xbin >> xbin& 数据不足");
-        }
+#ifndef XBIN_NOEXCEPT
+        if(sizeof(T) > size())
+          {
+          throw std::runtime_error("xbin >> xbin& 数据不足");
+          }
 #endif
-      erase(0, sizeof(T));
+        erase(0, sizeof(T));
+        }
+      else
+        {
+        T argvs;
+        return operator>>(argvs);
+        }
 
       return *this;
       }
   };
 
 /// lbin 数据头为 word ，不包含自身，小端序，不处理结尾 0 。
-typedef xbin<uint16_t, false, false, false>   lbin;
+typedef xbin<uint16_t, false, false, false> lbin;
 /// gbin 数据头为 word ,不包含自身，大端顺序，处理结尾 0 。
-typedef xbin<uint16_t, false, true, true>     gbin;
+typedef xbin<uint16_t, false, true, true>   gbin;
+/// vbin 为 varint 格式，忽略后继所有设置。
+typedef xbin<void, false, false, false>     vbin;
 
 #endif  // _XLIB_XBIN_H_

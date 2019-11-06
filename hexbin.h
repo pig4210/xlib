@@ -2,7 +2,7 @@
   \file  hex_bin.h
   \brief 定义了 hex 与 bin 的转换操作。
 
-  \version    2.0.0.191014
+  \version    2.1.0.191106
   \note       For All
 
   \author     triones
@@ -38,6 +38,7 @@
   - 2018-02-13 修正 hex2bin 的一个返回错误。 1.7.1 。
   - 2019-06-20 放弃 escape 模板。 1.7.2 。
   - 2019-10-14 重构。 2.0 。
+  - 2019-11-06 改进定义。 2.1 。
 */
 #ifndef _XLIB_HEXBIN_H_
 #define _XLIB_HEXBIN_H_
@@ -46,7 +47,7 @@
 #include <string>
 
 #include "xswap.h"
-#include "xcodecvt.h"
+#include "as_ws_u8.h"
 
 /**
   十六进制值的结构体。主要体现 BYTE 与十六进制字符间的关系。
@@ -71,30 +72,29 @@ struct HEX_VALUE_STRUCT
   };
 
 /**
-  指定 BIN 串转换为 HEX(ANSI) 格式。
+  指定 BIN 串转换为 HEX 格式。
   \param  bin   源 BIN 串。
-  \param  size  源 BIN 串大小。
-  \param  isup  指定转换后的 ANSI 大小写，默认小写。
-  \return       返回转换后的 ANSI 串对象。
+  \param  size  源 BIN 串大小（以类型字大小计）。
+  \param  isup  指定转换后的 HEX 大小写，默认小写。
+  \return       返回转换后的 HEX 串对象。
 
   \code
-    string asc = bin2hex(string("\xAB\xCD\xEF"));
-    cout << "bin2hex:" << asc ;   // 将输出 "abcdef" 。
+    std::cout << "bin2hex:" << bin2hex(string("\xAB\xCD\xEF"));   // 将输出 "abcdef" 。
   \endcode
 */
 template<typename T>
 std::string bin2hex(const T* const bin, const size_t size, const bool isup = false)
   {
-  std::string as;
+  std::string hex;
   const BIN_VALUE_STRUCT* s = (const BIN_VALUE_STRUCT*)bin;
   const BIN_VALUE_STRUCT* const e = (const BIN_VALUE_STRUCT*)(bin + size);
   const auto fmt = isup ? "0123456789ABCDEF" : "0123456789abcdef";
   for(; s < e; ++s)
     {
-    as.push_back(fmt[s->high]);
-    as.push_back(fmt[s->low]);
+    hex.push_back(fmt[s->high]);
+    hex.push_back(fmt[s->low]);
     }
-  return as;
+  return hex;
   }
 inline std::string bin2hex(const void* const bin, const size_t size, const bool isup = false)
   {
@@ -109,31 +109,32 @@ template<typename T> std::string bin2hex(const std::basic_string<T>& bin, const 
   指定 HEX 串转换为值。
   \param  hex       源 HEX 串。
   \param  size      源串大小（以类型字大小计）。
-  \param  lpreadlen 成功读取 BIN 串时，返回读取的字符个数。\n
+  \param  lpreadlen 成功读取 HEX 串时，返回读取的字符个数。\n
                     lpreadlen 可以为 nullptr ，此时不返回结果。\n
                     转换失败， *lpreadlen == 0 。
-  \param  wantlen   需要处理的 \b 有效数据 大小 （ 0 <= wantlen <= sizeof(R) ）。\n
-                    当 <= 0 或 > sizeof(R) 时，一律视 == sizeof(R) 。
+  \param  wantlen   需要处理的 \b 有效数据 大小 （ 0 < wantlen <= sizeof(R) * 2 ）。\n
+                    超出范围，一律视 == sizeof(R) * 2 。
   \param  errexit   指定转换未结束前遭遇非 HEX 字符，是否视作失败处理。\n
                     默认不作失败处理。当此标志为 true 时，忽略 errbreak 。
   \param  errbreak  指定转换未结束前遭遇非 HEX 字符，是否中止处理。默认跳过。
-  \return           成功转换则为十六进制字符串对应的 HEX 值。\n
+  \return           成功转换则为 HEX 串对应的 数值。\n
                     判定转换失败，应该通过 lpreadlen 的返回结果判定。
 
   \code
-    unsigned int readlen = 0;
-    const unsigned int value = hex2value("12345678", readlen);
+    size_t readlen = 0;
+    const auto value = hex2value<size_t>("12345678", readlen);
     // 返回 value == 0x12345678; readlen == 8;
-    const unsigned int value = hex2value("1234 56|78", readlen);
+    const auto value = hex2value<size_t>("1234 56|78", readlen);
     // 返回 value == 0x12345678; readlen == 10;
-    const unsigned int value = hex2value("1234 56|78", readlen, 8, true);
+    const auto value = hex2value<size_t>("1234 56|78", readlen, 8, true);
     // 返回 value == 0; readlen == 0;
-    const unsigned int value = hex2value("1234 56|78", readlen, 8, false, ture);
+    const auto value = hex2value<size_t>("1234 56|78", readlen, 8, false, ture);
     // 返回 value == 0x1234; readlen == 4;
   \endcode
 */
 template<typename R, typename T>
-R hex2value(const T* const  hex,
+std::enable_if_t<std::is_integral<R>::value, R>
+  hex2value(const T* const  hex,
             const size_t    size,
             size_t*         lpreadlen = nullptr,
             size_t          wantlen = 0,
@@ -188,7 +189,8 @@ R hex2value(const T* const  hex,
   }
 
 template<typename R>
-R hex2value(const void* const   hex,
+std::enable_if_t<std::is_integral<R>::value, R>
+  hex2value(const void* const   hex,
             const size_t        size,
             size_t*             lpreadlen = nullptr,
             size_t              wantlen = 0,
@@ -198,7 +200,8 @@ R hex2value(const void* const   hex,
   return hex2value<R>((const char*)hex, size, lpreadlen, wantlen, errexit, errbreak);
   }
 template<typename R, typename T>
-R hex2value(const std::basic_string<T>& hex,
+std::enable_if_t<std::is_integral<R>::value, R>
+  hex2value(const std::basic_string<T>& hex,
             size_t*                     lpreadlen = nullptr,
             size_t                      wantlen = 0,
             const bool                  errexit = false,
@@ -208,8 +211,9 @@ R hex2value(const std::basic_string<T>& hex,
   }
 
 /**
-  指定 HEX 串转换为 BIN 串。\n
-  转换十六进制字符应成对的，如最后字符不成对，将忽略最后不成对的字符。
+  指定 HEX 串转换为 BIN 串。
+  
+  HEX 字符应成对，如最后字符不成对，将忽略最后不成对的字符。
   \param  hex       源 HEX 串。
   \param  size      源串大小（以字类型大小计）。
   \param  lpreadlen 成功读取 HEX 串时，返回读取的字符个数。\n
@@ -218,7 +222,7 @@ R hex2value(const std::basic_string<T>& hex,
   \param  errexit   指定转换未结束前遭遇非 HEX 字符，是否视作失败处理。\n
                     默认不作失败处理。当此标志为 true 时，忽略 errbreak 。
   \param  errbreak  指定转换未结束前遭遇非 HEX 字符，是否中止处理。默认跳过。
-  \return           成功转换则为十六进制字符串对应的 BIN 数据。\n
+  \return           成功转换则为 HEX 串对应的 BIN 数据。\n
                     判定转换失败，应该通过 lpreadlen 的返回结果判定。
 */
 template<typename T>
@@ -354,13 +358,10 @@ std::basic_string<T> escape(const T* const str, const size_t size)
         uint32_t tmpC = 0;
         for(auto i = 0; i < 3; ++i)
           {
-          if((s >= e) ||
-             (*s < '0') || (*s > '7') ||
-             (tmpC * 8 + (*s & 0x7) > 0xFF))
-            {
-            break;
-            }
-          tmpC = tmpC * 8 + (*s & 0x7);
+          if((s >= e) || (*s < '0') || (*s > '7')) break;
+          const auto ch = tmpC * 8 + (*s & 0x7);
+          if(0x100 <= ch) break;
+          tmpC = ch;
           ++s;
           }
         ret.push_back((uint8_t)tmpC);
@@ -388,16 +389,17 @@ std::basic_string<T> escape(const T* const str, const size_t size)
           }
         else
           {
-          const size_t x = sizeof(v) / sizeof(T);
-          switch(x)
+          constexpr size_t x = sizeof(v) / sizeof(T);
+          if constexpr (0 == x)
             {
-            case 0: ret.push_back((T)v); break;
-            default:
-              for(size_t i = 0; i < x; ++i)
-                {
-                ret.push_back(((const T*)&v)[i]);
-                }
-              break;
+            ret.push_back((T)v);
+            }
+          else
+            {
+            for(size_t i = 0; i < x; ++i)
+              {
+              ret.push_back(((const T*)&v)[i]);
+              }
             }
           }
         s += readed;
@@ -415,16 +417,17 @@ std::basic_string<T> escape(const T* const str, const size_t size)
           }
         else
           {
-          const size_t x = sizeof(v) / sizeof(T);
-          switch(x)
+          constexpr size_t x = sizeof(v) / sizeof(T);
+          if constexpr (0 == x)
             {
-            case 0: ret.push_back((T)v); break;
-            default:
-              for(size_t i = 0; i < x; ++i)
-                {
-                ret.push_back(((const T*)&v)[i]);
-                }
-              break;
+            ret.push_back((T)v);
+            }
+          else
+            {
+            for(size_t i = 0; i < x; ++i)
+              {
+              ret.push_back(((const T*)&v)[i]);
+              }
             }
           }
         s += readed;
@@ -453,8 +456,12 @@ enum ShowBinCode
   SBC_UTF8
   };
 
-#define LocaleCheck (0xCE == *(const uint8_t*)&"文")
-#define DefShowBinCode (LocaleCheck ? SBC_ANSI : SBC_UTF8)
+constexpr bool LocaleCheck()
+  {
+  return (uint8_t)*u8"文" != (uint8_t)*"文";
+  }
+
+constexpr ShowBinCode DefShowBinCode = LocaleCheck() ? SBC_ANSI : SBC_UTF8;
 
 /**
   指定 BIN 串，格式化显示。
@@ -487,14 +494,14 @@ std::string showbin(const T* const    bin,
   size_t size = len * sizeof(T);
 
   // 每行显示数据个数。
-  const size_t k_max_line_byte = 0x10;
+  constexpr size_t k_max_line_byte = 0x10;
 
   // 输出 前缀格式化数据。
   auto prefix = [&]
     {
     ret.append(prews, ' ');  // 空格前缀。
-    const auto p = bswap(data);
-    ret.append(bin2hex((void*)&p, sizeof(p)));  // 地址前缀。
+    const auto p = bswap((size_t)data);
+    ret.append(bin2hex(&p, 1));  // 地址前缀。
     ret.append("┃");
     
     for(size_t i = 0; i < k_max_line_byte; ++i)
@@ -529,17 +536,18 @@ std::string showbin(const T* const    bin,
       return ".";
       }
 
-    // 对于 '?' 做特殊预处理以应对转换无法识别字符。
-    if(wc == L'?')
-      {
-      return ".";
-      }
-
     // 尝试转换 可视化。
-    auto func = (LocaleCheck) ? ws2as :ws2u8;
-    const auto ch(func(std::wstring(1, wc), nullptr));
-
-    return ch.empty() ? "" : ch;
+    const auto wch(std::wstring(1, wc));
+    if constexpr (LocaleCheck())
+      {
+      const auto ch = ws2as(wch);
+      return ch.empty() ? std::string() : ch;
+      }
+    else
+      {
+      const auto ch = ws2u8(wch);
+      return ch.empty() ? std::string() : std::string((const char*)ch.c_str());
+      }
     };
 
   using checkfunc = std::string (*)(const wchar_t);
@@ -586,7 +594,7 @@ std::string showbin(const T* const    bin,
       {
       // 无法进行向后匹配完整字符。
       if(used + i > size) break;
-      const auto ws = u82ws(std::string((const char*)data + used, i));
+      const auto ws = u82ws(std::u8string((const char8_t*)data + used, i));
       // 转换失败，尝试扩展匹配。
       if(ws.empty()) continue;
       const auto as = check(*ws.begin());

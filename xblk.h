@@ -3,7 +3,6 @@
   \brief 定义了内存块比对操作的类。
 
   \version    2.0.0.190920
-  \note       For All
 
   \author     triones
   \date       2012-09-12
@@ -49,7 +48,7 @@ class xblk
       {
       }
     /// 允许设置起始位置与大小初始化，允许 diff 为负值。
-    template<typename T> constexpr xblk(const T* const a, const intptr_t diff):
+    template<typename T> constexpr xblk(const T* const a, const intptr_t diff = 1):
       xblk(a, a + diff)
       {
       }
@@ -89,7 +88,7 @@ class xblk
       }
     bool operator!=(const xblk& blk) const
       {
-      return !this->operator==(blk);
+      return !operator==(blk);
       }
   };
 

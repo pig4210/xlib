@@ -5,12 +5,12 @@ xcrc.o              : xcrc.cc               xcrc.h
 xswap.o             : xswap.cc              xswap.h
 xrand.o             : xrand.cc              xrand.h
 xblk.o              : xblk.cc               xblk.h
-xcodecvt.o          : xcodecvt.cc           xcodecvt.h
-xmsg.o              : xmsg.cc               xmsg.h xcodecvt.h
-xlog.o              : xlog.cc               xlog.h xmsg.h xcodecvt.h
-hexbin.o            : hexbin.cc             hexbin.h xswap.h xcodecvt.h
+as_ws_u8.o          : as_ws_u8.cc           as_ws_u8.h
+xmsg.o              : xmsg.cc               xmsg.h as_ws_u8.h
+xlog.o              : xlog.cc               xlog.h xmsg.h as_ws_u8.h
+hexbin.o            : hexbin.cc             hexbin.h xswap.h as_ws_u8.h
 varint.o            : varint.cc             varint.h
-xbin.o              : xbin.cc               xbin.h xswap.h
+xbin.o              : xbin.cc               xbin.h xswap.h varint.h
 
 %.o : xlib_test.h
 
@@ -19,7 +19,7 @@ OBJS    := xlib_test.o \
            xswap.o \
            xrand.o \
            xblk.o \
-           xcodecvt.o \
+           as_ws_u8.o \
            xmsg.o \
            xlog.o \
            hexbin.o \

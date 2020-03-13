@@ -2,7 +2,7 @@
   \file  xcrc.h
   \brief 定义了 CRC 算法模板。支持 crc16 、 crc32 、 crc64 、crcccitt 。
 
-  \version    3.0.0.190929
+  \version    3.1.0.200306
 
   \author     triones
   \date       2013-03-19
@@ -17,7 +17,7 @@
   - 2017-07-24 改进函数定义。 1.1 。
   - 2019-09-19 修改为模板，使用了简单的单例。 2.0 。
   - 2019-09-29 引入新特性重构，解决非线程安全的问题。 3.0 。
-  - 2020-03-06 引入可变参数模板，重构。 4.0 。
+  - 2020-03-06 引入可变参数模板，表的生成重新设计。 3.1 。
 */
 #ifndef _XLIB_XCRC_H_
 #define _XLIB_XCRC_H_
@@ -26,7 +26,7 @@
 #include <string>
 #include <array>
 
-template<typename T, T N> constexpr T GetCrcTableValue(const T i)
+template<typename T, T N> constexpr T inline GetCrcTableValue(const T i)
   {
   T crc = i;
   for(size_t j = 0; j < CHAR_BIT; ++j)
@@ -37,7 +37,7 @@ template<typename T, T N> constexpr T GetCrcTableValue(const T i)
   }
 
 template<typename T, T N, std::size_t... I>
-constexpr auto __forceinline GetCrcTable(std::index_sequence<I...>)
+constexpr auto inline GetCrcTable(std::index_sequence<I...>)
   {
   return std::array<T, sizeof...(I)>{GetCrcTableValue<T, N>(I)...};
   }

@@ -38,10 +38,10 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#define XLOGOUT(msg) OutputDebugStringA(msg);
+#define XLOGOUT(msg) OutputDebugStringW(msg);
 #else
 #include <iostream>
-#define XLOGOUT(msg) std::cout << (msg) << std::endl;
+#define XLOGOUT(msg) std::wcout << (msg) << std::endl;
 #endif
 #endif
 
@@ -85,21 +85,20 @@ class xlog : public xmsg
         return *this;
         }
       // 转换成定长的 UNICODE 以避免多字节字符串切分出现截断现象。
-      const std::wstring tmp(as2ws(*this));
-      for(size_t i = 0; i < tmp.size();)
+      for(size_t i = 0; i < size();)
         {
         // 如果内部自带换行，则避免过多的切分。
-        const auto it = tmp.begin() + i;
-        const auto pos = tmp.find(L'\n', i);
-        if((tmp.npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
+        const auto it = begin() + i;
+        const auto pos = find(L'\n', i);
+        if((npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
           {
-          const auto xit = tmp.begin() + pos + 1;
-          XLOGOUT(ws2as(std::wstring(it, xit)).c_str());
+          const auto xit = begin() + pos + 1;
+          XLOGOUT(std::wstring(it, xit).c_str());
           i = pos + 1;
           continue;
           }
-        const auto xit = (it + (XLOG_MAX_BYTES) < tmp.end()) ? it + (XLOG_MAX_BYTES) : tmp.end();
-        XLOGOUT(ws2as(std::wstring(it, xit)).c_str());
+        const auto xit = (it + (XLOG_MAX_BYTES) < end()) ? it + (XLOG_MAX_BYTES) : end();
+        XLOGOUT(std::wstring(it, xit).c_str());
         i += (XLOG_MAX_BYTES);
         }
       clear();
@@ -151,7 +150,7 @@ class xlog : public xmsg
     xerr << xfuninfo << "这里出错";
   \endcode
 */
-#define xfuninfo "[" __FUNCTION__ "][" __LINE__ "]: "
+#define xfuninfo L"[" __FUNCTION__ L"][" << __LINE__ << L"]: "
 /**
   便捷宏，用于便捷插入异常产生的函数。
 
@@ -159,6 +158,6 @@ class xlog : public xmsg
     xerr << xfunexpt;
   \endcode
 */
-#define xfunexpt "[" __FUNCTION__ "]: exception."
+#define xfunexpt L"[" __FUNCTION__ L"]: exception."
 
 #endif  // _XLIB_XLOG_H_

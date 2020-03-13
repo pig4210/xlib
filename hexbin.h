@@ -2,7 +2,7 @@
   \file  hex_bin.h
   \brief 定义了 hex 与 bin 的转换操作。
 
-  \version    2.1.0.191106
+  \version    3.0.0.200313
   \note       For All
 
   \author     triones
@@ -39,6 +39,7 @@
   - 2019-06-20 放弃 escape 模板。 1.7.2 。
   - 2019-10-14 重构。 2.0 。
   - 2019-11-06 改进定义。 2.1 。
+  - 2020-03-13 改进 showbin 返回 wstring 。 3.0 。
 */
 #ifndef _XLIB_HEXBIN_H_
 #define _XLIB_HEXBIN_H_
@@ -474,20 +475,20 @@ constexpr ShowBinCode DefShowBinCode = LocaleCheck() ? SBC_ANSI : SBC_UTF8;
 
   \code
     std::string ss = "123456789aasdfsdhcf";
-    std::cout << showbin(ss);
+    std::wcout << showbin(ss);
     // 0012FF54┃31 32 33 34|35 36 37 38|39 61 61 73|64 66 73 64┃123456789aasdfsd
     // 0012FF64┃68 63 66 00|           |           |           ┃hcf.
   \endcode
 */
 template<typename T>
-std::string showbin(const T* const    bin,
-                    const size_t      len,
-                    const ShowBinCode code  = DefShowBinCode,
-                    const bool        isup  = true,
-                    const size_t      prews = 0)
+std::wstring showbin(const T* const    bin,
+                     const size_t      len,
+                     const ShowBinCode code  = DefShowBinCode,
+                     const bool        isup  = true,
+                     const size_t      prews = 0)
   {
-  std::string ret;
-  const auto fmt = isup ? "0123456789ABCDEF" : "0123456789abcdef";
+  std::wstring ret;
+  const auto fmt = isup ? L"0123456789ABCDEF" : L"0123456789abcdef";
 
   size_t used = 0;
   const uint8_t* data = (const uint8_t*)bin;
@@ -499,10 +500,10 @@ std::string showbin(const T* const    bin,
   // 输出 前缀格式化数据。
   auto prefix = [&]
     {
-    ret.append(prews, ' ');  // 空格前缀。
+    ret.append(prews, L' ');  // 空格前缀。
     const auto p = bswap((size_t)data);
-    ret.append(bin2hex(&p, 1));  // 地址前缀。
-    ret.append("┃");
+    ret.append(as2ws(bin2hex(&p, 1)));  // 地址前缀。
+    ret.append(L" |");
     
     for(size_t i = 0; i < k_max_line_byte; ++i)
       {
@@ -513,63 +514,61 @@ std::string showbin(const T* const    bin,
         }
       else            // 无数据补齐。
         {
-        ret.append("  ");
+        ret.append(L"  ");
         }
       switch(i)
         {
         case 3:  case 7:  case 11:
-          ret.push_back('|'); break;
+          ret.push_back(L'|'); break;
         case 15:
-          ret.append("┃"); break;
+          ret.append(L"| "); break;
         default:
-          ret.push_back(' ');
+          ret.push_back(L' ');
         }
       }
     };
 
   // 使 UNICODE 字符输出可视化，返回 true 表示接受字符，否则不接受，一律输出 '.' 。
-  auto check_unicode_visualization = [](const wchar_t wc) -> std::string
+  auto check_unicode_visualization = [](const wchar_t wc) -> std::wstring
     {
     // 控制字符一律输出 '.' 。
     if(wc < L' ' || (wc >= 0x7F && wc <= 0xA0))
       {
-      return ".";
+      return L".";
       }
 
     // 尝试转换 可视化。
-    const auto wch(std::wstring(1, wc));
+    const auto ch(std::wstring(1, wc));
     if constexpr (LocaleCheck())
       {
-      const auto ch = ws2as(wch);
-      return ch.empty() ? std::string() : ch;
+      return ws2as(ch).empty() ? std::wstring() : ch;
       }
     else
       {
-      const auto ch = ws2u8(wch);
-      return ch.empty() ? std::string() : std::string((const char*)ch.c_str());
+      return ws2u8(ch).empty() ? std::wstring() : ch;
       }
     };
 
-  using checkfunc = std::string (*)(const wchar_t);
-  using fixfunc = std::string (*)(const void* const data, size_t& used, const size_t size, checkfunc check);
+  using checkfunc = std::wstring (*)(const wchar_t);
+  using fixfunc = std::wstring (*)(const void* const data, size_t& used, const size_t size, checkfunc check);
   
-  fixfunc fix_unicode = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::string
+  fixfunc fix_unicode = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::wstring
     {
     // 无法进行向后匹配完整字符。
     if((used + sizeof(wchar_t)) > size)
       {
-      return "";
+      return L"";
       }
 
-    const auto as = check(*(wchar_t*)((const uint8_t*)data + used));
+    const auto ws = check(*(wchar_t*)((const uint8_t*)data + used));
 
-    if(as.empty())  return "";
+    if(ws.empty())  return ws;
 
     used += sizeof(wchar_t);
-    return as;
+    return ws;
     };
   
-  fixfunc fix_ansi = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::string
+  fixfunc fix_ansi = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::wstring
     {
     for(size_t i = 1; i <= 2; ++i)
       {
@@ -579,16 +578,16 @@ std::string showbin(const T* const    bin,
       // 转换失败，尝试扩展匹配。
       if(ws.empty()) continue;
 
-      const auto as = check(*ws.begin());
+      const auto s = check(*ws.begin());
       // 可视化失败，返回。
-      if(ws.empty())  break;
+      if(s.empty())  break;
       used += i;
-      return as;
+      return s;
       }
-    return "";
+    return L"";
     };
 
-  auto fix_utf8 = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::string
+  auto fix_utf8 = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::wstring
     {
     for(size_t i = 1; i <= 6; ++i)
       {
@@ -597,13 +596,13 @@ std::string showbin(const T* const    bin,
       const auto ws = u82ws(std::u8string((const char8_t*)data + used, i));
       // 转换失败，尝试扩展匹配。
       if(ws.empty()) continue;
-      const auto as = check(*ws.begin());
+      const auto s = check(*ws.begin());
       // 可视化失败，返回。
-      if(ws.empty())  break;
+      if(s.empty())  break;
       used += i;
-      return as;
+      return s;
       }
-    return "";
+    return L"";
     };
   
   fixfunc fix = (SBC_UNICODE == code) ? fix_unicode : ((SBC_UTF8 == code) ? fix_utf8 : fix_ansi );
@@ -615,20 +614,20 @@ std::string showbin(const T* const    bin,
 
     while(used < fix_len)
       {
-      const auto as = fix(data, used, size, check_unicode_visualization);
-      if(as.empty())
+      const auto ws = fix(data, used, size, check_unicode_visualization);
+      if(ws.empty())
         {
         used += sizeof(char);
-        ret.push_back('.');
+        ret.push_back(L'.');
         }
       else
         {
-        ret.append(as);
+        ret.append(ws);
         }
       }
     used -= fix_len;
-    ret.push_back('\r');
-    ret.push_back('\n');
+    ret.push_back(L'\r');
+    ret.push_back(L'\n');
 
     data += k_max_line_byte;
     size -= fix_len;
@@ -637,44 +636,44 @@ std::string showbin(const T* const    bin,
   }
 
 inline
-std::string showbin(const void* const bin,
-                    const size_t      len,
-                    const ShowBinCode code  = DefShowBinCode,
-                    const bool        isup  = true,
-                    const size_t      prews = 0)
+std::wstring showbin(const void* const bin,
+                     const size_t      len,
+                     const ShowBinCode code  = DefShowBinCode,
+                     const bool        isup  = true,
+                     const size_t      prews = 0)
   {
   return showbin((const char*)bin, len, code, isup, prews);
   }
 
 template<typename T>
-std::string showbin(const std::basic_string<T>& data,
-                    const ShowBinCode           code,
-                    const bool                  isup,
-                    const size_t                prews)
+std::wstring showbin(const std::basic_string<T>& data,
+                     const ShowBinCode           code,
+                     const bool                  isup,
+                     const size_t                prews)
   {
   return showbin(data.c_str(), data.size(), code, isup, prews);
   }
   
 template<typename T>
-std::string showbin(const std::basic_string<T>& data)
+std::wstring showbin(const std::basic_string<T>& data)
   {
   return showbin(data.c_str(), data.size(), DefShowBinCode, true, 0);
   }
 
 template<typename T>
-std::string showbin(const std::basic_string<T>& data, const ShowBinCode code)
+std::wstring showbin(const std::basic_string<T>& data, const ShowBinCode code)
   {
   return showbin(data.c_str(), data.size(), code, true, 0);
   }
 
 template<typename T>
-std::string showbin(const std::basic_string<T>& data, const bool isup)
+std::wstring showbin(const std::basic_string<T>& data, const bool isup)
   {
   return showbin(data.c_str(), data.size(), DefShowBinCode, true, 0);
   }
 
 template<typename T>
-std::string showbin(const std::basic_string<T>& data, const size_t prews) // 需要强制类型哦。
+std::wstring showbin(const std::basic_string<T>& data, const size_t prews) // 需要强制类型哦。
   {
   return showbin(data.c_str(), data.size(), DefShowBinCode, true, prews);
   }

@@ -12,10 +12,10 @@
 SHOW_TEST_INIT(XLOG)
 
 SHOW_TEST_HEAD(xlog);
-done = (xlog() << "123") == std::string("123");
+done = (xlog() << L"123") == std::wstring(L"123");
 SHOW_TEST_RESULT;
 
-xtrace << "xlog trace";
-xfail << "xlog fail";
+xtrace << L"xlog trace";
+xfail << L"xlog fail";
 
 SHOW_TEST_DONE;

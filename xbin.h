@@ -2,7 +2,7 @@
   \file  xbin.h
   \brief 定义了便捷数据组织的类，常用于封包的组织与解析。
 
-  \version    2.1.0.191106
+  \version    2.1.1.200313
 
   \author     triones
   \date       2010-03-26
@@ -84,7 +84,8 @@
   - 2016-11-15 适配 Linux g++ 。添加接口。 1.3 。
   - 2017-09-06 改进处理 >>(T*) 。 1.3.1 。
   - 2019-10-17 重构，升级为 xbin 。 2.0 。
-  - 2019-11-06 再次重构，合并 vbin 。2.1 。
+  - 2019-11-06 再次重构，合并 vbin 。 2.1 。
+  - 2020-03-13 适配 varint 优化。 2.1.1 。
 */
 #ifndef _XLIB_XBIN_H_
 #define _XLIB_XBIN_H_
@@ -180,7 +181,7 @@ class xbin : public std::basic_string<uint8_t>
       \endcode
     */
     template<typename T>
-    inline std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, xbin>&
+    std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, xbin>&
       operator<<(const T& argvs)
       {
       if constexpr (!std::is_void<headtype>::value)
@@ -190,7 +191,8 @@ class xbin : public std::basic_string<uint8_t>
         }
       else
         {
-        operator<<(tovarint(argvs));
+        const varint v(argvs);
+        append((xbin::const_pointer)v.data(), v.size());
         }
       return *this;
       }
@@ -205,8 +207,8 @@ class xbin : public std::basic_string<uint8_t>
         }
       else
         {
-        const auto s = tovarint(size());
-        insert(0, (xbin::const_pointer)s.c_str(), s.size());
+        const varint v(size());
+        insert(0, (xbin::const_pointer)v.data(), v.size());
         }
       return *this;
       }
@@ -330,7 +332,9 @@ class xbin : public std::basic_string<uint8_t>
         }
       else
         {
-        size_t typesize = getvarint(argvs, *this);
+        const varint<T> vi(data());
+        argvs = vi;
+        const size_t typesize = vi.size();
 #ifndef XBIN_NOEXCEPT
         if(typesize == 0 || typesize > size())
           {
@@ -374,9 +378,9 @@ class xbin : public std::basic_string<uint8_t>
 
 /// lbin 数据头为 word ，不包含自身，小端序，不处理结尾 0 。
 typedef xbin<uint16_t, false, false, false> lbin;
-/// gbin 数据头为 word ,不包含自身，大端顺序，处理结尾 0 。
+/// gbin 数据头为 word ，不包含自身，大端顺序，处理结尾 0 。
 typedef xbin<uint16_t, false, true, true>   gbin;
 /// vbin 为 varint 格式，忽略后继所有设置。
-typedef xbin<void, false, false, false>     vbin;
+using vbin = xbin<void, false, false, false>;
 
 #endif  // _XLIB_XBIN_H_

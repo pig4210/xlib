@@ -45,6 +45,7 @@ inline uint64_t xrand(const uint64_t mod = 0)
   // x86 下的 _lrotr 行为一致。
   // x64 下的 _lrotr ， windows 使用 32 bit ， linux 使用 64 bit 。
   // x64 下的 unsigned long ， windows 使用 32 bit ， linux 使用 64 bit 。
+  // VS2019 尚不支持 标准库 bit 。故采用此做法。
   seed += (r << (sizeof(uint32_t) * CHAR_BIT)) + _lrotr((unsigned long)r, l);
   return (0 != mod) ? (seed % mod) : (seed);
   }

@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    3.0.0.191103
+  \version    4.0.0.200309
   \note       For All
 
   \author     triones
@@ -23,6 +23,7 @@
   - 2016-11-15 适配 Linux g++ 。处理不再附加结尾 0 。 1.3 。
   - 2019-09-25 重构 xmsg 。 2.0 。
   - 2019-11-03 引入 char8_t 、 u8string 。 3.0 。
+  - 2020-03-09 改变基类为 wstring 。 4.0 。
 */
 #ifndef _XLIB_XMSG_H_
 #define _XLIB_XMSG_H_
@@ -34,72 +35,75 @@
 
 #include "as_ws_u8.h"
 
-class xmsg : public std::string
+class xmsg : public std::wstring
   {
   public:
     xmsg() {}
-    xmsg(const std::string& as):std::string(as) {}
-    xmsg(const std::wstring& ws):std::string(ws2as(ws)) {}
-    xmsg(const std::u8string& u8):std::string(u82as(u8)) {}
+    xmsg(const std::string& as):std::wstring(as2ws(as)) {}
+    xmsg(const std::wstring& ws):std::wstring(ws) {}
+    xmsg(const std::u8string& u8):std::wstring(u82ws(u8)) {}
   public:
     /// 指定格式输出。
-    xmsg& prt(const char* const fmt, ...)
+    xmsg& prt(const wchar_t* const fmt, ...)
       {
       if(nullptr == fmt) return *this;
       va_list ap;
-      va_start(ap, fmt);
-      const auto need = std::vsnprintf(nullptr, 0, fmt, ap);
-      va_end(ap);
-      // 格式化失败，不做处理。
-      if(need <= 0)  return *this;
-      reserve(size() + need + 1);
-      char* lpend = data() + size();
-      // 注意到，g++ 中 ap 好像会被修改，所以需要重做。
-      va_start(ap, fmt);
-      std::vsnprintf(lpend, capacity() - size(), fmt, ap);
-      va_end(ap);
-      append(lpend, need);
+      for(size_t rest = 0x10; rest; rest *= 2)
+        {
+        // 注意到 wstring.append 无法使用 reverse 的缓冲，将导致异常，故此自建缓冲。
+        std::unique_ptr<wchar_t[]> p(new wchar_t[rest]);
+        // 注意到，g++ 中 ap 好像会被修改，所以需要重做。
+        va_start(ap, fmt);
+        // 无 vsnprintf 等价版本，vswprintf 无法检查需要多少缓冲。只能反复尝试。
+        const auto need = std::vswprintf(p.get(), rest, fmt, ap);
+        va_end(ap);
+        if(need >= 0)
+          {
+          append(p.get(), need);
+          break;
+          }
+        }
       return *this;
       }
     /// 输出 dec 值。
     xmsg& operator<<(const int8_t& v)
       {
-      return prt("%hhi", v);
+      return prt(L"%hhi", v);
       }
     /// 输出 hex(XX)。
     xmsg& operator<<(const uint8_t& v)
       {
-      return prt("%02X", v);
+      return prt(L"%02X", v);
       }
     /// 输出 dec 值。
     xmsg& operator<<(const int16_t& v)
       {
-      return prt("%hi", v);
+      return prt(L"%hi", v);
       }
     /// 输出 hex(XXXX)。
     xmsg& operator<<(const uint16_t& v)
       {
-      return prt("%04X", v);
+      return prt(L"%04X", v);
       }
     /// 输出 dec 值。
     xmsg& operator<<(const int32_t& v)
       {
-      return prt("%i", v);
+      return prt(L"%i", v);
       }
     /// 输出 hex(XXXXXXXX)。
     xmsg& operator<<(const uint32_t& v)
       {
-      return prt("%08X", v);
+      return prt(L"%08X", v);
       }
     /// 输出 dec 值。
     xmsg& operator<<(const int64_t& v)
       {
-      return prt("%lli", v);
+      return prt(L"%lli", v);
       }
     /// 输出 hex(XXXXXXXXXXXXXXXX)。
     xmsg& operator<<(const uint64_t& v)
       {
-      return prt("%08X%08X", (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
+      return prt(L"%08X%08X", (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
       }
     /// 输出 hex 指针。
     xmsg& operator<<(const void* const v)
@@ -109,71 +113,71 @@ class xmsg : public std::string
     /// 输出 :true :false。
     xmsg& operator<<(const bool& v)
       {
-      return operator<<(v ? ":true" : ":false");
+      return operator<<(v ? L":true" : L":false");
       }
-    /// 输出 字符。
+    /// 输出 ANSI 字符 转换 UNICCODE 字符。
     xmsg& operator<<(const char& v)
+      {
+      append(as2ws(std::string(1, v)));
+      return *this;
+      }
+    /// 输出 ANSI 字符串 转换 UNICCODE 字符串。
+    xmsg& operator<<(const char* const v)
+      {
+      if(nullptr != v) append(as2ws(v));
+      return *this;
+      }
+    /// 输出 ASNI 字符串 转换 UNICCODE 字符串。
+    xmsg& operator<<(const std::string& v)
+      {
+      append(as2ws(v));
+      return *this;
+      }
+    /// 输出 UNICCODE 字符。
+    xmsg& operator<<(const wchar_t& v)
       {
       append(1, v);
       return *this;
       }
-    /// 输出 字符串。
-    xmsg& operator<<(const char* const v)
+    /// 输出 UNICCODE 字符串。
+    xmsg& operator<<(const wchar_t* const v)
       {
       if(nullptr != v) append(v);
       return *this;
       }
-    /// 输出 字符串。
-    xmsg& operator<<(const std::string& v)
+    /// 输出 UNICCODE 字符串。
+    xmsg& operator<<(const std::wstring& v)
       {
       append(v);
       return *this;
       }
-    /// 输出 UNICCODE 转化 ANSI 字符。
-    xmsg& operator<<(const wchar_t& v)
-      {
-      append(ws2as(std::wstring(1, v)));
-      return *this;
-      }
-    /// 输出 UNICCODE 字符串转化 ANSI 字符串。
-    xmsg& operator<<(const wchar_t* const v)
-      {
-      if(nullptr != v) append(ws2as(v));
-      return *this;
-      }
-    /// 输出 UNICCODE 字符串转化 ANSI 字符串。
-    xmsg& operator<<(const std::wstring& v)
-      {
-      append(ws2as(v));
-      return *this;
-      }
-    /// 输出 UTF-8 转换 ANSI 字符。
+    /// 输出 UTF-8 转换 UNICCODE 字符。
     xmsg& operator<<(const char8_t& v)
       {
-      append(u82as(std::u8string(1, v)));
+      append(u82ws(std::u8string(1, v)));
       return *this;
       }
-    /// 输出 UTF-8 字符串转换 ANSI 字符串。
+    /// 输出 UTF-8 字符串 转换 UNICCODE 字符串。
     xmsg& operator<<(const char8_t* v)
       {
-      if(nullptr != v) append(u82as(v));
+      if(nullptr != v) append(u82ws(v));
       return *this;
       }
-    /// 输出 UTF-8 字符串转化 ANSI 字符串。
+    /// 输出 UTF-8 字符串 转化 UNICCODE 字符串。
     xmsg& operator<<(const std::u8string& v)
       {
-      append(u82as(v));
+      append(u82ws(v));
       return *this;
       }
     /// 输出 dec 浮点数。
     xmsg& operator<<(const float& v)
       {
-      return prt("%f", v);
+      return prt(L"%f", v);
       }
     /// 输出 dec 浮点数。
     xmsg& operator<<(const double& v)
       {
-      return prt("%f", v);
+      return prt(L"%f", v);
       }
     /// 输出 内容。
     xmsg& operator<<(const xmsg& v)

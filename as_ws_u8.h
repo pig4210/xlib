@@ -79,9 +79,9 @@ inline std::wstring as2ws(const std::string& as, size_t* const readed = nullptr)
   const char* from_end    = from + as.size();
   const char* from_next;
   
-  wchar_t* to             = ws.data();
-  wchar_t* to_end         = to + ws.size();
-  wchar_t* to_next;
+  wchar_t*    to          = ws.data();
+  wchar_t*    to_end      = to + ws.size();
+  wchar_t*    to_next;
 
   const auto result = cvt.in(
     state,
@@ -126,9 +126,9 @@ inline std::string ws2as(const std::wstring& ws, size_t* const readed = nullptr)
   const wchar_t* from_end   = from + ws.size();
   const wchar_t* from_next;
 
-  char* to                  = as.data();
-  char* to_end              = to + as.size();
-  char* to_next;
+  char*          to         = as.data();
+  char*          to_end     = to + as.size();
+  char*          to_next;
 
   const auto result = cvt.out(
     state,
@@ -173,9 +173,9 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const readed = nullpt
   const char* from_end    = from + u8.size();
   const char* from_next;
   
-  wchar_t* to             = ws.data();
-  wchar_t* to_end         = to + ws.size();
-  wchar_t* to_next;
+  wchar_t*    to          = ws.data();
+  wchar_t*    to_end      = to + ws.size();
+  wchar_t*    to_next;
 
   const auto result = cvt.in(
     state,
@@ -220,9 +220,9 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const readed = nullpt
   const wchar_t* from_end   = from + ws.size();
   const wchar_t* from_next;
 
-  char* to                  = (char*)u8.data();
-  char* to_end              = to + u8.size();
-  char* to_next;
+  char*          to         = (char*)u8.data();
+  char*          to_end     = to + u8.size();
+  char*          to_next;
 
   const auto result = cvt.out(
     state,

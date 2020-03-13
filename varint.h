@@ -2,7 +2,7 @@
   \file  varint.h
   \brief 定义了 zig 、 zag 、 varint 相关操作。
 
-  \version    1.2.0.191106
+  \version    2.0.0.200313
   \note       For All
 
   \author     triones
@@ -14,16 +14,18 @@
   - 2017-09-11 修正处理有符号时的错误。 1.0.1 。
   - 2019-10-21 改进。1.1 。
   - 2019-11-06 重构 zig 、 zag 。 1.2 。
+  - 2020-03-13 重构 varint 。 2.0 。
 */
 #ifndef _XLIB_VARINT_H_
 #define _XLIB_VARINT_H_
 
 #include <climits>
 #include <string>
+#include <array>
 
 template<typename T> constexpr
 std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value,
-typename std::make_unsigned<T>::type> zig(const T& value)
+typename std::make_unsigned<T>::type> inline zig(const T& value)
   {
   using U = typename std::make_unsigned<T>::type;
   // 无符号值或枚举值，不转换。
@@ -41,7 +43,7 @@ typename std::make_unsigned<T>::type> zig(const T& value)
 
 template<typename T> constexpr
 std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value,
-typename std::make_signed<T>::type> zag(const T& value)
+typename std::make_signed<T>::type> inline zag(const T& value)
   {
   using S = typename std::make_signed<T>::type;
   // 有符号值，不转换。
@@ -57,77 +59,68 @@ typename std::make_signed<T>::type> zag(const T& value)
     }
   }
 
-/// 转换值，缓冲区错误、不足，将返回 0 值，否则返回写入缓冲区的大小。
-template<typename T>
-std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value, size_t>
-  tovarint(const T&      value,
-           void*         varint,
-           const size_t  size = sizeof(T) / CHAR_BIT + 1 + sizeof(T))
+template<typename T, std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value, int> = 0>
+class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
   {
-  auto v = zig(value);
-  size_t count = 0;
-  uint8_t* data = (uint8_t*)varint;
-  try
-    {
-    do
+  private:
+    T _value;
+  public:
+    constexpr varint(const T& value):_value(value)
       {
-      if(count > size) return 0;
-      data[count] = (uint8_t)((v & 0x7F) | 0x80);
-      v >>= (CHAR_BIT - 1);
-      ++count;
-      } while(v != 0);
-    data[count - 1] &= 0x7F;
-    }
-  catch(...)
-    {
-    return 0;
-    }
-  return count;
-  }
-template<typename T>
-std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value, std::string>
-  tovarint(const T& value)
-  {
-  uint8_t varint[sizeof(T) / CHAR_BIT + 1 + sizeof(T)];
-  auto size = tovarint(value, varint, sizeof(varint));
-  return std::string((const char*)varint, size);
-  }
-
-/// 转换值，数据不足，返回 0 值。目标容量不足，截断值。否则返回读取缓冲区的大小。
-template<typename T>
-std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value, size_t>
-  getvarint(T&             value,
-            const void*    varint,
-            const size_t   size = sizeof(T) / CHAR_BIT + 1 + sizeof(T))
-  {
-  using U = typename std::make_unsigned<T>::type;
-  U v = 0;
-  size_t count = 0;
-  const uint8_t* data = (const uint8_t*)varint;
-  try
-    {
-    while(count < size)
-      {
-      U ch = data[count];
-      v |= ((ch & 0x7F) << (count * (CHAR_BIT - 1)));
-      ++count;
-      if((ch & 0x80) == 0)
+      auto v = zig(value);
+      for(auto& pv : *this)
         {
-        value = (std::is_signed<T>::value) ? (T)zag((U)v) : (T)v;
-        return count;
+        const auto vv = (uint8_t)(v & 0x7F);
+        v >>= (CHAR_BIT - 1);
+        if(0 == v)
+          {
+          pv = vv;
+          break;
+          }
+        pv = vv | 0x80;
         }
       }
-    }
-  catch(...)
-    {
-    }
-  return 0;
-  }
-template<typename T, typename Ty>
-std::enable_if_t<(std::is_signed<T>::value || std::is_unsigned<T>::value) && (sizeof(Ty) == 1), size_t>
-  getvarint(T& value, const std::basic_string<Ty>& varint)
-  {
-  return getvarint(value, varint.c_str(), varint.size() * sizeof(T));
-  }
+    constexpr size_t size() const noexcept
+      {
+      size_t n = 0;
+      for(const auto& v : *this)
+        {
+        ++n;
+        // g++ 这里有 may be used uninitialized in this function 警告，可忽略。
+        if(0 == (v & 0x80)) break;
+        }
+      return n;
+      }
+    constexpr operator T() const noexcept
+      {
+      return _value;
+      }
+    constexpr T operator()() const noexcept
+      {
+      return _value;
+      }
+    constexpr varint(const char* p):_value(0)
+      {
+      using U = typename std::make_unsigned<T>::type;
+      U v = 0;
+      size_t count = 0;
+      for(auto& pv : *this)
+        {
+        pv = *p; ++p;
+        v |= ((pv & 0x7F) << (count * (CHAR_BIT - 1)));
+        ++count;
+        if(0 == (pv & 0x80))
+          {
+          _value = (std::is_signed<T>::value) ? (T)zag((U)v) : (T)v;
+          break;
+          }
+        }
+      }
+    template<typename Ty,
+    std::enable_if_t<(sizeof(Ty) == 1) || std::is_void<Ty>::value, int> = 0>
+    varint(const Ty* p):varint((const char*)p)
+      {
+      }
+  };
 
 #endif  // _XLIB_VARINT_H_

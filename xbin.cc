@@ -23,9 +23,9 @@ lb.clear(); gb.clear(); vb.clear();
 lb << "123456";
 gb << L"123456";
 vb << "123456";
-done = 0 == memcmp(lb.c_str(), "123456", 6) &&
-       0 == memcmp(gb.c_str(), L"123456", 6 * sizeof(wchar_t)) &&
-       0 == memcmp(vb.c_str(), "123456", 6);
+done = lb.size() == 6 && 0 == memcmp(lb.c_str(), "123456", 6) &&
+       gb.size() == 7 * sizeof(wchar_t) && 0 == memcmp(gb.c_str(), L"123456", 6 * sizeof(wchar_t)) &&
+       vb.size() == 6 && 0 == memcmp(vb.c_str(), "123456", 6);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(<< xbin);
@@ -45,9 +45,9 @@ lb.clear(); gb.clear(); vb.clear();
 lb << std::string("123456");
 gb << std::wstring(L"123456");
 vb << std::string("123456");
-done = 0 == memcmp(lb.c_str(), "123456", 6) &&
-       0 == memcmp(gb.c_str(), L"123456", 6 * sizeof(wchar_t)) &&
-       0 == memcmp(vb.c_str(), "123456", 6);
+done = lb.size() == 6 && 0 == memcmp(lb.c_str(), "123456", 6) &&
+       gb.size() == 6 * sizeof(wchar_t) && 0 == memcmp(gb.c_str(), L"123456", 6 * sizeof(wchar_t)) &&
+       vb.size() == 6 && 0 == memcmp(vb.c_str(), "123456", 6);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(<< T&);
@@ -88,23 +88,23 @@ SHOW_TEST_HEAD(>> T*);
 char abuf[0x10];
 char bbuf[0x10];
 char cbuf[0x10];
-lb >> (char*)abuf;
+lb >> (char*)abuf >> '\0';
 gb >> (char*)bbuf;
-vb >> (char*)cbuf;
-done = 0 == memcmp(abuf, "123456", 6) &&
-       0 == memcmp(bbuf, "123456", 7) &&
-       0 == memcmp(cbuf, "123456", 6);
+vb >> (char*)cbuf >> '\0';
+done = lb.empty() && 0 == memcmp(abuf, "123456", 6) &&
+       gb.empty() && 0 == memcmp(bbuf, "123456", 7) &&
+       vb.empty() && 0 == memcmp(cbuf, "123456", 6);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(>> xbin);
 lb.clear(); gb.clear(); vb.clear();
 aa.clear(); bb.clear(); cc.clear();
-aa << "123456"; aa.mkhead(); aa >> lb;
-bb << "123456"; bb.mkhead(); bb >> gb;
-cc << "123456"; cc.mkhead(); cc >> vb;
-done = 0 == memcmp(lb.c_str(), "123456", 6) &&
-       0 == memcmp(gb.c_str(), "123456", 7) &&
-       0 == memcmp(vb.c_str(), "123456", 6);
+lb << "123456"; lb.mkhead(); lb >> aa;
+gb << "123456"; gb.mkhead(); gb >> bb;
+vb << "123456"; vb.mkhead(); vb >> cc;
+done = lb.empty() && 0 == memcmp(aa.c_str(), "123456", 6) &&
+       gb.empty() && 0 == memcmp(bb.c_str(), "123456", 7) &&
+       vb.empty() && 0 == memcmp(cc.c_str(), "123456", 6);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(>> basic_string);
@@ -113,9 +113,9 @@ lb.clear(); gb.clear(); vb.clear();
 lb << "123456"; lb >> ls;
 gb << "123456"; gb >> gs;
 vb << "123456"; vb >> vs;
-done = 0 == memcmp(ls.c_str(), "123456", 6) &&
-       0 == memcmp(gs.c_str(), "123456", 7) &&
-       0 == memcmp(vs.c_str(), "123456", 6);
+done = lb.empty() && 0 == memcmp(ls.c_str(), "123456", 6) &&
+       gb.empty() && 0 == memcmp(gs.c_str(), "123456", 7) &&
+       vb.empty() && 0 == memcmp(vs.c_str(), "123456", 6);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(>> T);

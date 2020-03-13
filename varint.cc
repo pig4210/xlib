@@ -20,22 +20,23 @@ SHOW_TEST_HEAD(zag signed);
 done = 0x1234567812345678 == zag((int64_t)0x1234567812345678);
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(tovarint signed);
-done = "\x9C\x85\xE3\x0B" == tovarint((int32_t)12345678);
+SHOW_TEST_HEAD(varint T signed);
+constexpr varint v64((int64_t)12345678);
+done = "\x9C\x85\xE3\x0B" == std::string((const char*)v64.data(), v64.size());
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(tovarint unsigned);
-done = "\xCE\xC2\xF1\x05" == tovarint((uint64_t)12345678);
+SHOW_TEST_HEAD(varint T unsigned);
+constexpr varint v32((uint32_t)0x87654321);
+done = "\xA1\x86\x95\xBB\x08" == std::string((const char*)v32.data(), v32.size());
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(getvarint signed);
-int32_t iv;
-done = 4 == getvarint(iv, "\x9C\x85\xE3\x0B", 4 ) && 12345678 == iv;
+SHOW_TEST_HEAD(varint T* signed);
+done = 12345678 == varint<int32_t>("\x9C\x85\xE3\x0B");
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(getvarint unsigned);
-uint32_t uv;
-done = 4 == getvarint(uv, "\xCE\xC2\xF1\x05", 4) && 12345678 == uv;
+SHOW_TEST_HEAD(varint T* unsigned);
+constexpr auto uv = varint<uint32_t>("\xA1\x86\x95\xBB\x08");
+done = 0x87654321 == uv;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

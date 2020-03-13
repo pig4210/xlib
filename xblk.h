@@ -57,7 +57,7 @@ class xblk
       {
       }
     /// 判定目标块与本块的关系。
-    PosDcrpt checkin(const xblk& blk) const
+    constexpr PosDcrpt checkin(const xblk& blk) const
       {
       const char* const s = (const char*)start;
       const char* const e = (const char*)end;
@@ -73,20 +73,20 @@ class xblk
       if(ee > e)  return HeadIn;
       return WholeIn;
       }
-    template<typename T> PosDcrpt checkin(const T* const a, const T* const b) const
+    template<typename T> constexpr PosDcrpt checkin(const T* const a, const T* const b) const
       {
       return checkin(xblk(a, b));
       }
-    template<typename T> PosDcrpt checkin(const T* const a, const intptr_t diff = 1) const
+    template<typename T> constexpr PosDcrpt checkin(const T* const a, const intptr_t diff = 1) const
       {
       return checkin(xblk(a, diff));
       }
     /// 比较操作。
-    bool operator==(const xblk& blk) const
+    constexpr bool operator==(const xblk& blk) const
       {
       return (start == blk.start) && (end == blk.end);
       }
-    bool operator!=(const xblk& blk) const
+    constexpr bool operator!=(const xblk& blk) const
       {
       return !operator==(blk);
       }

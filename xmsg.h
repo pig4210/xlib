@@ -48,7 +48,7 @@ class xmsg : public std::wstring
       {
       if(nullptr == fmt) return *this;
       va_list ap;
-      for(size_t rest = 0x10; rest; rest *= 2)
+      for(size_t rest = wcslen(fmt) * 2; rest; rest *= 2)
         {
         // 注意到 wstring.append 无法使用 reverse 的缓冲，将导致异常，故此自建缓冲。
         std::unique_ptr<wchar_t[]> p(new wchar_t[rest]);

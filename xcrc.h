@@ -2,7 +2,7 @@
   \file  xcrc.h
   \brief 定义了 CRC 算法模板。支持 crc16 、 crc32 、 crc64 、crcccitt 。
 
-  \version    3.1.0.200306
+  \version    3.2.0.200509
 
   \author     triones
   \date       2013-03-19
@@ -18,6 +18,7 @@
   - 2019-09-19 修改为模板，使用了简单的单例。 2.0 。
   - 2019-09-29 引入新特性重构，解决非线程安全的问题。 3.0 。
   - 2020-03-06 引入可变参数模板，表的生成重新设计。 3.1 。
+  - 2020-05-09 扩大模板匹配，匹配多数顺序容器。优化接口 3.2 。
 */
 #ifndef _XLIB_XCRC_H_
 #define _XLIB_XCRC_H_
@@ -26,7 +27,8 @@
 #include <string>
 #include <array>
 
-template<typename T, T N> constexpr T inline GetCrcTableValue(const T i)
+/// 用于编译期计算 CRC 表单个值。
+template<typename T, T N> constexpr T inline XCrcTableValue(const T i) noexcept
   {
   T crc = i;
   for(size_t j = 0; j < CHAR_BIT; ++j)
@@ -36,82 +38,63 @@ template<typename T, T N> constexpr T inline GetCrcTableValue(const T i)
   return crc;
   }
 
+/// 用于编译期生成 CRC 表。
 template<typename T, T N, std::size_t... I>
-constexpr auto inline GetCrcTable(std::index_sequence<I...>)
+constexpr auto inline XCrcTable(std::index_sequence<I...>) noexcept
   {
-  return std::array<T, sizeof...(I)>{GetCrcTableValue<T, N>(I)...};
+  return std::array<T, sizeof...(I)>{XCrcTableValue<T, N>(I)...};
   }
 
-/// CRC 基本模板。
-template<typename T, T N, T V, bool R, typename P>
-T XCRC(const P* const data, const size_t size)
-  {
-  constexpr auto CrcTable = GetCrcTable<T, N>(std::make_index_sequence<0x100>{});
-  T ret = V;
-  const size_t len = (nullptr == data) ? 0 : (size * sizeof(P));
-  const uint8_t* const buf = (const uint8_t*)data;
-  for(size_t i = 0; i < len; ++i)
-    {
-    ret = CrcTable[(ret & 0xFF) ^ buf[i]] ^ (ret >> 8);
-    }
-  return R ? ~ret : ret;
-  }
+/// CRC 计算模板。
 template<typename T, T N, T V, bool R>
 T XCRC(const void* const data, const size_t size)
   {
-  return XCRC<T, N, V, R>((const char*)data, size);
-  }
-template<typename T, T N, T V, bool R, typename S>
-T XCRC(const std::basic_string<S>& s)
-  {
-  return XCRC<T, N, V, R>(s.c_str(), s.size());
+  // 将在编译期生成 CRC 表。
+  constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
+  T ret = V;
+  const size_t len = (nullptr == data) ? 0 : size;
+  const uint8_t* const p = (const uint8_t*)data;
+  for(size_t i = 0; i < len; ++i)
+    {
+    ret = CrcTable[(ret & 0xFF) ^ p[i]] ^ (ret >> 8);
+    }
+  return R ? ~ret : ret;
   }
 
 //////////////////////////////////////////////////////////////////////////
-// 因需要使用重载，除了 define ，别无他法。
 /**
-  生成指定数据的 crc16 。
-  \param    data    指定需要计算 crc16 的数据。
-  \param    size    指定需要计算 crc16 的数据长度（以相应类型字计）。
-  \return           返回 crc16 值。
+  生成指定数据的 crc 。
+  \param    data    指定需要计算 crc 的数据。
+  \param    size    指定需要计算 crc 的数据长度（以相应类型字计）。
+  \return           返回 crc 值。
 
   \code
-    std::cout << crc16(std::string("012345"));
+    // 接受指定长度数据。
+    auto x = crc((void*)"12", 2);
+    auto x = crc(L"12", 2);
+    // 接受顺序容器。
+    auto x = crc(std::string("12"));
+    auto x = crc(std::array<char, 1>{'1'});
+    // 接受编译期字符串。
+    auto x = crc("12");
   \endcode
 */
-#define crc16           (XCRC<uint16_t, 0xA001, 0, false>)
-/**
-  生成指定数据的 crc32 。
-  \param    data    指定需要计算 crc32 的数据。
-  \param    size    指定需要计算 crc32 的数据长度（以相应类型字计）。
-  \return           返回 crc32 值。
+#define CRCX(NAME, TT, NN, VV, RR) \
+inline auto NAME(const void* const data, const size_t size) \
+  { return XCRC<TT, NN, VV, RR>(data, size); } \
+template<typename T> auto NAME(const T* const data, const size_t size) \
+  { return NAME((const void*)data, size * sizeof(T)); } \
+template<typename T> auto NAME(const T& o) \
+  ->std::enable_if_t<std::is_pointer<decltype(o.data())>::value, TT> \
+  { return NAME(o.data(), o.size()); } \
+template<typename T, size_t size> auto NAME(T const(&data)[size]) \
+  { return NAME(data, size - 1); }
 
-  \code
-    std::cout << crc32(std::string("012345"));
-  \endcode
-*/
-#define crc32           (XCRC<uint32_t, 0xEDB88320, 0xFFFFFFFF, true>)
-/**
-  生成指定数据的 crc64 。
-  \param    data    指定需要计算 crc64 的数据。
-  \param    size    指定需要计算 crc64 的数据长度（以相应类型字计）。
-  \return           返回 crc64 值。
+CRCX(crc16,     uint16_t, 0xA001, 0, false);
+CRCX(crc32,     uint32_t, 0xEDB88320, 0xFFFFFFFF, true);
+CRCX(crc64,     uint64_t, 0xC96C5795D7870F42, 0xFFFFFFFFFFFFFFFF, true);
+CRCX(crcccitt,  uint16_t, 0x8408, 0xFFFF, false);
 
-  \code
-    std::cout << crc64(std::string("012345"));
-  \endcode
-*/
-#define crc64           (XCRC<uint64_t, 0xC96C5795D7870F42, 0xFFFFFFFFFFFFFFFF, true>)
-/**
-  生成指定数据的 crcccitt 。
-  \param    data    指定需要计算 crcccitt 的数据。
-  \param    size    指定需要计算 crcccitt 的数据长度（以相应类型字计）。
-  \return           返回 crcccitt 值。
-
-  \code
-    std::cout << crcccitt(std::string("012345"));
-  \endcode
-*/
-#define crcccitt        (XCRC<uint16_t, 0x8408, 0xFFFF, false>)
+#undef CRCX
 
 #endif  // _XLIB_XCRC_H_

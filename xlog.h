@@ -84,7 +84,7 @@ class xlog : public xmsg
         clear();
         return *this;
         }
-      // 转换成定长的 UNICODE 以避免多字节字符串切分出现截断现象。
+      // 定宽的 UNICODE 避免多字节字符串切分出现截断现象。
       for(size_t i = 0; i < size();)
         {
         // 如果内部自带换行，则避免过多的切分。
@@ -150,7 +150,7 @@ class xlog : public xmsg
     xerr << xfuninfo << "这里出错";
   \endcode
 */
-#define xfuninfo L"[" __FUNCTION__ L"][" << __LINE__ << L"]: "
+#define xfuninfo L"[" __FUNCTIONW__ L"][" << __LINE__ << L"]: "
 /**
   便捷宏，用于便捷插入异常产生的函数。
 
@@ -158,6 +158,6 @@ class xlog : public xmsg
     xerr << xfunexpt;
   \endcode
 */
-#define xfunexpt L"[" __FUNCTION__ L"]: exception."
+#define xfunexpt L"[" __FUNCTIONW__ L"]: exception."
 
 #endif  // _XLIB_XLOG_H_

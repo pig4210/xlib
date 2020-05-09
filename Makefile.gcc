@@ -26,7 +26,7 @@ vpath %.exe $(DESTPATH)
 
 ######## 格式匹配规则
 # 编译
-%.o : %.cc $(XLIB_BASE_H) | $(DESTPATH)
+%.o : %.cc | $(DESTPATH)
 	$(CC) -c $(CFLAGS) -o"$(DESTPATH)/$(@F)" "$<"
 
 

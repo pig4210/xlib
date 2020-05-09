@@ -83,12 +83,11 @@ struct HEX_VALUE_STRUCT
     std::cout << "bin2hex:" << bin2hex(string("\xAB\xCD\xEF"));   // 将输出 "abcdef" 。
   \endcode
 */
-template<typename T>
-std::string bin2hex(const T* const bin, const size_t size, const bool isup = false)
+inline std::string bin2hex(const void* const bin, const size_t size, const bool isup = false)
   {
   std::string hex;
   const BIN_VALUE_STRUCT* s = (const BIN_VALUE_STRUCT*)bin;
-  const BIN_VALUE_STRUCT* const e = (const BIN_VALUE_STRUCT*)(bin + size);
+  const BIN_VALUE_STRUCT* const e = (const BIN_VALUE_STRUCT*)((size_t)bin + size);
   const auto fmt = isup ? "0123456789ABCDEF" : "0123456789abcdef";
   for(; s < e; ++s)
     {
@@ -97,13 +96,16 @@ std::string bin2hex(const T* const bin, const size_t size, const bool isup = fal
     }
   return hex;
   }
-inline std::string bin2hex(const void* const bin, const size_t size, const bool isup = false)
+template<typename T>
+std::string bin2hex(const T* const bin, const size_t size, const bool isup = false)
   {
-  return bin2hex((const char*)bin, size, isup);
+  return bin2hex((const void*)bin, size * sizeof(T), isup);
   }
-template<typename T> std::string bin2hex(const std::basic_string<T>& bin, const bool isup = false)
+template<typename T>
+auto bin2hex(const T& bin, const bool isup = false)
+  ->std::enable_if_t<std::is_pointer<decltype(bin.data())>::value, std::string>
   {
-  return bin2hex(bin.c_str(), bin.size(), isup);
+  return bin2hex(bin.data(), bin.size(), isup);
   }
 
 /**
@@ -201,14 +203,14 @@ std::enable_if_t<std::is_integral<R>::value, R>
   return hex2value<R>((const char*)hex, size, lpreadlen, wantlen, errexit, errbreak);
   }
 template<typename R, typename T>
-std::enable_if_t<std::is_integral<R>::value, R>
-  hex2value(const std::basic_string<T>& hex,
-            size_t*                     lpreadlen = nullptr,
-            size_t                      wantlen = 0,
-            const bool                  errexit = false,
-            const bool                  errbreak = false)
+auto hex2value(const T&         hex,
+               size_t*          lpreadlen = nullptr,
+               size_t           wantlen = 0,
+               const bool       errexit = false,
+               const bool       errbreak = false)
+  ->std::enable_if_t<std::is_integral<R>::value && std::is_pointer<decltype(hex.data())>::value, R>
   {
-  return hex2value<R>(hex.c_str(), hex.size(), lpreadlen, wantlen, errexit, errbreak);
+  return hex2value<R>(hex.data(), hex.size(), lpreadlen, wantlen, errexit, errbreak);
   }
 
 /**
@@ -302,12 +304,13 @@ std::string hex2bin(const void* const   hex,
   return hex2bin((const char*)hex, size, lpreadlen, errexit, errbreak);
   }
 template<typename T>
-std::string hex2bin(const std::basic_string<T>& hex,
-                    size_t*                     lpreadlen = nullptr,
-                    const bool                  errexit = false,
-                    const bool                  errbreak = false)
+auto hex2bin(const T&   hex,
+             size_t*    lpreadlen = nullptr,
+             const bool errexit = false,
+             const bool errbreak = false)
+  ->std::enable_if_t<std::is_pointer<decltype(hex.data())>::value, std::string>
   {
-  return hex2bin(hex.c_str(), hex.size(), lpreadlen, errexit, errbreak);
+  return hex2bin(hex.data(), hex.size(), lpreadlen, errexit, errbreak);
   }
 
 /**
@@ -447,7 +450,7 @@ inline std::string escape(const void* const str, const size_t size)
 template<typename T>
 std::basic_string<T> escape(const std::basic_string<T>& str)
   {
-  return escape(str.c_str(), str.size());
+  return escape(str.data(), str.size());
   }
 
 enum ShowBinCode
@@ -646,36 +649,41 @@ std::wstring showbin(const void* const bin,
   }
 
 template<typename T>
-std::wstring showbin(const std::basic_string<T>& data,
-                     const ShowBinCode           code,
-                     const bool                  isup,
-                     const size_t                prews)
+auto showbin(const T&           data,
+             const ShowBinCode  code,
+             const bool         isup,
+             const size_t       prews)
+  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
   {
-  return showbin(data.c_str(), data.size(), code, isup, prews);
+  return showbin(data.data(), data.size(), code, isup, prews);
   }
   
 template<typename T>
-std::wstring showbin(const std::basic_string<T>& data)
+auto showbin(const T& data)
+  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
   {
-  return showbin(data.c_str(), data.size(), DefShowBinCode, true, 0);
+  return showbin(data.data(), data.size(), DefShowBinCode, true, 0);
   }
 
 template<typename T>
-std::wstring showbin(const std::basic_string<T>& data, const ShowBinCode code)
+auto showbin(const T& data, const ShowBinCode code)
+  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
   {
-  return showbin(data.c_str(), data.size(), code, true, 0);
+  return showbin(data.data(), data.size(), code, true, 0);
   }
 
 template<typename T>
-std::wstring showbin(const std::basic_string<T>& data, const bool isup)
+auto showbin(const T& data, const bool isup)
+  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
   {
-  return showbin(data.c_str(), data.size(), DefShowBinCode, true, 0);
+  return showbin(data.data(), data.size(), DefShowBinCode, true, 0);
   }
 
 template<typename T>
-std::wstring showbin(const std::basic_string<T>& data, const size_t prews) // 需要强制类型哦。
+auto showbin(const T& data, const size_t prews) // 需要强制类型哦。
+  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
   {
-  return showbin(data.c_str(), data.size(), DefShowBinCode, true, prews);
+  return showbin(data.data(), data.size(), DefShowBinCode, true, prews);
   }
 
 #endif  // _XLIB_HEXBIN_H_

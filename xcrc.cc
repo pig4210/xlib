@@ -4,22 +4,20 @@
 
 SHOW_TEST_INIT(CRC)
 
-const std::string data("1234567890");
-
 SHOW_TEST_HEAD(crc16);
-done = 0xC57A == crc16(data);
+done = 0xC57A == crc16("1234567890", 10);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(crc32);
-done = 0x261DAEE5 == crc32(data);
+done = 0x261DAEE5 == crc32(std::string("1234567890"));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(crc64);
-done = 0xB1CB31BBB4A2B2BE == crc64(data);
+done = 0xB1CB31BBB4A2B2BE == crc64("1234567890");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(crcccitt);
-done = 0xB4EC == crcccitt(data);
+done = 0x4D53 == crcccitt(std::array<char, 2>{'1', '2'});
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

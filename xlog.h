@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.1.0.191105
+  \version    2.2.0.201112
 
   \author     triones
   \date       2011-07-22
@@ -27,6 +27,7 @@
   - 2019-07-05 添加消息分段功能，以应对 DebugView 在多条消息过长时，出现卡顿。 1.1.1 。
   - 2019-09-26 重构 xlog 。去除动态控制与类型控制。 2.0 。
   - 2019-11-05 改进声明。 2.1 。
+  - 2020-11-12 适配 xmsg 升级。 2.2 。
 */
 #ifndef _XLIB_XLOG_H_
 #define _XLIB_XLOG_H_
@@ -35,14 +36,14 @@
 
 /// 允许设置 XLOGOUT 改变 xlog 默认输出行为。
 #ifndef XLOGOUT
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#define XLOGOUT(msg) OutputDebugStringW(msg);
-#else
-#include <iostream>
-#define XLOGOUT(msg) std::wcout << (msg) << std::endl;
-#endif
+  #ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #include <windows.h>
+    #define XLOGOUT(msg) OutputDebugStringA(msg);
+  #else
+    #include <iostream>
+    #define XLOGOUT(msg) std::wcout << (msg) << std::endl;
+  #endif
 #endif
 
 // 允许设置 XLOG_MAX_BYTES 用于消息过长分段输出。
@@ -85,23 +86,30 @@ class xlog : public xmsg
         return *this;
         }
       // 定宽的 UNICODE 避免多字节字符串切分出现截断现象。
-      for(size_t i = 0; i < size();)
+#if XMSG_BASE == XMSG_BASE_UTF8
+      const std::wstring buf(u82ws(*this));
+#elif XMSG_BASE == XMSG_BASE_UNICODE
+      const std::wstring buf(*this);
+#else
+      const std::wstring buf(as2ws(*this));
+#endif
+      clear();
+      for(size_t i = 0; i < buf.size();)
         {
         // 如果内部自带换行，则避免过多的切分。
-        const auto it = begin() + i;
-        const auto pos = find(L'\n', i);
+        const auto it = buf.begin() + i;
+        const auto pos = buf.find(L'\n', i);
         if((npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
           {
-          const auto xit = begin() + pos + 1;
-          XLOGOUT(std::wstring(it, xit).c_str());
+          const auto xit = buf.begin() + pos + 1;
+          XLOGOUT(xmsg_base_ws(std::wstring(it, xit)).c_str());
           i = pos + 1;
           continue;
           }
-        const auto xit = (it + (XLOG_MAX_BYTES) < end()) ? it + (XLOG_MAX_BYTES) : end();
-        XLOGOUT(std::wstring(it, xit).c_str());
+        const auto xit = (it + (XLOG_MAX_BYTES) < buf.end()) ? it + (XLOG_MAX_BYTES) : buf.end();
+        XLOGOUT(xmsg_base_ws(std::wstring(it, xit)).c_str());
         i += (XLOG_MAX_BYTES);
         }
-      clear();
       return *this;
       }
   };
@@ -150,7 +158,7 @@ class xlog : public xmsg
     xerr << xfuninfo << "这里出错";
   \endcode
 */
-#define xfuninfo L"[" __FUNCTIONW__ L"][" << __LINE__ << L"]: "
+#define xfuninfo XMSG_TEXT("[" __FUNCTIONW__ "][") << __LINE__ << XMSG_TEXT("]: ")
 /**
   便捷宏，用于便捷插入异常产生的函数。
 
@@ -158,6 +166,6 @@ class xlog : public xmsg
     xerr << xfunexpt;
   \endcode
 */
-#define xfunexpt L"[" __FUNCTIONW__ L"]: exception."
+#define xfunexpt XMSG_TEXT("[" __FUNCTION__ "]: exception.")
 
 #endif  // _XLIB_XLOG_H_

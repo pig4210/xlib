@@ -99,7 +99,7 @@
 
 /**
   xbin 用于便捷的数据组织操作。
-  \param  headtype    数据头类型， byte , word , dword , qword 。
+  \param  headtype    数据头类型， byte , word , dword , qword , void。
   \param  headself    指示数据头是否包含自身长度。
   \param  bigendian   输入输出的数据是否转换成大端序（默认小端）。
   \param  zeroend     指示处理流时是否追加处理结尾 0 。
@@ -139,7 +139,7 @@ class xbin : public std::basic_string<uint8_t>
 
       size_t len = 0;
       while(str[len]) ++len;
-      if constexpr (!std::is_void<headtype>::value) len += zeroend ? 1 : 0;
+      if constexpr (!std::is_void_v<headtype>) len += zeroend ? 1 : 0;
 
       append((xbin::const_pointer)str, len * sizeof(T));
       return *this;
@@ -153,7 +153,7 @@ class xbin : public std::basic_string<uint8_t>
       {
       if(&bin == this)  return mkhead();
 
-      if constexpr (!std::is_void<headtype>::value)
+      if constexpr (!std::is_void_v<headtype>)
         {
         const size_t nlen = bin.size() + (headself ? sizeof(headtype) : 0);
         operator<<((headtype)nlen);
@@ -181,10 +181,10 @@ class xbin : public std::basic_string<uint8_t>
       \endcode
     */
     template<typename T>
-    std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, xbin>&
+    std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, xbin>&
       operator<<(const T& argvs)
       {
-      if constexpr (!std::is_void<headtype>::value)
+      if constexpr (!std::is_void_v<headtype>)
         {
         const auto v = bigendian ? bswap(argvs) :argvs;
         append((xbin::const_pointer)&v, sizeof(v));
@@ -199,7 +199,7 @@ class xbin : public std::basic_string<uint8_t>
 
     xbin& mkhead()
       {
-      if constexpr (!std::is_void<headtype>::value)
+      if constexpr (!std::is_void_v<headtype>)
         {
         const auto nlen = size() + (headself ? sizeof(headtype) : 0);
         const auto v = (bigendian ? bswap((headtype)nlen) : (headtype)nlen);
@@ -236,7 +236,7 @@ class xbin : public std::basic_string<uint8_t>
 
       size_t strlen = 0;
       while(lpstr[strlen]) ++strlen;
-      if constexpr (!std::is_void<headtype>::value) strlen += zeroend ? 1 : 0;
+      if constexpr (!std::is_void_v<headtype>) strlen += zeroend ? 1 : 0;
       strlen *= sizeof(T);
 
 #ifndef XBIN_NOEXCEPT
@@ -262,7 +262,7 @@ class xbin : public std::basic_string<uint8_t>
     xbin& operator>>(xbin& bin)
       {
       size_t nlen;
-      if constexpr (!std::is_void<headtype>::value)
+      if constexpr (!std::is_void_v<headtype>)
         {
         headtype xlen;
         operator>>(xlen);
@@ -315,10 +315,10 @@ class xbin : public std::basic_string<uint8_t>
       \exception 数据不足时，抛出 runtime_error 异常。
     */
     template<typename T>
-    inline std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, xbin>&
+    inline std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, xbin>&
       operator>>(T& argvs)
       {
-      if constexpr (!std::is_void<headtype>::value)
+      if constexpr (!std::is_void_v<headtype>)
         {
 #ifndef XBIN_NOEXCEPT
         if(sizeof(T) > size())
@@ -356,7 +356,7 @@ class xbin : public std::basic_string<uint8_t>
     */
     template<typename T> xbin& operator>>(const T&)
       {
-      if constexpr (!std::is_void<headtype>::value)
+      if constexpr (!std::is_void_v<headtype>)
         {
 #ifndef XBIN_NOEXCEPT
         if(sizeof(T) > size())
@@ -377,9 +377,9 @@ class xbin : public std::basic_string<uint8_t>
   };
 
 /// lbin 数据头为 word ，不包含自身，小端序，不处理结尾 0 。
-typedef xbin<uint16_t, false, false, false> lbin;
+using lbin = xbin<uint16_t, false, false, false>;
 /// gbin 数据头为 word ，不包含自身，大端顺序，处理结尾 0 。
-typedef xbin<uint16_t, false, true, true>   gbin;
+using gbin = xbin<uint16_t, false, true, true>;
 /// vbin 为 varint 格式，忽略后继所有设置。
 using vbin = xbin<void, false, false, false>;
 

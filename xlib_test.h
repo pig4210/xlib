@@ -3,7 +3,6 @@
   \brief 定义了 xlib 校验环境。
 
   \version    2.0.0.190919
-  \note       Only For Ring3
 
   \author     triones
   \date       2013-03-19

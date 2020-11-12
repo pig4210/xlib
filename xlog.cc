@@ -12,7 +12,7 @@
 SHOW_TEST_INIT(XLOG)
 
 SHOW_TEST_HEAD(xlog);
-done = (xlog() << L"123") == std::wstring(L"123");
+done = (xlog() << L"123") == xmsg_base_ws(L"123");
 SHOW_TEST_RESULT;
 
 xtrace << L"xlog trace";

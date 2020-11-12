@@ -21,13 +21,13 @@
 
 #include <cstdint>
 #ifdef _WIN32
-#define bswap16   _byteswap_ushort
-#define bswap32   _byteswap_ulong
-#define bswap64   _byteswap_uint64
+#define xbswap16   _byteswap_ushort
+#define xbswap32   _byteswap_ulong
+#define xbswap64   _byteswap_uint64
 #else
-#define bswap16   __builtin_bswap16
-#define bswap32   __builtin_bswap32
-#define bswap64   __builtin_bswap64
+#define xbswap16   __builtin_bswap16
+#define xbswap32   __builtin_bswap32
+#define xbswap64   __builtin_bswap64
 #endif
 #include <algorithm>
 
@@ -63,15 +63,15 @@ template<> inline void bswap_type<1>(uint8_t*)
   }
 template<> inline void bswap_type<2>(uint8_t* mem)
   {
-  *(uint16_t*)mem = bswap16(*(const uint16_t*)mem);
+  *(uint16_t*)mem = xbswap16(*(const uint16_t*)mem);
   }
 template<> inline void bswap_type<4>(uint8_t* mem)
   {
-  *(uint32_t*)mem = bswap32(*(const uint32_t*)mem);
+  *(uint32_t*)mem = xbswap32(*(const uint32_t*)mem);
   }
 template<> inline void bswap_type<8>(uint8_t* mem)
   {
-  *(uint64_t*)mem = bswap64(*(const uint64_t*)mem);
+  *(uint64_t*)mem = xbswap64(*(const uint64_t*)mem);
   }
 
 /**
@@ -84,9 +84,8 @@ template<> inline void bswap_type<8>(uint8_t* mem)
     bswap((short)0x1234) == 0x3412;
   \endcode
 */
-template<typename T>
-inline std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value, T>
-  bswap(const T& values)
+template<typename T> inline
+std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, T> bswap(const T& values)
   {
   T v = values;
   bswap_type<sizeof(T)>((uint8_t*)&v);

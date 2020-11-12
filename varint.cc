@@ -35,8 +35,7 @@ done = 12345678 == varint<int32_t>("\x9C\x85\xE3\x0B");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(varint T* unsigned);
-constexpr auto uv = varint<uint32_t>("\xA1\x86\x95\xBB\x08");
-done = 0x87654321 == uv;
+done = 0x87654321 == varint<uint32_t>("\xA1\x86\x95\xBB\x08");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

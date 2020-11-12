@@ -2,7 +2,7 @@
   \file  hex_bin.h
   \brief 定义了 hex 与 bin 的转换操作。
 
-  \version    3.0.0.200313
+  \version    3.1.0.201112
   \note       For All
 
   \author     triones
@@ -40,6 +40,7 @@
   - 2019-10-14 重构。 2.0 。
   - 2019-11-06 改进定义。 2.1 。
   - 2020-03-13 改进 showbin 返回 wstring 。 3.0 。
+  - 2020-11-12 改进 showbin 返回 xmsg 。 3.1 。
 */
 #ifndef _XLIB_HEXBIN_H_
 #define _XLIB_HEXBIN_H_
@@ -48,7 +49,7 @@
 #include <string>
 
 #include "xswap.h"
-#include "as_ws_u8.h"
+#include "xmsg.h"
 
 /**
   十六进制值的结构体。主要体现 BYTE 与十六进制字符间的关系。
@@ -103,7 +104,7 @@ std::string bin2hex(const T* const bin, const size_t size, const bool isup = fal
   }
 template<typename T>
 auto bin2hex(const T& bin, const bool isup = false)
-  ->std::enable_if_t<std::is_pointer<decltype(bin.data())>::value, std::string>
+  ->std::enable_if_t<std::is_pointer_v<decltype(bin.data())>, std::string>
   {
   return bin2hex(bin.data(), bin.size(), isup);
   }
@@ -136,13 +137,13 @@ auto bin2hex(const T& bin, const bool isup = false)
   \endcode
 */
 template<typename R, typename T>
-std::enable_if_t<std::is_integral<R>::value, R>
-  hex2value(const T* const  hex,
-            const size_t    size,
-            size_t*         lpreadlen = nullptr,
-            size_t          wantlen = 0,
-            const bool      errexit = false,
-            const bool      errbreak = false)
+std::enable_if_t<std::is_integral_v<R>, R> hex2value(
+  const T* const  hex,
+  const size_t    size,
+  size_t*         lpreadlen = nullptr,
+  size_t          wantlen = 0,
+  const bool      errexit = false,
+  const bool      errbreak = false)
   {
   R values = 0;
   size_t readlen = 0;
@@ -192,23 +193,23 @@ std::enable_if_t<std::is_integral<R>::value, R>
   }
 
 template<typename R>
-std::enable_if_t<std::is_integral<R>::value, R>
-  hex2value(const void* const   hex,
-            const size_t        size,
-            size_t*             lpreadlen = nullptr,
-            size_t              wantlen = 0,
-            const bool          errexit = false,
-            const bool          errbreak = false)
+std::enable_if_t<std::is_integral_v<R>, R> hex2value(
+  const void* const   hex,
+  const size_t        size,
+  size_t*             lpreadlen = nullptr,
+  size_t              wantlen = 0,
+  const bool          errexit = false,
+  const bool          errbreak = false)
   {
   return hex2value<R>((const char*)hex, size, lpreadlen, wantlen, errexit, errbreak);
   }
-template<typename R, typename T>
-auto hex2value(const T&         hex,
-               size_t*          lpreadlen = nullptr,
-               size_t           wantlen = 0,
-               const bool       errexit = false,
-               const bool       errbreak = false)
-  ->std::enable_if_t<std::is_integral<R>::value && std::is_pointer<decltype(hex.data())>::value, R>
+template<typename R, typename T> auto hex2value(
+  const T&         hex,
+  size_t*          lpreadlen = nullptr,
+  size_t           wantlen = 0,
+  const bool       errexit = false,
+  const bool       errbreak = false)
+  ->std::enable_if_t<std::is_integral_v<R> && std::is_pointer_v<decltype(hex.data())>, R>
   {
   return hex2value<R>(hex.data(), hex.size(), lpreadlen, wantlen, errexit, errbreak);
   }
@@ -228,12 +229,12 @@ auto hex2value(const T&         hex,
   \return           成功转换则为 HEX 串对应的 BIN 数据。\n
                     判定转换失败，应该通过 lpreadlen 的返回结果判定。
 */
-template<typename T>
-std::string hex2bin(const T* const  hex,
-                    const size_t    size,
-                    size_t*         lpreadlen = nullptr,
-                    const bool      errexit = false,
-                    const bool      errbreak = false)
+template<typename T> std::string hex2bin(
+  const T* const  hex,
+  const size_t    size,
+  size_t*         lpreadlen   = nullptr,
+  const bool      errexit     = false,
+  const bool      errbreak    = false)
   {
   std::string rets;
 
@@ -294,21 +295,21 @@ std::string hex2bin(const T* const  hex,
 
   return rets;
   }
-template<typename T>
-std::string hex2bin(const void* const   hex,
-                    const size_t        size,
-                    size_t*             lpreadlen = nullptr,
-                    const bool          errexit = false,
-                    const bool          errbreak = false)
+inline std::string hex2bin(
+  const void* const   hex,
+  const size_t        size,
+  size_t*             lpreadlen = nullptr,
+  const bool          errexit   = false,
+  const bool          errbreak  = false)
   {
   return hex2bin((const char*)hex, size, lpreadlen, errexit, errbreak);
   }
-template<typename T>
-auto hex2bin(const T&   hex,
-             size_t*    lpreadlen = nullptr,
-             const bool errexit = false,
-             const bool errbreak = false)
-  ->std::enable_if_t<std::is_pointer<decltype(hex.data())>::value, std::string>
+template<typename T> auto hex2bin(
+  const T&   hex,
+  size_t*    lpreadlen  = nullptr,
+  const bool errexit    = false,
+  const bool errbreak   = false)
+  ->std::enable_if_t<std::is_pointer_v<decltype(hex.data())>, std::string>
   {
   return hex2bin(hex.data(), hex.size(), lpreadlen, errexit, errbreak);
   }
@@ -324,8 +325,7 @@ auto hex2bin(const T&   hex,
   \param    size    源字符串大小（以字类型大小计）。
   \return           返回转换后的字符串。
 */
-template<typename T>
-std::basic_string<T> escape(const T* const str, const size_t size)
+template<typename T> std::basic_string<T> escape(const T* const str, const size_t size)
   {
   const T* s = str;
   const T* const e = s + size;
@@ -447,8 +447,7 @@ inline std::string escape(const void* const str, const size_t size)
   {
   return escape((std::string::const_pointer)str, size);
   }
-template<typename T>
-std::basic_string<T> escape(const std::basic_string<T>& str)
+template<typename T> std::basic_string<T> escape(const std::basic_string<T>& str)
   {
   return escape(str.data(), str.size());
   }
@@ -483,15 +482,15 @@ constexpr ShowBinCode DefShowBinCode = LocaleCheck() ? SBC_ANSI : SBC_UTF8;
     // 0012FF64┃68 63 66 00|           |           |           ┃hcf.
   \endcode
 */
-template<typename T>
-std::wstring showbin(const T* const    bin,
-                     const size_t      len,
-                     const ShowBinCode code  = DefShowBinCode,
-                     const bool        isup  = true,
-                     const size_t      prews = 0)
+template<typename T> xmsg showbin(
+  const T* const    bin,
+  const size_t      len,
+  const ShowBinCode code  = DefShowBinCode,
+  const bool        isup  = true,
+  const size_t      prews = 0)
   {
-  std::wstring ret;
-  const auto fmt = isup ? L"0123456789ABCDEF" : L"0123456789abcdef";
+  xmsg ret;
+  const auto fmt = isup ? XMSG_TEXT("0123456789ABCDEF") : XMSG_TEXT("0123456789abcdef");
 
   size_t used = 0;
   const uint8_t* data = (const uint8_t*)bin;
@@ -503,10 +502,10 @@ std::wstring showbin(const T* const    bin,
   // 输出 前缀格式化数据。
   auto prefix = [&]
     {
-    ret.append(prews, L' ');  // 空格前缀。
+    ret.append(prews, XMSG_TEXT(' '));  // 空格前缀。
     const auto p = bswap((size_t)data);
-    ret.append(as2ws(bin2hex(&p, 1)));  // 地址前缀。
-    ret.append(L" |");
+    ret << bin2hex(&p, 1);  // 地址前缀。
+    ret.append(XMSG_TEXT(" |"));
     
     for(size_t i = 0; i < k_max_line_byte; ++i)
       {
@@ -517,67 +516,69 @@ std::wstring showbin(const T* const    bin,
         }
       else            // 无数据补齐。
         {
-        ret.append(L"  ");
+        ret.append(XMSG_TEXT("  "));
         }
       switch(i)
         {
         case 3:  case 7:  case 11:
-          ret.push_back(L'|'); break;
+          ret.push_back(XMSG_TEXT('|')); break;
         case 15:
-          ret.append(L"| "); break;
+          ret.append(XMSG_TEXT("| ")); break;
         default:
-          ret.push_back(L' ');
+          ret.push_back(XMSG_TEXT(' '));
         }
       }
     };
 
   // 使 UNICODE 字符输出可视化，返回 true 表示接受字符，否则不接受，一律输出 '.' 。
-  auto check_unicode_visualization = [](const wchar_t wc) -> std::wstring
+  auto check_unicode_visualization = [](const wchar_t wc)
     {
     // 控制字符一律输出 '.' 。
     if(wc < L' ' || (wc >= 0x7F && wc <= 0xA0))
       {
-      return L".";
+      return std::wstring(L".");
       }
 
     // 尝试转换 可视化。
     const auto ch(std::wstring(1, wc));
+    size_t read;
     if constexpr (LocaleCheck())
       {
-      return ws2as(ch).empty() ? std::wstring() : ch;
+      return ws2as(ch, &read).empty() ? std::wstring() : ch;
       }
     else
       {
-      return ws2u8(ch).empty() ? std::wstring() : ch;
+      return ws2u8(ch, &read).empty() ? std::wstring() : ch;
       }
     };
 
   using checkfunc = std::wstring (*)(const wchar_t);
-  using fixfunc = std::wstring (*)(const void* const data, size_t& used, const size_t size, checkfunc check);
+  using fixfunc = xmsg (*)(const void* const data, size_t& used, const size_t size, checkfunc check);
   
-  fixfunc fix_unicode = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::wstring
+  fixfunc fix_unicode = [](const void* const data, size_t& used, const size_t size, checkfunc check)
     {
     // 无法进行向后匹配完整字符。
     if((used + sizeof(wchar_t)) > size)
       {
-      return L"";
+      return xmsg();
       }
 
     const auto ws = check(*(wchar_t*)((const uint8_t*)data + used));
 
-    if(ws.empty())  return ws;
+    if(ws.empty())  return xmsg();
 
     used += sizeof(wchar_t);
-    return ws;
+    return xmsg(ws);
     };
   
-  fixfunc fix_ansi = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::wstring
+  fixfunc fix_ansi = [](const void* const data, size_t& used, const size_t size, checkfunc check)
     {
     for(size_t i = 1; i <= 2; ++i)
       {
       // 无法进行向后匹配完整字符。
       if(used + i > size) break;
-      const auto ws = as2ws(std::string((const char*)data + used, i));
+      size_t read;
+      const auto ws = as2ws(std::string((const char*)data + used, i), &read);
       // 转换失败，尝试扩展匹配。
       if(ws.empty()) continue;
 
@@ -585,27 +586,28 @@ std::wstring showbin(const T* const    bin,
       // 可视化失败，返回。
       if(s.empty())  break;
       used += i;
-      return s;
+      return xmsg(s);
       }
-    return L"";
+    return xmsg();
     };
 
-  auto fix_utf8 = [](const void* const data, size_t& used, const size_t size, checkfunc check) -> std::wstring
+  auto fix_utf8 = [](const void* const data, size_t& used, const size_t size, checkfunc check)
     {
     for(size_t i = 1; i <= 6; ++i)
       {
       // 无法进行向后匹配完整字符。
       if(used + i > size) break;
-      const auto ws = u82ws(std::u8string((const char8_t*)data + used, i));
+      size_t read;
+      const auto ws = u82ws(std::u8string((const char8_t*)data + used, i), &read);
       // 转换失败，尝试扩展匹配。
       if(ws.empty()) continue;
       const auto s = check(*ws.begin());
       // 可视化失败，返回。
       if(s.empty())  break;
       used += i;
-      return s;
+      return xmsg(s);
       }
-    return L"";
+    return xmsg();
     };
   
   fixfunc fix = (SBC_UNICODE == code) ? fix_unicode : ((SBC_UTF8 == code) ? fix_utf8 : fix_ansi );
@@ -617,20 +619,20 @@ std::wstring showbin(const T* const    bin,
 
     while(used < fix_len)
       {
-      const auto ws = fix(data, used, size, check_unicode_visualization);
-      if(ws.empty())
+      const auto s = fix(data, used, size, check_unicode_visualization);
+      if(s.empty())
         {
         used += sizeof(char);
-        ret.push_back(L'.');
+        ret.push_back(XMSG_TEXT('.'));
         }
       else
         {
-        ret.append(ws);
+        ret.append(s);
         }
       }
     used -= fix_len;
-    ret.push_back(L'\r');
-    ret.push_back(L'\n');
+    ret.push_back(XMSG_TEXT('\r'));
+    ret.push_back(XMSG_TEXT('\n'));
 
     data += k_max_line_byte;
     size -= fix_len;
@@ -638,50 +640,46 @@ std::wstring showbin(const T* const    bin,
   return ret;
   }
 
-inline
-std::wstring showbin(const void* const bin,
-                     const size_t      len,
-                     const ShowBinCode code  = DefShowBinCode,
-                     const bool        isup  = true,
-                     const size_t      prews = 0)
+inline auto showbin(
+  const void* const bin,
+  const size_t      len,
+  const ShowBinCode code  = DefShowBinCode,
+  const bool        isup  = true,
+  const size_t      prews = 0)
   {
   return showbin((const char*)bin, len, code, isup, prews);
   }
 
-template<typename T>
-auto showbin(const T&           data,
-             const ShowBinCode  code,
-             const bool         isup,
-             const size_t       prews)
-  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
+template<typename T> auto showbin(
+  const T&           data,
+  const ShowBinCode  code,
+  const bool         isup,
+  const size_t       prews)
+  ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
   return showbin(data.data(), data.size(), code, isup, prews);
   }
   
-template<typename T>
-auto showbin(const T& data)
-  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
+template<typename T> auto showbin(const T& data)
+  ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
   return showbin(data.data(), data.size(), DefShowBinCode, true, 0);
   }
 
-template<typename T>
-auto showbin(const T& data, const ShowBinCode code)
-  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
+template<typename T> auto showbin(const T& data, const ShowBinCode code)
+  ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
   return showbin(data.data(), data.size(), code, true, 0);
   }
 
-template<typename T>
-auto showbin(const T& data, const bool isup)
-  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
+template<typename T> auto showbin(const T& data, const bool isup)
+  ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
   return showbin(data.data(), data.size(), DefShowBinCode, true, 0);
   }
 
-template<typename T>
-auto showbin(const T& data, const size_t prews) // 需要强制类型哦。
-  ->std::enable_if_t<std::is_pointer<decltype(data.data())>::value, std::wstring>
+template<typename T> auto showbin(const T& data, const size_t prews) // 需要强制类型哦。
+  ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
   return showbin(data.data(), data.size(), DefShowBinCode, true, prews);
   }

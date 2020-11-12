@@ -24,12 +24,12 @@
 #include <array>
 
 template<typename T> constexpr
-std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value,
-typename std::make_unsigned<T>::type> inline zig(const T& value)
+std::enable_if_t<std::is_integral_v<T>, typename std::make_unsigned_t<T>>
+inline zig(const T& value)
   {
-  using U = typename std::make_unsigned<T>::type;
+  using U = typename std::make_unsigned_t<T>;
   // 无符号值或枚举值，不转换。
-  if constexpr (std::is_unsigned<T>::value)
+  if constexpr (std::is_unsigned_v<T>)
     {
     return (U)value;
     }
@@ -42,12 +42,12 @@ typename std::make_unsigned<T>::type> inline zig(const T& value)
   }
 
 template<typename T> constexpr
-std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value,
-typename std::make_signed<T>::type> inline zag(const T& value)
+std::enable_if_t<std::is_integral_v<T>, typename std::make_signed_t<T>>
+inline zag(const T& value)
   {
-  using S = typename std::make_signed<T>::type;
+  using S = typename std::make_signed_t<T>;
   // 有符号值，不转换。
-  if constexpr (std::is_signed<T>::value)
+  if constexpr (std::is_signed_v<T>)
     {
     return (S)value;
     }
@@ -59,14 +59,15 @@ typename std::make_signed<T>::type> inline zag(const T& value)
     }
   }
 
-template<typename T, std::enable_if_t<std::is_signed<T>::value || std::is_unsigned<T>::value, int> = 0>
+template<typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
 class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
   {
   private:
     T _value;
   public:
-    constexpr varint(const T& value):_value(value)
+    constexpr varint(const T& value):_value(value), std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>()
       {
+      // g++ 这里有 will be initialized after 警告，可忽略。
       auto v = zig(value);
       for(auto& pv : *this)
         {
@@ -101,7 +102,7 @@ class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
       }
     constexpr varint(const char* p):_value(0)
       {
-      using U = typename std::make_unsigned<T>::type;
+      using U = typename std::make_unsigned_t<T>;
       U v = 0;
       size_t count = 0;
       for(auto& pv : *this)
@@ -111,7 +112,7 @@ class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
         ++count;
         if(0 == (pv & 0x80))
           {
-          _value = (std::is_signed<T>::value) ? (T)zag((U)v) : (T)v;
+          _value = (std::is_signed_v<T>) ? (T)zag((U)v) : (T)v;
           break;
           }
         }

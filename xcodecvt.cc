@@ -1,8 +1,8 @@
-﻿#include "as_ws_u8.h"
+﻿#include "xcodecvt.h"
 
 #include "xlib_test.h"
 
-SHOW_TEST_INIT(AS_WS_U8)
+SHOW_TEST_INIT(XCODECVT)
 
 // 测试字符串："AA转换测试BB\0CC" 。 g++ 默认编码 UTF8 ，为了通用， ASCII 书写使用硬编码。
 // 特意加上 0 编码用于完整转换测试。

@@ -79,16 +79,16 @@ T XCRC(const void* const data, const size_t size)
     auto x = crc("12");
   \endcode
 */
-#define CRCX(NAME, TT, NN, VV, RR) \
-inline auto NAME(const void* const data, const size_t size) \
+#define CRCX(FUNC, TT, NN, VV, RR) \
+inline auto FUNC(const void* const data, const size_t size) \
   { return XCRC<TT, NN, VV, RR>(data, size); } \
-template<typename T> auto NAME(const T* const data, const size_t size) \
-  { return NAME((const void*)data, size * sizeof(T)); } \
-template<typename T> auto NAME(const T& o) \
-  ->std::enable_if_t<std::is_pointer<decltype(o.data())>::value, TT> \
-  { return NAME(o.data(), o.size()); } \
-template<typename T, size_t size> auto NAME(T const(&data)[size]) \
-  { return NAME(data, size - 1); }
+template<typename T> auto FUNC(const T* const data, const size_t size) \
+  { return FUNC((const void*)data, size * sizeof(T)); } \
+template<typename T> auto FUNC(const T& o) \
+  ->std::enable_if_t<std::is_pointer_v<decltype(o.data())>, TT> \
+  { return FUNC(o.data(), o.size()); } \
+template<typename T, size_t size> auto FUNC(T const(&data)[size]) \
+  { return FUNC(data, size - 1); }
 
 CRCX(crc16,     uint16_t, 0xA001, 0, false);
 CRCX(crc32,     uint32_t, 0xEDB88320, 0xFFFFFFFF, true);

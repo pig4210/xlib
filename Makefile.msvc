@@ -28,14 +28,11 @@ CFLAGS      = /c /MP /GS- /Qpar /GL /analyze- /W4 /Gy /Zc:wchar_t /Zi /Gm- /Ox /
 CFLAGS      += /I"$(SRCPATH)"
 CFLAGS      += /Fd"$(DESTPATH)/"
 
-CFLAGS      += $(MyCFLAGS)
-
 ifeq "$(Platform)" "x86"
 CFLAGS      += /D_USING_V110_SDK71_
-CFLAGS_RING0 := /D_X86_ /DFOR_RING0
-else
-CFLAGS_RING0 := /D_AMD64_ /DFOR_RING0
 endif
+
+CFLAGS      += $(MyCFLAGS)
 
 ######## LDFLAGS
 LDFLAGS     = /MANIFEST:NO /LTCG /NXCOMPAT /DYNAMICBASE "kernel32.lib" "user32.lib" "gdi32.lib" "winspool.lib" "comdlg32.lib" "advapi32.lib" "shell32.lib" "ole32.lib" "oleaut32.lib" "uuid.lib" "odbc32.lib" "odbccp32.lib" /OPT:REF /INCREMENTAL:NO /OPT:ICF /ERRORREPORT:NONE /NOLOGO /MACHINE:$(Platform) /DEBUG:FULL
@@ -48,7 +45,6 @@ else
 LDFLAGS_CONSOLE := /SUBSYSTEM:CONSOLE
 LDFLAGS_WINDOWS := /SUBSYSTEM:WINDOWS
 endif
-
 
 # 源文件搜索路径
 vpath %.cc  $(SRCPATH)

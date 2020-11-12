@@ -464,7 +464,30 @@ constexpr bool LocaleCheck()
   return (uint8_t)*u8"文" != (uint8_t)*"文";
   }
 
-constexpr ShowBinCode DefShowBinCode = LocaleCheck() ? SBC_ANSI : SBC_UTF8;
+template<typename T> constexpr ShowBinCode inline CheckBinCode()
+  {
+  if constexpr (std::is_same_v<T, char>)
+    {
+    return SBC_ANSI;
+    }
+  if constexpr (std::is_same_v<T, wchar_t>)
+    {
+    return SBC_UNICODE;
+    }
+  if constexpr (std::is_same_v<T, char8_t>)
+    {
+    return SBC_UTF8;
+    }
+  if constexpr (std::is_class_v<T>)
+    {
+    return CheckBinCode<typename T::value_type>();
+    }
+  else
+    {
+    return LocaleCheck() ? SBC_ANSI : SBC_UTF8;
+    }
+  }
+
 
 /**
   指定 BIN 串，格式化显示。
@@ -485,7 +508,7 @@ constexpr ShowBinCode DefShowBinCode = LocaleCheck() ? SBC_ANSI : SBC_UTF8;
 template<typename T> xmsg showbin(
   const T* const    bin,
   const size_t      len,
-  const ShowBinCode code  = DefShowBinCode,
+  const ShowBinCode code  = CheckBinCode<T>(),
   const bool        isup  = true,
   const size_t      prews = 0)
   {
@@ -643,7 +666,7 @@ template<typename T> xmsg showbin(
 inline auto showbin(
   const void* const bin,
   const size_t      len,
-  const ShowBinCode code  = DefShowBinCode,
+  const ShowBinCode code  = CheckBinCode<void>(),
   const bool        isup  = true,
   const size_t      prews = 0)
   {
@@ -663,7 +686,7 @@ template<typename T> auto showbin(
 template<typename T> auto showbin(const T& data)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), DefShowBinCode, true, 0);
+  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, 0);
   }
 
 template<typename T> auto showbin(const T& data, const ShowBinCode code)
@@ -675,13 +698,13 @@ template<typename T> auto showbin(const T& data, const ShowBinCode code)
 template<typename T> auto showbin(const T& data, const bool isup)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), DefShowBinCode, true, 0);
+  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, 0);
   }
 
 template<typename T> auto showbin(const T& data, const size_t prews) // 需要强制类型哦。
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), DefShowBinCode, true, prews);
+  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, prews);
   }
 
 #endif  // _XLIB_HEXBIN_H_

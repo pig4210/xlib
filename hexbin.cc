@@ -57,7 +57,7 @@ const auto asshowbin =
     << L" |48 49 4A 4B|4C 4D 4E 4F|50 51 52 53|54 55 56 D7| HIJKLMNOPQRSTUV转\r\n"
     << bin2hex(&lpas1, 1)
     << L" |AA BB BB B2|E2 CA D4 42|42 00 43 43|           | 换测试BB.CC\r\n";
-done = asshowbin == showbin(as, SBC_ANSI);
+done = asshowbin == showbin(as);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(showbin u8);
@@ -70,7 +70,7 @@ const auto usshowbin =
     << L" |48 49 4A 4B|4C 4D 4E 4F|50 51 52 53|54 55 56 E8| HIJKLMNOPQRSTUV转\r\n"
     << bin2hex(&lpus1, 1)
     << L" |BD AC E6 8D|A2 E6 B5 8B|E8 AF 95 42|42 00 43 43| 换测试BB.CC\r\n";
-done = usshowbin == showbin(us, SBC_UTF8);
+done = usshowbin == showbin(us);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(showbin ws);
@@ -100,7 +100,7 @@ const auto wsshowbin =
     << bin2hex(&lpws1, 1)
     << L" |62 63 00 00|4B 6D 00 00|D5 8B 00 00|00 00 00 00| 换测试.\r\n";
 #endif
-done = wsshowbin == showbin(ws, SBC_UNICODE);
+done = wsshowbin == showbin(ws);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

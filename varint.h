@@ -62,10 +62,12 @@ inline zag(const T& value)
 template<typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
 class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
   {
+  public:
+    using base = std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>;
   private:
     T _value;
   public:
-    constexpr varint(const T& value):_value(value), std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>()
+    constexpr varint(const T& value) : std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>(), _value(value)
       {
       // g++ 这里有 will be initialized after 警告，可忽略。
       auto v = zig(value);
@@ -80,6 +82,10 @@ class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
           }
         pv = vv | 0x80;
         }
+      }
+    constexpr uint8_t* data() const noexcept
+      {
+      return (uint8_t*)base::data();
       }
     constexpr size_t size() const noexcept
       {

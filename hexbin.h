@@ -2,7 +2,7 @@
   \file  hex_bin.h
   \brief 定义了 hex 与 bin 的转换操作。
 
-  \version    3.1.0.201112
+  \version    3.2.0.210620
   \note       For All
 
   \author     triones
@@ -41,6 +41,7 @@
   - 2019-11-06 改进定义。 2.1 。
   - 2020-03-13 改进 showbin 返回 wstring 。 3.0 。
   - 2020-11-12 改进 showbin 返回 xmsg 。 3.1 。
+  - 2021-06-20 改进 showbin 的前缀类型。 3.2 。
 */
 #ifndef _XLIB_HEXBIN_H_
 #define _XLIB_HEXBIN_H_
@@ -510,10 +511,10 @@ template<typename T> xmsg showbin(
   const size_t      len,
   const ShowBinCode code  = CheckBinCode<T>(),
   const bool        isup  = true,
-  const size_t      prews = 0)
+  const xmsg&       prews = xmsg())
   {
   xmsg ret;
-  const auto fmt = isup ? XMSG_TEXT("0123456789ABCDEF") : XMSG_TEXT("0123456789abcdef");
+  const auto fmt = isup ? u8"0123456789ABCDEF" : u8"0123456789abcdef";
 
   size_t used = 0;
   const uint8_t* data = (const uint8_t*)bin;
@@ -525,10 +526,10 @@ template<typename T> xmsg showbin(
   // 输出 前缀格式化数据。
   auto prefix = [&]
     {
-    ret.append(prews, XMSG_TEXT(' '));  // 空格前缀。
+    ret.append(prews);      // 前缀。
     const auto p = bswap((size_t)data);
     ret << bin2hex(&p, 1);  // 地址前缀。
-    ret.append(XMSG_TEXT(" |"));
+    ret.append(u8" |");
     
     for(size_t i = 0; i < k_max_line_byte; ++i)
       {
@@ -539,16 +540,16 @@ template<typename T> xmsg showbin(
         }
       else            // 无数据补齐。
         {
-        ret.append(XMSG_TEXT("  "));
+        ret.append(u8"  ");
         }
       switch(i)
         {
         case 3:  case 7:  case 11:
-          ret.push_back(XMSG_TEXT('|')); break;
+          ret.push_back(u8'|'); break;
         case 15:
-          ret.append(XMSG_TEXT("| ")); break;
+          ret.append(u8"| "); break;
         default:
-          ret.push_back(XMSG_TEXT(' '));
+          ret.push_back(u8' ');
         }
       }
     };
@@ -646,7 +647,7 @@ template<typename T> xmsg showbin(
       if(s.empty())
         {
         used += sizeof(char);
-        ret.push_back(XMSG_TEXT('.'));
+        ret.push_back(u8'.');
         }
       else
         {
@@ -654,8 +655,8 @@ template<typename T> xmsg showbin(
         }
       }
     used -= fix_len;
-    ret.push_back(XMSG_TEXT('\r'));
-    ret.push_back(XMSG_TEXT('\n'));
+    ret.push_back(u8'\r');
+    ret.push_back(u8'\n');
 
     data += k_max_line_byte;
     size -= fix_len;
@@ -668,7 +669,7 @@ inline auto showbin(
   const size_t      len,
   const ShowBinCode code  = CheckBinCode<void>(),
   const bool        isup  = true,
-  const size_t      prews = 0)
+  const xmsg&       prews = xmsg())
   {
   return showbin((const char*)bin, len, code, isup, prews);
   }
@@ -677,7 +678,7 @@ template<typename T> auto showbin(
   const T&           data,
   const ShowBinCode  code,
   const bool         isup,
-  const size_t       prews)
+  const xmsg&        prews)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
   return showbin(data.data(), data.size(), code, isup, prews);
@@ -686,7 +687,7 @@ template<typename T> auto showbin(
 template<typename T> auto showbin(const T& data)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, 0);
+  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, xmsg());
   }
 
 template<typename T> auto showbin(const T& data, const ShowBinCode code)
@@ -701,7 +702,7 @@ template<typename T> auto showbin(const T& data, const bool isup)
   return showbin(data.data(), data.size(), CheckBinCode<T>(), true, 0);
   }
 
-template<typename T> auto showbin(const T& data, const size_t prews) // 需要强制类型哦。
+template<typename T> auto showbin(const T& data, const xmsg& prews)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
   return showbin(data.data(), data.size(), CheckBinCode<T>(), true, prews);

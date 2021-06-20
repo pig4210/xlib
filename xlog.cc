@@ -1,5 +1,6 @@
-﻿#define XLOGOUT(msg) (nullptr == msg);
+﻿#define XLOGOUT
 #define XLOG_MAX_BYTES 200
+
 #include "xlog.h"
 
 #undef xlog_static_lvl
@@ -9,10 +10,14 @@
 
 #include "xlib_test.h"
 
+void XLogout(const xmsg&)
+  {
+  }
+
 SHOW_TEST_INIT(XLOG)
 
 SHOW_TEST_HEAD(xlog);
-done = (xlog() << L"123") == xmsg_base_ws(L"123");
+done = (xlog() << L"123") == xmsg(L"123");
 SHOW_TEST_RESULT;
 
 xtrace << L"xlog trace";

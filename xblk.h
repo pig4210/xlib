@@ -2,7 +2,7 @@
   \file  xblk.h
   \brief 定义了内存块比对操作的类。
 
-  \version    2.0.0.190920
+  \version    2.0.1.210620
 
   \author     triones
   \date       2012-09-12
@@ -52,7 +52,7 @@ class xblk
       xblk(a, a + diff)
       {
       }
-    constexpr xblk(const void* const a, const intptr_t diff):
+    constexpr xblk(const void* const a, const intptr_t diff = 1):
       xblk((const char*)a, (const char*)a + diff)
       {
       }
@@ -78,6 +78,10 @@ class xblk
       return checkin(xblk(a, b));
       }
     template<typename T> constexpr PosDcrpt checkin(const T* const a, const intptr_t diff = 1) const
+      {
+      return checkin(xblk(a, diff));
+      }
+    constexpr PosDcrpt checkin(const void* const a, const intptr_t diff = 1) const
       {
       return checkin(xblk(a, diff));
       }

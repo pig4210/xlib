@@ -2,7 +2,7 @@
   \file  xrand.h
   \brief 定义了随机数的生成模板。（随机平均率无法保证、刻意忽略非线程安全。）
 
-  \version    3.0.0.190929
+  \version    3.0.1.210620
 
   \author     triones
   \date       2013-01-08
@@ -15,6 +15,7 @@
   - 2016-11-14 适配 Linux g++ 。 1.2 。
   - 2019-09-20 重构 xrand 。允许 x86 下获取 64 bit 随机值。 2.0 。
   - 2019-09-29 再次重构 xrand 。放弃单例。 3.0 。
+  - 2021-06-20 VS2019 支持 bit 库，引入改造之。
 */
 #ifndef _XLIB_XRAND_H_
 #define _XLIB_XRAND_H_
@@ -27,6 +28,7 @@
 
 #include <climits>
 #include <cstdint>
+#include <bit>
 
 /**
   用于生成随机数
@@ -42,11 +44,7 @@ inline uint64_t xrand(const uint64_t mod = 0)
   static auto seed = __rdtsc();   // 经验证 seed 全局唯一。
   const auto r = __rdtsc();
   const int l = r % (CHAR_BIT * sizeof(size_t));
-  // x86 下的 _lrotr 行为一致。
-  // x64 下的 _lrotr ， windows 使用 32 bit ， linux 使用 64 bit 。
-  // x64 下的 unsigned long ， windows 使用 32 bit ， linux 使用 64 bit 。
-  // VS2019 尚不支持 标准库 bit 。故采用此做法。
-  seed += (r << (sizeof(uint32_t) * CHAR_BIT)) + _lrotr((unsigned long)r, l);
+  seed += std::rotr(r, l);
   return (0 != mod) ? (seed % mod) : (seed);
   }
 

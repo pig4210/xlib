@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.2.0.201112
+  \version    2.2.1.210620
 
   \author     triones
   \date       2011-07-22
@@ -34,15 +34,23 @@
 
 #include "xmsg.h"
 
+void XLogout(const xmsg& msg);
+
 /// 允许设置 XLOGOUT 改变 xlog 默认输出行为。
 #ifndef XLOGOUT
   #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
     #include <windows.h>
-    #define XLOGOUT(msg) OutputDebugStringA(msg);
+    inline void XLogout(const xmsg& msg)
+      {
+      OutputDebugStringA(msg.toas().c_str());
+      }
   #else
     #include <iostream>
-    #define XLOGOUT(msg) std::wcout << (msg) << std::endl;
+    inline void XLogout(const xmsg& msg)
+      {
+      std::wcout << msg.tows() << std::endl;
+      }
   #endif
 #endif
 
@@ -81,18 +89,12 @@ class xlog : public xmsg
       if(empty())  return *this;
       if constexpr (0 == XLOG_MAX_BYTES)
         {
-        XLOGOUT(c_str());
+        XLogout(*this);
         clear();
         return *this;
         }
       // 定宽的 UNICODE 避免多字节字符串切分出现截断现象。
-#if XMSG_BASE == XMSG_BASE_UTF8
-      const std::wstring buf(u82ws(*this));
-#elif XMSG_BASE == XMSG_BASE_UNICODE
-      const std::wstring buf(*this);
-#else
-      const std::wstring buf(as2ws(*this));
-#endif
+      const std::wstring buf(tows());
       clear();
       for(size_t i = 0; i < buf.size();)
         {
@@ -102,12 +104,12 @@ class xlog : public xmsg
         if((npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
           {
           const auto xit = buf.begin() + pos + 1;
-          XLOGOUT(xmsg_base_ws(std::wstring(it, xit)).c_str());
+          XLogout(std::wstring(it, xit));
           i = pos + 1;
           continue;
           }
         const auto xit = (it + (XLOG_MAX_BYTES) < buf.end()) ? it + (XLOG_MAX_BYTES) : buf.end();
-        XLOGOUT(xmsg_base_ws(std::wstring(it, xit)).c_str());
+        XLogout(std::wstring(it, xit));
         i += (XLOG_MAX_BYTES);
         }
       return *this;
@@ -158,7 +160,7 @@ class xlog : public xmsg
     xerr << xfuninfo << "这里出错";
   \endcode
 */
-#define xfuninfo XMSG_TEXT("[" __FUNCTIONW__ "][") << __LINE__ << XMSG_TEXT("]: ")
+#define xfuninfo u8"[" << __FUNCTION__ << u8"][" << __LINE__ << u8"]: "
 /**
   便捷宏，用于便捷插入异常产生的函数。
 
@@ -166,6 +168,6 @@ class xlog : public xmsg
     xerr << xfunexpt;
   \endcode
 */
-#define xfunexpt XMSG_TEXT("[" __FUNCTION__ "]: exception.")
+#define xfunexpt u8"[" << __FUNCTION__ << u8"]: exception."
 
 #endif  // _XLIB_XLOG_H_

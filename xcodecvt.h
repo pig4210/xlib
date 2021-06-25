@@ -2,7 +2,7 @@
   \file  xcodecvt.h
   \brief 用于 ANSI 与 UNICODE 及 UTF8 等编码的本地化转换。
 
-  \version    2.1.0.200514
+  \version    2.1.1.210625
 
   \author     triones
   \date       2019-08-02
@@ -311,7 +311,13 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
   */
 inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr)
   {
-  return ws2u8(as2ws(as, lpread));
+  for(const auto& c : as)
+    {
+    const uint8_t ch = (uint8_t)c;
+    if((ch < ' ') || (ch > '~')) return ws2u8(as2ws(as, lpread));
+    }
+  // 纯英文字符，无需转换。
+  return std::u8string((const char8_t*)as.c_str(), as.size());
   }
 
 /**
@@ -325,7 +331,13 @@ inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr
 */
 inline std::string u82as(const std::u8string& u8, size_t* const lpread = nullptr)
   {
-  return ws2as(u82ws(u8, lpread));
+  for(const auto& c : u8)
+    {
+    const uint8_t ch = (uint8_t)c;
+    if((ch < ' ') || (ch > '~')) return ws2as(u82ws(u8, lpread));
+    }
+  // 纯英文字符，无需转换。
+  return std::string((const char*)u8.c_str(), u8.size());
   }
 
 #endif  // _XLIB_XCODECVT_H_

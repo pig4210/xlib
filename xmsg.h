@@ -108,7 +108,7 @@ class xmsg : public std::u8string
     /// 输出 hex 指针。
     xmsg& operator<<(const void* const v)
       {
-      return operator<<((size_t)v);
+      return operator<<((uintptr_t)v);
       }
     /// 输出 :true :false。
     xmsg& operator<<(const bool& v)

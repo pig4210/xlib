@@ -12,7 +12,7 @@ DESTPATH   := gcc
 CC         := g++
 
 ######## CFLAGS
-CFLAGS     = -lc -O3 -Wall -lstdc++ -std=c++2a
+CFLAGS     = -lc -O3 -Wall -lstdc++ -std=c++2a -fPIC
 
 CFLAGS     += $(MyCFLAGS)
 

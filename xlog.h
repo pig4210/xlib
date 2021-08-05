@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.2.1.210620
+  \version    2.3.0.210805
 
   \author     triones
   \date       2011-07-22
@@ -28,6 +28,7 @@
   - 2019-09-26 重构 xlog 。去除动态控制与类型控制。 2.0 。
   - 2019-11-05 改进声明。 2.1 。
   - 2020-11-12 适配 xmsg 升级。 2.2 。
+  - 2021-08-05 分段输出改进。 2.3 。
 */
 #ifndef _XLIB_XLOG_H_
 #define _XLIB_XLOG_H_
@@ -93,25 +94,34 @@ class xlog : public xmsg
         clear();
         return *this;
         }
-      // 定宽的 UNICODE 避免多字节字符串切分出现截断现象。
-      const std::wstring buf(tows());
-      clear();
-      for(size_t i = 0; i < buf.size();)
+      size_t ss = 0;
+      size_t ll = 0;
+      for(size_t i = ss; i < size();)
         {
-        // 如果内部自带换行，则避免过多的切分。
-        const auto it = buf.begin() + i;
-        const auto pos = buf.find(L'\n', i);
-        if((npos != pos) && ((pos - i) <= (XLOG_MAX_BYTES)))
+        if(ll >= XLOG_MAX_BYTES)
           {
-          const auto xit = buf.begin() + pos + 1;
-          XLogout(std::wstring(it, xit));
-          i = pos + 1;
-          continue;
+          XLogout(std::u8string(begin() + ss, begin() + i));
+          ss = i;
+          ll = 0;
           }
-        const auto xit = (it + (XLOG_MAX_BYTES) < buf.end()) ? it + (XLOG_MAX_BYTES) : buf.end();
-        XLogout(std::wstring(it, xit));
-        i += (XLOG_MAX_BYTES);
+        const uint8_t ch = *(begin() + i);
+        // 如果内部自带换行，则避免过多切分。
+        if(ch == '\n') { ++i;     ll = 0;   continue; }
+        if(ch <= 0x7F) { ++i;     ++ll;     continue; }
+        // 忽略首字节非法。
+        if(ch < 0xC0)  { ++i;     ++ll;     continue; }
+        if(ch < 0xE0)  { i += 2;  ll += 2;  continue; }
+        if(ch < 0xF0)  { i += 3;  ll += 3;  continue; }
+        if(ch < 0xF8)  { i += 4;  ll += 4;  continue; }
+        if(ch < 0xFC)  { i += 5;  ll += 5;  continue; }
+        if(ch < 0xFE)  { i += 6;  ll += 6;  continue; }
+        ++i;     ++ll;
         }
+      if(ss < size())
+        {
+        XLogout(std::u8string(begin() + ss, end()));
+        }
+      clear();
       return *this;
       }
   };

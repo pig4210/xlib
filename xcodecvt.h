@@ -2,14 +2,14 @@
   \file  xcodecvt.h
   \brief 用于 ANSI 与 UNICODE 及 UTF8 等编码的本地化转换。
 
-  \version    2.1.1.210625
+  \version    2.2.1.210805
 
   \author     triones
   \date       2019-08-02
 
   \section more 额外说明
 
-  - linux 下，注意查询本地化支持： `locale -a` 。
+  - linux 下，注意查询本地化支持： `locale -a` （否则，会在 `std::locale` 时崩溃）。
       - 安装 GB2312 ： `sudo locale-gen zh_CN` 。
       - 安装 UTF8 中文： `sudo apt-get install language-pack-zh-hans` 。
   - g++ 默认编码为 UTF8 ，如需以 ANSI 编译，需加入编译参数如： `-fexec-charset=GB2312` 。
@@ -21,6 +21,7 @@
   - 2019-09-25 使用 codecvt 重构。 1.0 。
   - 2019-11-03 引入 u8string ，再次重构。 2.0 。
   - 2020-05-14 加入贪婪处理方式。 2.1 。
+  - 2021-08-04 处理 ws 转换 emoji 不正确的 BUG。 2.2 。
 */
 #ifndef _XLIB_XCODECVT_H_
 #define _XLIB_XCODECVT_H_
@@ -46,8 +47,6 @@
 #endif
 #endif
 
-using XCODECVT = std::codecvt<wchar_t, char, std::mbstate_t>;
-
 /**
   ANSI 串转换 UNICODE 串。
   \param  as      需要转换的 ANSI 串
@@ -61,6 +60,7 @@ using XCODECVT = std::codecvt<wchar_t, char, std::mbstate_t>;
 inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
   {
   if(as.empty())  return std::wstring();
+  using XCODECVT = std::codecvt<wchar_t, char, std::mbstate_t>;
 
   std::locale locale(LOCALE_AS_WS);
 
@@ -124,6 +124,7 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
 inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
   {
   if(ws.empty())  return std::string();
+  using XCODECVT = std::codecvt<wchar_t, char, std::mbstate_t>;
 
   std::locale locale(LOCALE_AS_WS);
 
@@ -187,6 +188,12 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
 inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullptr)
   {
   if(u8.empty())  return std::wstring();
+#ifdef _WIN32
+  using WCHART = char16_t;
+#else
+  using WCHART = char32_t;
+#endif
+  using XCODECVT = std::codecvt<WCHART, char8_t, std::mbstate_t>;
 
   std::locale locale(LOCALE_WS_U8);
 
@@ -207,13 +214,13 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
     {
     std::mbstate_t state{};
 
-    const char* from        = (const char*)u8.data() + read;
-    const char* from_end    = (const char*)u8.data() + u8.size();
-    const char* from_next;
+    const char8_t* from       = u8.data() + read;
+    const char8_t* from_end   = u8.data() + u8.size();
+    const char8_t* from_next;
     
-    wchar_t*    to          = ws.data() + write;
-    wchar_t*    to_end      = ws.data() + ws.size();
-    wchar_t*    to_next;
+    WCHART*    to          = (WCHART*)ws.data() + write;
+    WCHART*    to_end      = (WCHART*)ws.data() + ws.size();
+    WCHART*    to_next;
 
     const auto result = cvt.in(
       state,
@@ -250,6 +257,12 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
 inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullptr)
   {
   if(ws.empty())  return std::u8string();
+#ifdef _WIN32
+  using WCHART = char16_t;
+#else
+  using WCHART = char32_t;
+#endif
+  using XCODECVT = std::codecvt<WCHART, char8_t, std::mbstate_t>;
 
   std::locale locale(LOCALE_WS_U8);
 
@@ -270,13 +283,13 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
     {
     std::mbstate_t state{};
 
-    const wchar_t* from       = ws.data() + read;
-    const wchar_t* from_end   = ws.data() + ws.size();
-    const wchar_t* from_next;
+    const WCHART* from       = (const WCHART*)ws.data() + read;
+    const WCHART* from_end   = (const WCHART*)ws.data() + ws.size();
+    const WCHART* from_next;
 
-    char*          to         = (char*)u8.data() + write;
-    char*          to_end     = (char*)u8.data() + u8.size();
-    char*          to_next;
+    char8_t*         to         = (char8_t*)u8.data() + write;
+    char8_t*         to_end     = (char8_t*)u8.data() + u8.size();
+    char8_t*         to_next;
 
     const auto result = cvt.out(
       state,
@@ -317,6 +330,9 @@ inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr
     if((ch < ' ') || (ch > '~')) return ws2u8(as2ws(as, lpread));
     }
   // 纯英文字符，无需转换。
+  size_t rd;
+  size_t& read = (nullptr == lpread) ? rd : *lpread;
+  read = as.size();
   return std::u8string((const char8_t*)as.c_str(), as.size());
   }
 
@@ -337,6 +353,9 @@ inline std::string u82as(const std::u8string& u8, size_t* const lpread = nullptr
     if((ch < ' ') || (ch > '~')) return ws2as(u82ws(u8, lpread));
     }
   // 纯英文字符，无需转换。
+  size_t rd;
+  size_t& read = (nullptr == lpread) ? rd : *lpread;
+  read = u8.size();
   return std::string((const char*)u8.c_str(), u8.size());
   }
 

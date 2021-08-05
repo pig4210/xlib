@@ -2,7 +2,7 @@
   \file  xswap.h
   \brief 定义了 swap 的相关模板。
 
-  \version    2.1.0.191105
+  \version    2.2.0.210805
 
   \author     triones
   \date       2014-01-07
@@ -15,6 +15,7 @@
   - 2016-11-14 适配 Linux g++ 。 1.1 。
   - 2019-09-20 重构 bswap 。 2.0 。
   - 2019-11-05 升级声明。 2.1 。
+  - 2021-08-05 升级定义。 2.2 。
 */
 #ifndef _XLIB_XSWAP_H_
 #define _XLIB_XSWAP_H_
@@ -31,49 +32,6 @@
 #endif
 #include <algorithm>
 
-/// bswap 模板，是 bswap 函数的实现细节。
-template<size_t N> inline void bswap_type(uint8_t* mem)
-  {
-  /*
-    模板内部调用了特化模板。  
-    注意：三个基本大小必须特化，否则无法优化编译成一个 bswap 指令。  
-    常量会直接在编译阶段直接优化成值。
-  */
-  size_t len = N;
-  while(len != 0)
-    {
-    switch(len)
-      {
-      case 1:bswap_type<1>(mem); return;
-      case 2:
-      case 3:bswap_type<2>(mem); return;
-      case 4:
-      case 5:bswap_type<4>(mem); return;
-      case 6:
-      case 7:bswap_type<4>(mem); bswap_type<2>(mem + 4); return;
-      default:
-        bswap_type<8>(mem);
-        len -= 8;
-        mem += 8;
-      }
-    }
-  }
-template<> inline void bswap_type<1>(uint8_t*)
-  {
-  }
-template<> inline void bswap_type<2>(uint8_t* mem)
-  {
-  *(uint16_t*)mem = xbswap16(*(const uint16_t*)mem);
-  }
-template<> inline void bswap_type<4>(uint8_t* mem)
-  {
-  *(uint32_t*)mem = xbswap32(*(const uint32_t*)mem);
-  }
-template<> inline void bswap_type<8>(uint8_t* mem)
-  {
-  *(uint64_t*)mem = xbswap64(*(const uint64_t*)mem);
-  }
-
 /**
   用于翻转数值。
   \param    values  数值。
@@ -85,11 +43,31 @@ template<> inline void bswap_type<8>(uint8_t* mem)
   \endcode
 */
 template<typename T> inline
-std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, T> bswap(const T& values)
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint8_t), T>
+  bswap(const T& values)
   {
-  T v = values;
-  bswap_type<sizeof(T)>((uint8_t*)&v);
-  return v;
+  return values;
+  }
+
+template<typename T> inline
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint16_t), T>
+  bswap(const T& values)
+  {
+  return (T)xbswap16(values);
+  }
+
+template<typename T> inline
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint32_t), T>
+  bswap(const T& values)
+  {
+  return (T)xbswap32(values);
+  }
+
+template<typename T> inline
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint64_t), T>
+  bswap(const T& values)
+  {
+  return (T)xbswap64(values);
   }
 
 /**

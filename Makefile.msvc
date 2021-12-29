@@ -1,72 +1,65 @@
-﻿# 这个 Makefile 用于使用 GNU make 在 Windows 编译 xlib 。
-
-# 如果只是单纯的 clean ，则无需 环境 和 路径
-ifneq "$(MAKECMDGOALS)" "clean"
-  ifeq "$(filter x64 x86,$(Platform))" ""
-    $(error Need VS Environment)
-  endif
-
-  ifeq "$(SRCPATH)" ""
-    $(error Need SRCPATH)
-  endif
+﻿ifeq "$(filter x64 x86,$(ARCH))" ""
+  $(error Need VS Environment)
 endif
 
+ifeq "$(ProjectName)" ""
+$(error Need ProjectName)
+endif
+
+ifeq "$(SRCPATH)" ""
+  $(error Need SRCPATH)
+endif
 
 .PHONY : all
-all : test.exe
-	@echo make done.
+all :
 
-include Makefile.inc
+DSTPATH	:= $(ARCH)
 
-DESTPATH    := $(Platform)
-
-CC          := cl.exe
-LINK        := link.exe
+CC 			:= cl.exe
+LINK		:= link.exe
 
 ######## CFLAGS
-CFLAGS      = /c /MP /GS- /Qpar /GL /analyze- /W4 /Gy /Zc:wchar_t /Zi /Gm- /Ox /Zc:inline /fp:precise /DWIN32 /DNDEBUG /D_UNICODE /DUNICODE /fp:except- /errorReport:none /GF /WX /Zc:forScope /GR- /Gd /Oy /Oi /MT /EHa /nologo /std:c++latest
+CFLAGS		= /c /MP /GS- /Qpar /GL /analyze- /W4 /Gy /Zc:wchar_t /Zi /Gm- /Ox /Zc:inline /fp:precise /DWIN32 /DNDEBUG /D_UNICODE /DUNICODE /fp:except- /errorReport:none /GF /WX /Zc:forScope /GR- /Gd /Oy /Oi /MT /EHa /nologo /std:c++latest
 CFLAGS      += /I"$(SRCPATH)"
-CFLAGS      += /Fd"$(DESTPATH)/"
+CFLAGS		+= /Fd"$(DSTPATH)/"
 
-ifeq "$(Platform)" "x86"
-CFLAGS      += /D_USING_V110_SDK71_
+ifeq "$(ARCH)" "x86"
+CFLAGS		+= /D_USING_V110_SDK71_
 endif
 
 CFLAGS      += $(MyCFLAGS)
 
 ######## LDFLAGS
-LDFLAGS     = /MANIFEST:NO /LTCG /NXCOMPAT /DYNAMICBASE "kernel32.lib" "user32.lib" "gdi32.lib" "winspool.lib" "comdlg32.lib" "advapi32.lib" "shell32.lib" "ole32.lib" "oleaut32.lib" "uuid.lib" "odbc32.lib" "odbccp32.lib" /OPT:REF /INCREMENTAL:NO /OPT:ICF /ERRORREPORT:NONE /NOLOGO /MACHINE:$(Platform) /DEBUG:FULL
-LDFLAGS     += /LIBPATH:"$(DESTPATH)"
+LDFLAGS		= /MANIFEST:NO /LTCG /NXCOMPAT /DYNAMICBASE "kernel32.lib" "user32.lib" "gdi32.lib" "winspool.lib" "comdlg32.lib" "advapi32.lib" "shell32.lib" "ole32.lib" "oleaut32.lib" "uuid.lib" "odbc32.lib" "odbccp32.lib" /OPT:REF /INCREMENTAL:NO /OPT:ICF /ERRORREPORT:NONE /NOLOGO /MACHINE:$(ARCH) /DEBUG:FULL
+LDFLAGS		+= /LIBPATH:"$(DSTPATH)"
 
-ifeq "$(Platform)" "x86"
-LDFLAGS_CONSOLE := /SAFESEH /SUBSYSTEM:CONSOLE",5.01"
-LDFLAGS_WINDOWS := /SAFESEH /SUBSYSTEM:WINDOWS",5.01"
+ifeq "$(ARCH)" "x86"
+LDFLAGS_CONSOLE	:= /SAFESEH /SUBSYSTEM:CONSOLE",5.01"
+LDFLAGS_WINDOWS	:= /SAFESEH /SUBSYSTEM:WINDOWS",5.01"
 else
-LDFLAGS_CONSOLE := /SUBSYSTEM:CONSOLE
-LDFLAGS_WINDOWS := /SUBSYSTEM:WINDOWS
+LDFLAGS_CONSOLE	:= /SUBSYSTEM:CONSOLE
+LDFLAGS_WINDOWS	:= /SUBSYSTEM:WINDOWS
 endif
 
-# 源文件搜索路径
 vpath %.cc  $(SRCPATH)
 vpath %.h   $(SRCPATH)
 
-# 最终目标文件搜索路径
-vpath %.o   $(DESTPATH)
-vpath %.exe $(DESTPATH)
+vpath %.o   $(DSTPATH)
+vpath %.dll $(DSTPATH)
+vpath %.exe $(DSTPATH)
 
-######## 格式匹配规则
-# 编译
-%.o : %.cc | $(DESTPATH)
-	$(CC) $(CFLAGS) /Fo"$(DESTPATH)/$(@F)" "$<"
+include Makefile.inc
 
-$(DESTPATH) :
+$(DSTPATH) :
 	@mkdir "$@"
 
-test.exe : $(OBJS)| $(DESTPATH)
-	$(LINK) $(LDFLAGS) $(LDFLAGS_CONSOLE) /OUT:"$(DESTPATH)/$(@F)" $^
-	@"$(DESTPATH)\\$(@F)"
+%.o : %.cc | $(DSTPATH)
+	$(CC) $(CFLAGS) /Fo"$(DSTPATH)/$(@F)" "$<"
 
-.PHONY : clean
-clean :
-	@if exist x64 @rd /s /q x64
-	@if exist x86 @rd /s /q x86
+
+all : test.exe
+	@echo make done.
+
+test.exe : $(OBJS)| $(DSTPATH)
+	$(LINK) $(LDFLAGS) $(LDFLAGS_CONSOLE) /OUT:"$(DSTPATH)/$(@F)" $(^F)
+	@"$(DSTPATH)\\$(@F)"

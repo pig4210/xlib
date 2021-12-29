@@ -3,9 +3,109 @@
 ::begin
     setlocal
     pushd "%~dp0"
+
+    :: if has arg , it must be : x64 or x86.
+    if not "%1" == "" (
+        if not "%1" == "x64" (
+            if not "%1" == "x86" (
+                echo Need arg x64/x86 !!!
+                goto end
+            )
+        )
+    )
+
+    set ARCH=
+    set BOTHARCH=
+
+    cl >nul 2>&1
+    :: if in the compilation env , check ARCH.
+    if not ERRORLEVEL 1 goto checkarch
+
+    if "%1" == "" (
+        set ARCH=x64
+        set BOTHARCH=1
+    ) else (
+        set ARCH=%1
+    )
+
+    goto findmsvc
+
+:checkarch
+    :: VS2013 x86 has no Platform.
+    if "%Platform%" == "" set Platform=x86
+
+    set ARCH=x%Platform:~-2%
+
+    if not "%ARCH%" == "x64" (
+        if not "%ARCH%" == "x86" (
+            echo Unknow ARCH : %ARCH% !
+            goto end
+        )
+    )
+
+    :: if has no arg , use ARCH default . otherwise, check equ.
+    if not "%1" == "" (
+        if not "%ARCH%" == "%1" (
+            :: if arg no equ ARCH , change the ARCH.
+            set ARCH=%1
+            goto findmsvc
+        )
+    )
+    goto baseconfig
+
+:findvswhere
+    set VSWHERE=vswhere
+    %VSWHERE% -help >nul 2>&1
+    if not ERRORLEVEL 1 exit /b 0
+
+    set "VSWHERE=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere"
+    "%VSWHERE%" -help >nul 2>&1
+    if ERRORLEVEL 1 exit /b 1
+
+    exit /b 0
+
+:checkmsvc
+    if not exist "%VCPath%" exit /b 1
+
+    echo.
+    echo ==== ==== ==== ==== Prepare VS Environment for %ARCH% ...
+    call "%VCPath%\vcvarsall.bat" %ARCH% >nul
+    ::echo on
+    if ERRORLEVEL 1 exit /b 1
+
+    cl >nul 2>&1
+    if ERRORLEVEL 1 exit /b 1
+
+    exit /b 0
+
+:findmsvc
+    call :findvswhere
+    if ERRORLEVEL 1 goto oldervs
+
+    for /f "tokens=* usebackq" %%i in (`"%VSWHERE%" -latest -property installationPath`) do (
+        set "VCPath=%%i\VC\Auxiliary\Build"
+    )
+
+    call :checkmsvc
+    if not ERRORLEVEL 1 goto baseconfig
+
+:oldervs
+    set "VCPath=%VS150COMNTOOLS%\..\..\VC"
+    call :checkmsvc
+    if not ERRORLEVEL 1 goto baseconfig
     
-::baseconfig
-    set VCPATH=D:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build
+    set "VCPath=%VS140COMNTOOLS%\..\..\VC"
+    call :checkmsvc
+    if not ERRORLEVEL 1 goto baseconfig
+
+    set "VCPath=%VS120COMNTOOLS%\..\..\VC"
+    call :checkmsvc
+    if not ERRORLEVEL 1 goto baseconfig
+
+    echo No MSVC compiler available. or no support older MSVC.
+    goto end
+    
+:baseconfig
     set MyPath=%CD%
     set MAKE=E:/work/gnu/make/make.exe
 
@@ -14,37 +114,30 @@
         echo !!!!!!!! Empty project name !!!!!!!!
         goto end
     )
-    echo ==== ==== ==== ==== Got project name [ %ProjectName% ]
 
-    set SrcPath=%MyPath%
-    echo ==== ==== ==== ==== Got source folder [ %SrcPath% ]
-    echo.
-
-    cl >nul 2>&1
-    if %errorlevel%==0 (
-        set SUF=
-    ) else (
-        set SUF=^>nul
-    )
+    set SRCPATH=%MyPath%
 
 ::main
-    echo.
-    cl >nul 2>&1
-    if %errorlevel%==0 (
-        echo ==== ==== ==== ==== Build %Platform% ^& processing ==== ==== ==== ====
-        echo.
-        call :do || goto end
-    ) else (
-        echo ==== ==== ==== ==== Build x64 ^& x86 by silence ==== ==== ==== ====
-        echo.
-        call :do x64 || goto end
-        call :do x86 || goto end
+    call :do %ARCH% || goto end
+    popd
+
+    pushd "%~dp0"
+
+    if "%1" == "" (
+        if "%BOTHARCH%" == "1" (
+            echo.
+            echo.
+            if "%ARCH%" == "x64" (
+                call %~n0 x86
+            ) else (
+                call %~n0 x64
+            )
+        )
     )
 
     popd
     endlocal
     echo.
-    echo ==== ==== ==== ==== Done ==== ==== ==== ====
     cl >nul 2>&1 || pause >nul
     exit /B 0
 
@@ -52,62 +145,41 @@
     popd
     endlocal
     echo.
-    echo ==== ==== ==== ==== Done ==== ==== ==== ====
     cl >nul 2>&1 || pause >nul
     exit /B 1
 
 :do
     setlocal
 
-    if "%1"=="" (
-        set PLAT=%Platform%
-        set SUF=
-    ) else (
-        set PLAT=%1
-        set SUF=^>nul
-    )
-    if "%PLAT%"=="" (
-        echo !!!!!!!! Need arg with x64/x86 !!!!!!!!
-        goto done
-    )
-
-    echo.
-
-::prepare
-    if not "%1"=="" (
-        echo ==== ==== ==== ==== Prepare environment^(%PLAT%^)...
-        
-        cd /d "%VCPath%"
-        if "%PLAT%"=="x64" (
-            call vcvarsall.bat x64 >nul
-        ) else (
-            call vcvarsall.bat x86 >nul
-        )
-    )
-
     cd /d "%MyPath%"
 
-    echo ==== ==== ==== ==== Building %PLAT%...
+    echo.
+    echo ==== ==== ==== ==== Building (%ARCH%) ==== ==== ==== ====
+    echo.
 
     call :make || goto done
+
+    echo.
 
 ::ok
     endlocal
     echo.
+    echo ==== ==== ==== ====      Done      ==== ==== ==== ====
     exit /B 0
 
 :done
     endlocal
     echo.
+    echo ==== ==== ==== ====      Done      ==== ==== ==== ====
     exit /B 1
 
 :make
     if "%SUF%"=="" (
         echo.
-        echo %MAKE% -f Makefile.msvc SrcPath=%SrcPath%
+        echo %MAKE% -f Makefile.msvc SRCPATH=%SRCPATH% %1
         echo.
     )
-    %MAKE% -f Makefile.msvc SRCPATH="%SrcPath%" %SUF% && exit /B 0
+    %MAKE% -f Makefile.msvc %SUF% && exit /B 0
     
     echo !!!!!!!! Make Error !!!!!!!!
     exit /B 1

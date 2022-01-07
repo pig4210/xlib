@@ -36,7 +36,7 @@
 
 /**
   用于生成随机数
-  \param in mod   指定取模。默认为 0 ，不取模。
+  \param    mod   指定取模。默认为 0 ，不取模。
   \return         返回随机数。
 
   \code

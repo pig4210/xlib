@@ -22,7 +22,7 @@
   - 2016-07-20 添加 xmsg 构造。 1.2 。
   - 2016-11-15 适配 Linux g++ 。处理不再附加结尾 0 。 1.3 。
   - 2019-09-25 重构 xmsg 。 2.0 。
-  - 2019-11-03 引入 u8char 、 u8string 。 2.1 。
+  - 2019-11-03 引入 char8_t 、 u8string 。 2.1 。
   - 2020-03-09 改变基类为 wstring 。 3.0 。
   - 2020-11-12 改变基类可选，改变数值输出为模板 。 4.0 。
   - 2021-06-20 基类固定为 u8string 。 5.0 。
@@ -38,18 +38,18 @@
 
 #include "xcodecvt.h"
 
-class xmsg : public u8string
+class xmsg : public std::u8string
   {
   public:
-    using u8string::u8string;
+    using std::u8string::u8string;
   public:
     xmsg() {}
-    xmsg(const std::string& as)   : u8string(as2u8(as)) {}
-    xmsg(const std::wstring& ws)  : u8string(ws2u8(ws)) {}
-    xmsg(const u8string& u8)      : u8string(u8) {}
+    xmsg(const std::string& as)   : std::u8string(as2u8(as)) {}
+    xmsg(const std::wstring& ws)  : std::u8string(ws2u8(ws)) {}
+    xmsg(const std::u8string& u8) : std::u8string(u8) {}
   public:
     /// 指定格式输出。
-    xmsg& prt(const u8char* const fmt, ...)
+    xmsg& prt(const char8_t* const fmt, ...)
       {
       if(nullptr == fmt) return *this;
       va_list ap;
@@ -57,7 +57,7 @@ class xmsg : public u8string
       const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
       va_end(ap);
       if(0 >= need) return *this;
-      u8string buffer;
+      std::u8string buffer;
       buffer.resize(need);
       va_start(ap, fmt);
       std::vsnprintf((char*)buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
@@ -68,42 +68,42 @@ class xmsg : public u8string
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int8_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%hhi", v);
+      return prt((const char8_t*)u8"%hhi", v);
       }
     /// 输出 hex(XX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint8_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%02X", v);
+      return prt((const char8_t*)u8"%02X", v);
       }
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int16_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%hi", v);
+      return prt((const char8_t*)u8"%hi", v);
       }
     /// 输出 hex(XXXX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint16_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%04X", v);
+      return prt((const char8_t*)u8"%04X", v);
       }
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int32_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%i", v);
+      return prt((const char8_t*)u8"%i", v);
       }
     /// 输出 hex(XXXXXXXX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint32_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%08X", v);
+      return prt((const char8_t*)u8"%08X", v);
       }
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int64_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%lli", v);
+      return prt((const char8_t*)u8"%lli", v);
       }
     /// 输出 hex(XXXXXXXXXXXXXXXX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint64_t), xmsg&> operator<<(const T& v)
       {
-      return prt(u8"%08X%08X", (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
+      return prt((const char8_t*)u8"%08X%08X", (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
       }
     /// 输出 hex 指针。
     xmsg& operator<<(const void* const v)
@@ -113,9 +113,8 @@ class xmsg : public u8string
     /// 输出 :true :false。
     xmsg& operator<<(const bool& v)
       {
-      return operator<<(v ? u8":true" : u8":false");
+      return operator<<(v ? (const char8_t*)u8"true" : (const char8_t*)u8"false");
       }
-#ifndef XLIB_NOCXX20
     /// 输出 ANSI 字符 转换。
     xmsg& operator<<(const char& v)
       {
@@ -128,7 +127,6 @@ class xmsg : public u8string
       if(nullptr != v) append(as2u8(v));
       return *this;
       }
-#endif
     /// 输出 ASNI 字符串 转换。
     xmsg& operator<<(const std::string& v)
       {
@@ -153,20 +151,22 @@ class xmsg : public u8string
       append(ws2u8(v));
       return *this;
       }
+#ifndef XLIB_NOCXX20
     /// 输出 UTF-8 字符 转换。
-    xmsg& operator<<(const u8char& v)
+    xmsg& operator<<(const char8_t& v)
       {
-      append(u8string(1, v));
+      append(std::u8string(1, v));
       return *this;
       }
+#endif
     /// 输出 UTF-8 字符串 转换。
-    xmsg& operator<<(const u8char* v)
+    xmsg& operator<<(const char8_t* v)
       {
       if(nullptr != v) append(v);
       return *this;
       }
     /// 输出 UTF-8 字符串 转换。
-    xmsg& operator<<(const u8string& v)
+    xmsg& operator<<(const std::u8string& v)
       {
       append(v);
       return *this;
@@ -174,12 +174,12 @@ class xmsg : public u8string
     /// 输出 dec 浮点数。
     xmsg& operator<<(const float& v)
       {
-      return prt(u8"%f", v);
+      return prt((const char8_t*)u8"%f", v);
       }
     /// 输出 dec 浮点数。
     xmsg& operator<<(const double& v)
       {
-      return prt(u8"%f", v);
+      return prt((const char8_t*)u8"%f", v);
       }
     /// 输出 内容。
     xmsg& operator<<(const xmsg& v)

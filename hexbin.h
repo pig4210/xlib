@@ -471,7 +471,7 @@ constexpr bool LocaleCheck()
 
 template<typename T> constexpr ShowBinCode inline CheckBinCode()
   {
-  if constexpr (std::is_same_v<T, u8char>)
+  if constexpr (std::is_same_v<T, char8_t>)
     {
     return SBC_UTF8;
     }
@@ -479,17 +479,10 @@ template<typename T> constexpr ShowBinCode inline CheckBinCode()
     {
     return SBC_UNICODE;
     }
-#ifndef XLIB_NOCXX20
   if constexpr (std::is_same_v<T, char>)
     {
     return SBC_ANSI;
     }
-#else
-  if constexpr (std::is_same_v<T, std::string>)
-    {
-    return SBC_ANSI;
-    }
-#endif
   if constexpr (std::is_class_v<T>)
     {
     return CheckBinCode<typename T::value_type>();
@@ -525,7 +518,7 @@ template<typename T> xmsg showbin(
   const xmsg&       prews = xmsg())
   {
   xmsg ret;
-  const auto fmt = isup ? u8"0123456789ABCDEF" : u8"0123456789abcdef";
+  const auto fmt = isup ? (const char8_t*)u8"0123456789ABCDEF" : (const char8_t*)u8"0123456789abcdef";
 
   size_t used = 0;
   const uint8_t* data = (const uint8_t*)bin;
@@ -540,7 +533,7 @@ template<typename T> xmsg showbin(
     ret.append(prews);      // 前缀。
     const auto p = bswap((size_t)data);
     ret << bin2hex(&p, 1);  // 地址前缀。
-    ret.append(u8" |");
+    ret.append((const char8_t*)u8" |");
     
     for(size_t i = 0; i < k_max_line_byte; ++i)
       {
@@ -551,16 +544,16 @@ template<typename T> xmsg showbin(
         }
       else            // 无数据补齐。
         {
-        ret.append(u8"  ");
+        ret.append((const char8_t*)u8"  ");
         }
       switch(i)
         {
         case 3:  case 7:  case 11:
-          ret.push_back(u8'|'); break;
+          ret.push_back(char8_t(u8'|')); break;
         case 15:
-          ret.append(u8"| "); break;
+          ret.append((const char8_t*)u8"| "); break;
         default:
-          ret.push_back(u8' ');
+          ret.push_back(char8_t(u8' '));
         }
       }
     };
@@ -633,7 +626,7 @@ template<typename T> xmsg showbin(
       // 无法进行向后匹配完整字符。
       if(used + i > size) break;
       size_t read;
-      const auto ws = u82ws(u8string((const u8char*)data + used, i), &read);
+      const auto ws = u82ws(std::u8string((const char8_t*)data + used, i), &read);
       // 转换失败，尝试扩展匹配。
       if(ws.empty()) continue;
       const auto s = check(*ws.begin());
@@ -658,7 +651,7 @@ template<typename T> xmsg showbin(
       if(s.empty())
         {
         used += sizeof(char);
-        ret.push_back(u8'.');
+        ret.push_back(char8_t(u8'.'));
         }
       else
         {
@@ -666,8 +659,8 @@ template<typename T> xmsg showbin(
         }
       }
     used -= fix_len;
-    ret.push_back(u8'\r');
-    ret.push_back(u8'\n');
+    ret.push_back(char8_t(u8'\r'));
+    ret.push_back(char8_t(u8'\n'));
 
     data += k_max_line_byte;
     size -= fix_len;

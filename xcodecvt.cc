@@ -2,8 +2,7 @@
 
 #include "xlib_test.h"
 
-#ifndef XLIB_NOCXX20
-#else
+#ifdef XLIB_NOCXX20
 std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
 #endif
 
@@ -13,7 +12,7 @@ SHOW_TEST_INIT(XCODECVT)
 // 特意加上 0 编码用于完整转换测试。
 const std::string   asbuf("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42\0CC", 15);
 const std::wstring  wsbuf(L"AA转换测试BB\0CC", 11);
-const u8string      u8buf(u8"AA转换测试BB\0CC", 19);
+const std::u8string u8buf((const char8_t*)u8"AA转换测试BB\0CC", 19);
 
 SHOW_TEST_HEAD(as2ws);
 done = wsbuf == as2ws(asbuf);

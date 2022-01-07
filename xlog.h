@@ -100,7 +100,7 @@ class xlog : public xmsg
         {
         if(ll >= XLOG_MAX_BYTES)
           {
-          XLogout(std::u8string(begin() + ss, begin() + i));
+          XLogout(u8string(begin() + ss, begin() + i));
           ss = i;
           ll = 0;
           }
@@ -119,7 +119,7 @@ class xlog : public xmsg
         }
       if(ss < size())
         {
-        XLogout(std::u8string(begin() + ss, end()));
+        XLogout(u8string(begin() + ss, end()));
         }
       clear();
       return *this;

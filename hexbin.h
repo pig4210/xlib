@@ -462,23 +462,34 @@ enum ShowBinCode
 
 constexpr bool LocaleCheck()
   {
+#if defined(_WIN32) && XLIB_NOCXX20
+  return true;
+#else
   return (uint8_t)*u8"文" != (uint8_t)*"文";
+#endif
   }
 
 template<typename T> constexpr ShowBinCode inline CheckBinCode()
   {
-  if constexpr (std::is_same_v<T, char>)
+  if constexpr (std::is_same_v<T, u8char>)
     {
-    return SBC_ANSI;
+    return SBC_UTF8;
     }
   if constexpr (std::is_same_v<T, wchar_t>)
     {
     return SBC_UNICODE;
     }
-  if constexpr (std::is_same_v<T, char8_t>)
+#ifndef XLIB_NOCXX20
+  if constexpr (std::is_same_v<T, char>)
     {
-    return SBC_UTF8;
+    return SBC_ANSI;
     }
+#else
+  if constexpr (std::is_same_v<T, std::string>)
+    {
+    return SBC_ANSI;
+    }
+#endif
   if constexpr (std::is_class_v<T>)
     {
     return CheckBinCode<typename T::value_type>();
@@ -622,7 +633,7 @@ template<typename T> xmsg showbin(
       // 无法进行向后匹配完整字符。
       if(used + i > size) break;
       size_t read;
-      const auto ws = u82ws(std::u8string((const char8_t*)data + used, i), &read);
+      const auto ws = u82ws(u8string((const u8char*)data + used, i), &read);
       // 转换失败，尝试扩展匹配。
       if(ws.empty()) continue;
       const auto s = check(*ws.begin());

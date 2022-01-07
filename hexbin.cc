@@ -61,7 +61,7 @@ done = asshowbin == showbin(as);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(showbin u8);
-const std::u8string us(u8"HIJKLMNOPQRSTUV转换测试BB\0CC", 0x20);
+const u8string us(u8"HIJKLMNOPQRSTUV转换测试BB\0CC", 0x20);
 const auto lpus0 = bswap((size_t)us.data());
 const auto lpus1 = bswap((size_t)us.data() + 0x10);
 const auto usshowbin = 

@@ -5,7 +5,7 @@
 SHOW_TEST_INIT(XMSG)
 
 SHOW_TEST_HEAD(constructor as);
-done = xmsg("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42") == ws2u8(L"AA转换测试BB");
+done = xmsg(std::string("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42")) == ws2u8(L"AA转换测试BB");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(constructor ws);
@@ -13,7 +13,7 @@ done = xmsg(L"AA转换测试BB") == ws2u8(L"AA转换测试BB");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(constructor u8);
-done = xmsg(u8"AA转换测试BB") == ws2u8(L"AA转换测试BB");
+done = xmsg(u8string(u8"AA转换测试BB")) == ws2u8(L"AA转换测试BB");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(int8_t);
@@ -93,7 +93,7 @@ done = (xmsg() << u8"123") == u8"123";
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(u8string);
-done = (xmsg() << std::u8string(u8"123")) == u8"123";
+done = (xmsg() << u8string(u8"123")) == u8"123";
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(float);

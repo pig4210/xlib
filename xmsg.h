@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.0.0.210620
+  \version    5.1.0.220105
   \note       For All
 
   \author     triones
@@ -22,10 +22,11 @@
   - 2016-07-20 添加 xmsg 构造。 1.2 。
   - 2016-11-15 适配 Linux g++ 。处理不再附加结尾 0 。 1.3 。
   - 2019-09-25 重构 xmsg 。 2.0 。
-  - 2019-11-03 引入 char8_t 、 u8string 。 2.1 。
+  - 2019-11-03 引入 u8char 、 u8string 。 2.1 。
   - 2020-03-09 改变基类为 wstring 。 3.0 。
   - 2020-11-12 改变基类可选，改变数值输出为模板 。 4.0 。
   - 2021-06-20 基类固定为 u8string 。 5.0 。
+  - 2022-01-05 向下兼容 c++17 。
 */
 #ifndef _XLIB_XMSG_H_
 #define _XLIB_XMSG_H_
@@ -37,19 +38,18 @@
 
 #include "xcodecvt.h"
 
-class xmsg : public std::u8string
+class xmsg : public u8string
   {
   public:
-    using base = std::u8string;
-    using chart = char8_t;
+    using u8string::u8string;
   public:
     xmsg() {}
-    xmsg(const std::string& as)   : std::u8string(as2u8(as)) {}
-    xmsg(const std::wstring& ws)  : std::u8string(ws2u8(ws)) {}
-    xmsg(const std::u8string& u8) : std::u8string(u8) {}
+    xmsg(const std::string& as)   : u8string(as2u8(as)) {}
+    xmsg(const std::wstring& ws)  : u8string(ws2u8(ws)) {}
+    xmsg(const u8string& u8)      : u8string(u8) {}
   public:
     /// 指定格式输出。
-    xmsg& prt(const char8_t* const fmt, ...)
+    xmsg& prt(const u8char* const fmt, ...)
       {
       if(nullptr == fmt) return *this;
       va_list ap;
@@ -57,7 +57,7 @@ class xmsg : public std::u8string
       const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
       va_end(ap);
       if(0 >= need) return *this;
-      std::u8string buffer;
+      u8string buffer;
       buffer.resize(need);
       va_start(ap, fmt);
       std::vsnprintf((char*)buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
@@ -115,6 +115,7 @@ class xmsg : public std::u8string
       {
       return operator<<(v ? u8":true" : u8":false");
       }
+#ifndef XLIB_NOCXX20
     /// 输出 ANSI 字符 转换。
     xmsg& operator<<(const char& v)
       {
@@ -127,6 +128,7 @@ class xmsg : public std::u8string
       if(nullptr != v) append(as2u8(v));
       return *this;
       }
+#endif
     /// 输出 ASNI 字符串 转换。
     xmsg& operator<<(const std::string& v)
       {
@@ -152,19 +154,19 @@ class xmsg : public std::u8string
       return *this;
       }
     /// 输出 UTF-8 字符 转换。
-    xmsg& operator<<(const char8_t& v)
+    xmsg& operator<<(const u8char& v)
       {
-      append(std::u8string(1, v));
+      append(u8string(1, v));
       return *this;
       }
     /// 输出 UTF-8 字符串 转换。
-    xmsg& operator<<(const char8_t* v)
+    xmsg& operator<<(const u8char* v)
       {
       if(nullptr != v) append(v);
       return *this;
       }
     /// 输出 UTF-8 字符串 转换。
-    xmsg& operator<<(const std::u8string& v)
+    xmsg& operator<<(const u8string& v)
       {
       append(v);
       return *this;

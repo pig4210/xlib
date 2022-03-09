@@ -56,6 +56,10 @@ class xblk
       xblk((const char*)a, (const char*)a + diff)
       {
       }
+    constexpr xblk(const void* const a, const void* const b):
+      xblk((const char*)a, (const char*)b)
+      {
+      }
     /// 判定目标块与本块的关系。
     constexpr PosDcrpt checkin(const xblk& blk) const
       {
@@ -84,6 +88,10 @@ class xblk
     constexpr PosDcrpt checkin(const void* const a, const intptr_t diff = 1) const
       {
       return checkin(xblk(a, diff));
+      }
+    constexpr PosDcrpt checkin(const void* const a, const void* b) const
+      {
+      return checkin(xblk(a, b));
       }
     /// 比较操作。
     constexpr bool operator==(const xblk& blk) const

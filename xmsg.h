@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.1.0.220105
+  \version    5.1.1.220309
   \note       For All
 
   \author     triones
@@ -38,15 +38,20 @@
 
 #include "xcodecvt.h"
 
+#define XMSGT(text) (const char8_t*)u8 ## text
+#define XMSGAS(v) as2u8(v)
+#define XMSGWS(v) ws2u8(v)
+#define XMSGU8(v) v
+
 class xmsg : public std::u8string
   {
   public:
     using std::u8string::u8string;
   public:
     xmsg() {}
-    xmsg(const std::string& as)   : std::u8string(as2u8(as)) {}
-    xmsg(const std::wstring& ws)  : std::u8string(ws2u8(ws)) {}
-    xmsg(const std::u8string& u8) : std::u8string(u8) {}
+    xmsg(const std::string& as)   : std::u8string(XMSGAS(as)) {}
+    xmsg(const std::wstring& ws)  : std::u8string(XMSGWS(ws)) {}
+    xmsg(const std::u8string& u8) : std::u8string(XMSGU8(u8)) {}
   public:
     /// 指定格式输出。
     xmsg& prt(const char8_t* const fmt, ...)
@@ -68,42 +73,42 @@ class xmsg : public std::u8string
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int8_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%hhi", v);
+      return prt(XMSGT("%hhi"), v);
       }
     /// 输出 hex(XX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint8_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%02X", v);
+      return prt(XMSGT("%02X"), v);
       }
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int16_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%hi", v);
+      return prt(XMSGT("%hi"), v);
       }
     /// 输出 hex(XXXX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint16_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%04X", v);
+      return prt(XMSGT("%04X"), v);
       }
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int32_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%i", v);
+      return prt(XMSGT("%i"), v);
       }
     /// 输出 hex(XXXXXXXX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint32_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%08X", v);
+      return prt(XMSGT("%08X"), v);
       }
     /// 输出 dec 值。
     template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int64_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%lli", v);
+      return prt(XMSGT("%lli"), v);
       }
     /// 输出 hex(XXXXXXXXXXXXXXXX)。
     template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint64_t), xmsg&> operator<<(const T& v)
       {
-      return prt((const char8_t*)u8"%08X%08X", (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
+      return prt(XMSGT("%08X%08X"), (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
       }
     /// 输出 hex 指针。
     xmsg& operator<<(const void* const v)
@@ -113,73 +118,71 @@ class xmsg : public std::u8string
     /// 输出 :true :false。
     xmsg& operator<<(const bool& v)
       {
-      return operator<<(v ? (const char8_t*)u8"true" : (const char8_t*)u8"false");
+      return operator<<(v ? XMSGT("true") : XMSGT("false"));
       }
     /// 输出 ANSI 字符 转换。
     xmsg& operator<<(const char& v)
       {
-      append(as2u8(std::string(1, v)));
+      append(XMSGAS(std::string(1, v)));
       return *this;
       }
     /// 输出 ANSI 字符串 转换。
     xmsg& operator<<(const char* const v)
       {
-      if(nullptr != v) append(as2u8(v));
+      if(nullptr != v) append(XMSGAS(v));
       return *this;
       }
     /// 输出 ASNI 字符串 转换。
     xmsg& operator<<(const std::string& v)
       {
-      append(as2u8(v));
+      append(XMSGAS(v));
       return *this;
       }
     /// 输出 UNICCODE 字符 转换。
     xmsg& operator<<(const wchar_t& v)
       {
-      append(ws2u8(std::wstring(1, v)));
+      append(XMSGWS(std::wstring(1, v)));
       return *this;
       }
     /// 输出 UNICCODE 字符串 转换。
     xmsg& operator<<(const wchar_t* const v)
       {
-      if(nullptr != v) append(ws2u8(v));
+      if(nullptr != v) append(XMSGWS(v));
       return *this;
       }
     /// 输出 UNICCODE 字符串 转换。
     xmsg& operator<<(const std::wstring& v)
       {
-      append(ws2u8(v));
+      append(XMSGWS(v));
       return *this;
       }
-#ifndef XLIB_NOCXX20
     /// 输出 UTF-8 字符 转换。
     xmsg& operator<<(const char8_t& v)
       {
-      append(std::u8string(1, v));
+      append(XMSGU8(std::u8string(1, v)));
       return *this;
       }
-#endif
     /// 输出 UTF-8 字符串 转换。
     xmsg& operator<<(const char8_t* v)
       {
-      if(nullptr != v) append(v);
+      if(nullptr != v) append(XMSGU8(v));
       return *this;
       }
     /// 输出 UTF-8 字符串 转换。
     xmsg& operator<<(const std::u8string& v)
       {
-      append(v);
+      append(XMSGU8(v));
       return *this;
       }
     /// 输出 dec 浮点数。
     xmsg& operator<<(const float& v)
       {
-      return prt((const char8_t*)u8"%f", v);
+      return prt(XMSGT("%f"), v);
       }
     /// 输出 dec 浮点数。
     xmsg& operator<<(const double& v)
       {
-      return prt((const char8_t*)u8"%f", v);
+      return prt(XMSGT("%f"), v);
       }
     /// 输出 内容。
     xmsg& operator<<(const xmsg& v)
@@ -198,5 +201,10 @@ class xmsg : public std::u8string
       return u82ws(*this);
       }
   };
+
+#undef XMSGT
+#undef XMSGAS
+#undef XMSGWS
+#undef XMSGU8
 
 #endif  // _XLIB_XMSG_H_

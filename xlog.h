@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.3.0.210805
+  \version    2.3.0.220309
 
   \author     triones
   \date       2011-07-22
@@ -89,6 +89,12 @@ class xlog : public xmsg
       {
       if(empty())  return *this;
       if constexpr (0 == XLOG_MAX_BYTES)
+        {
+        XLogout(*this);
+        clear();
+        return *this;
+        }
+      if(XLOG_MAX_BYTES >= size())
         {
         XLogout(*this);
         clear();

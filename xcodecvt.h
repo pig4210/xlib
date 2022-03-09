@@ -2,7 +2,7 @@
   \file  xcodecvt.h
   \brief 用于 ANSI 与 UNICODE 及 UTF8 等编码的本地化转换。
 
-  \version    2.3.0.220105
+  \version    2.3.1.2200309
 
   \author     triones
   \date       2019-08-02
@@ -34,7 +34,7 @@
 // 有 BUG ！！！需要在某个 CPP 定义如下注释代码。
 // std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
 
-using char8_t = uint8_t;
+using char8_t = unsigned char;
 
 // 违反规则，添加进 std ，以模拟实现。
 namespace std

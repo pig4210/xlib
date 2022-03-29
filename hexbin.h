@@ -493,14 +493,16 @@ template<typename T> constexpr ShowBinCode inline CheckBinCode()
     }
   }
 
+#define __SBTS(text) (const char8_t*)u8 ## text
 
 /**
   指定 BIN 串，格式化显示。
   \param  bin       BIN 串。
   \param  len       BIN 串长度。
   \param  code      指明内容编码（默认编码自动选择 ANSI 或 UTF8 ）。
+  \param  prews     前缀。
+  \param  offset    地址模式。采用真实地址 == false / 从 0 开始计算 == true 。
   \param  isup      HEX 格式大小写控制。
-  \param  prews     前缀空格数。
   \return           格式化后的内容。
 
   \code
@@ -513,12 +515,13 @@ template<typename T> constexpr ShowBinCode inline CheckBinCode()
 template<typename T> xmsg showbin(
   const T* const    bin,
   const size_t      len,
-  const ShowBinCode code  = CheckBinCode<T>(),
-  const bool        isup  = true,
-  const xmsg&       prews = xmsg())
+  const ShowBinCode code    = CheckBinCode<T>(),
+  const xmsg&       prews   = xmsg(),
+  const bool        offset  = false,
+  const bool        isup    = true)
   {
   xmsg ret;
-  const auto fmt = isup ? (const char8_t*)u8"0123456789ABCDEF" : (const char8_t*)u8"0123456789abcdef";
+  const auto fmt = isup ? __SBTS("0123456789ABCDEF") : __SBTS("0123456789abcdef");
 
   size_t used = 0;
   const uint8_t* data = (const uint8_t*)bin;
@@ -531,9 +534,9 @@ template<typename T> xmsg showbin(
   auto prefix = [&]
     {
     ret.append(prews);      // 前缀。
-    const auto p = bswap((size_t)data);
+    const auto p = bswap(offset ? (data - (const uint8_t*)bin) : (size_t)data);
     ret << bin2hex(&p, 1);  // 地址前缀。
-    ret.append((const char8_t*)u8" |");
+    ret.append(__SBTS(" |"));
     
     for(size_t i = 0; i < k_max_line_byte; ++i)
       {
@@ -544,16 +547,16 @@ template<typename T> xmsg showbin(
         }
       else            // 无数据补齐。
         {
-        ret.append((const char8_t*)u8"  ");
+        ret.append(__SBTS("  "));
         }
       switch(i)
         {
         case 3:  case 7:  case 11:
-          ret.push_back(char8_t(u8'|')); break;
+          ret.push_back('|'); break;
         case 15:
-          ret.append((const char8_t*)u8"| "); break;
+          ret.append(__SBTS("| ")); break;
         default:
-          ret.push_back(char8_t(u8' '));
+          ret.push_back(' ');
         }
       }
     };
@@ -651,7 +654,7 @@ template<typename T> xmsg showbin(
       if(s.empty())
         {
         used += sizeof(char);
-        ret.push_back(char8_t(u8'.'));
+        ret.push_back('.');
         }
       else
         {
@@ -659,8 +662,8 @@ template<typename T> xmsg showbin(
         }
       }
     used -= fix_len;
-    ret.push_back(char8_t(u8'\r'));
-    ret.push_back(char8_t(u8'\n'));
+    ret.push_back('\r');
+    ret.push_back('\n');
 
     data += k_max_line_byte;
     size -= fix_len;
@@ -668,48 +671,46 @@ template<typename T> xmsg showbin(
   return ret;
   }
 
+#undef __SBTS
+
 inline auto showbin(
   const void* const bin,
   const size_t      len,
-  const ShowBinCode code  = CheckBinCode<void>(),
-  const bool        isup  = true,
-  const xmsg&       prews = xmsg())
+  const ShowBinCode code    = CheckBinCode<void>(),
+  const xmsg&       prews   = xmsg(),
+  const bool        offset  = false,
+  const bool        isup    = true)
   {
-  return showbin((const char*)bin, len, code, isup, prews);
+  return showbin((const char*)bin, len, code, prews, offset, isup);
   }
 
 template<typename T> auto showbin(
   const T&           data,
   const ShowBinCode  code,
-  const bool         isup,
-  const xmsg&        prews)
+  const xmsg&        prews,
+  const bool         offset,
+  const bool         isup)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), code, isup, prews);
+  return showbin(data.data(), data.size(), code, prews, offset, isup);
   }
   
 template<typename T> auto showbin(const T& data)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, xmsg());
+  return showbin(data.data(), data.size());
   }
 
 template<typename T> auto showbin(const T& data, const ShowBinCode code)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), code, true, 0);
-  }
-
-template<typename T> auto showbin(const T& data, const bool isup)
-  ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
-  {
-  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, 0);
+  return showbin(data.data(), data.size(), code);
   }
 
 template<typename T> auto showbin(const T& data, const xmsg& prews)
   ->std::enable_if_t<std::is_pointer_v<decltype(data.data())>, xmsg>
   {
-  return showbin(data.data(), data.size(), CheckBinCode<T>(), true, prews);
+  return showbin(data.data(), data.size(), CheckBinCode<T>(), prews);
   }
 
 #endif  // _XLIB_HEXBIN_H_

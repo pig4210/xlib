@@ -115,7 +115,7 @@ class xmsg : public std::u8string
       {
       return operator<<((uintptr_t)v);
       }
-    /// 输出 :true :false。
+    /// 输出 true 或 false。
     xmsg& operator<<(const bool& v)
       {
       return operator<<(v ? XMSGT("true") : XMSGT("false"));

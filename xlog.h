@@ -176,7 +176,7 @@ class xlog : public xmsg
     xerr << xfuninfo << "这里出错";
   \endcode
 */
-#define xfuninfo "[" __FUNCTION__ "][" << __LINE__ << u8"]: "
+#define xfuninfo "[" __FUNCTION__ "][" << __LINE__ << "]: "
 /**
   便捷宏，用于便捷插入异常产生的函数。
 

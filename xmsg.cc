@@ -88,7 +88,7 @@ done = (xmsg() << std::wstring(L"123")) == XMSGS("123");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(char8_t);
-done = (xmsg() << u8'1') == XMSGS("1");
+done = (xmsg() << char8_t(u8'1')) == XMSGS("1");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(char8_t*);
@@ -96,7 +96,7 @@ done = (xmsg() << (const char8_t*)u8"123") == XMSGS("123");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(std::u8string);
-done = (xmsg() << XMSGS("123")) == XMSGS("123");
+done = (xmsg() << std::u8string((const char8_t*)u8"123")) == XMSGS("123");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(float);

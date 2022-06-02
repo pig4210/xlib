@@ -3,14 +3,14 @@
 xlib_test.o         : 
 xcrc.o              : xcrc.h
 xswap.o             : xswap.h
-xrand.o             : xrand.h
+xrand.o             : xcompilerspecial.h xrand.h
 xblk.o              : xblk.h
-xcodecvt.o          : xcodecvt.h
-xmsg.o              : xcodecvt.h xmsg.h
-xlog.o              : xcodecvt.h xmsg.h xlog.h
-hexbin.o            : xswap.h xcodecvt.h xmsg.h hexbin.h
+xcodecvt.o          : xcompilerspecial.h xcodecvt.h
+xmsg.o              : xcompilerspecial.h xcodecvt.h xmsg.h
+xlog.o              : xcompilerspecial.h xcodecvt.h xmsg.h xlog.h
+hexbin.o            : xswap.h xcompilerspecial.h xcodecvt.h xmsg.h hexbin.h
 varint.o            : varint.h
-xbin.o              : xbin.h xswap.h varint.h
+xbin.o              : xswap.h varint.h xbin.h
 
 %.o : xlib_test.h
 

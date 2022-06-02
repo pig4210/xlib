@@ -156,12 +156,14 @@ class xmsg : public std::u8string
       append(XMSGWS(v));
       return *this;
       }
+#ifndef XLIB_NOCXX20
     /// 输出 UTF-8 字符 转换。
     xmsg& operator<<(const char8_t& v)
       {
       append(XMSGU8(std::u8string(1, v)));
       return *this;
       }
+#endif
     /// 输出 UTF-8 字符串 转换。
     xmsg& operator<<(const char8_t* v)
       {

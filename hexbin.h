@@ -462,7 +462,7 @@ enum ShowBinCode
 
 constexpr bool LocaleCheck()
   {
-#if defined(_WIN32) && XLIB_NOCXX20
+#if defined(_WIN32) && defined(XLIB_NOCXX20)
   return true;
 #else
   return (uint8_t)*u8"文" != (uint8_t)*"文";

@@ -87,9 +87,11 @@ SHOW_TEST_HEAD(wstring);
 done = (xmsg() << std::wstring(L"123")) == XMSGS("123");
 SHOW_TEST_RESULT;
 
+#ifndef XLIB_NOCXX20
 SHOW_TEST_HEAD(char8_t);
 done = (xmsg() << char8_t(u8'1')) == XMSGS("1");
 SHOW_TEST_RESULT;
+#endif
 
 SHOW_TEST_HEAD(char8_t*);
 done = (xmsg() << (const char8_t*)u8"123") == XMSGS("123");

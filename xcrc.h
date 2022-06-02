@@ -75,8 +75,9 @@ T XCRC(const void* const data, const size_t size)
     // 接受顺序容器。
     auto x = crc(std::string("12"));
     auto x = crc(std::array<char, 1>{'1'});
-    // 接受编译期字符串。
+    // 接受字符串字面量。
     auto x = crc("12");
+    auto x = crc(L"12");
   \endcode
 */
 #define CRCX(FUNC, TT, NN, VV, RR) \

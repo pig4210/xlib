@@ -30,6 +30,8 @@
 #include <climits>
 #include <cstdint>
 
+#include "xcompilerspecial.h"
+
 #ifndef XLIB_NOCXX20
 #include <bit>
 #endif

@@ -30,18 +30,7 @@
 #include <string>
 #include <locale>
 
-#ifdef XLIB_NOCXX20
-// 有 BUG ！！！需要在某个 CPP 定义如下注释代码。
-// std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
-
-using char8_t = unsigned char;
-
-// 违反规则，添加进 std ，以模拟实现。
-namespace std
-  {
-  using u8string = basic_string<char8_t, char_traits<char8_t>, allocator<char8_t>>;
-  }
-#endif
+#include "xcompilerspecial.h"
 
 /// 允许通过设置 LOCALE_AS_WS 宏，改变默认 ANSI 编码。
 #ifndef LOCALE_AS_WS

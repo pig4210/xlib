@@ -3,6 +3,7 @@
 #include "xlib_test.h"
 
 #ifdef XLIB_NOCXX20
+#pragma message("!!! use fake std::u8string !!!")
 std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
 #endif
 

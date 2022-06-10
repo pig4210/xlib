@@ -4,7 +4,6 @@
 
 #include <memory>
 #include <string>
-#include <set>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -285,19 +284,19 @@ class Opcodes : public std::basic_string<char, std::char_traits<char>, Allocator
     template<class T> auto operator<<(const T& v)
       -> std::enable_if_t<std::is_pointer_v<decltype(v.data())>, Opcodes&>
       {
-      append((const char*)v.data(), v.size() * sizeof(T::value_type));
+      this->append((const char*)v.data(), v.size() * sizeof(T::value_type));
       return *this;
       }
     template<class T> std::enable_if_t<!std::is_class_v<T>, Opcodes&>
       operator<<(const T& v)
       {
-      append((const char*)&v, sizeof(v));
+      this->append((const char*)&v, sizeof(v));
       return *this;
       }
     template<typename T, size_t size>
     Opcodes& operator<<(T const(&data)[size])
       {
-      append((const char*)data, sizeof(T) * (size - 1));
+      this->append((const char*)data, sizeof(T) * (size - 1));
       return *this;
       }
   };

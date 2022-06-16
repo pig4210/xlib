@@ -624,9 +624,10 @@ class xHook
           HookRoutine   routine,
           const bool    routinefirst,
           void*         p_shellcode = nullptr)
+      :xHook((void*)hookmem, hooksize, routine, routinefirst, p_shellcode)
       {
-      xHook((void*)hookmem, hooksize, routine, routinefirst, p_shellcode);
-      } 
+      // 注意，不能在这里 xHook 。
+      }
     /**
       指定 跳转表 或 call 偏移位置，执行 Hook 操作。
 
@@ -732,8 +733,8 @@ class xHook
           const bool      routinefirst,
           void*           p_shellcode = nullptr,
           const intptr_t  expandargc = 0)
+      : xHook((void*)hookmem, routine, calltable_offset, routinefirst, p_shellcode, expandargc)
       {
-      xHook((void*)hookmem, routine, calltable_offset, routinefirst, p_shellcode, expandargc);
       } 
   public:
     /// 偏移计算。

@@ -38,7 +38,11 @@
 
 #include "xcodecvt.h"
 
+#ifdef XLIB_NOCXX20
 #define XMSGT(text) (const char8_t*)u8 ## text
+#else
+#define XMSGT(text) u8 ## text
+#endif
 #define XMSGAS(v) as2u8(v)
 #define XMSGWS(v) ws2u8(v)
 #define XMSGU8(v) v

@@ -15,7 +15,6 @@
 #ifndef _XLIB_TEST_H_
 #define _XLIB_TEST_H_
 
-#include <map>
 #include <string>
 #include <iostream>
 #include <iomanip>

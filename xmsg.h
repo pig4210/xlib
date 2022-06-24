@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.1.1.220309
+  \version    5.1.2.220624
   \note       For All
 
   \author     triones
@@ -75,42 +75,42 @@ class xmsg : public std::u8string
       return *this;
       }
     /// 输出 dec 值。
-    template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int8_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int8_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%hhi"), v);
       }
     /// 输出 hex(XX)。
-    template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint8_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint8_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%02X"), v);
       }
     /// 输出 dec 值。
-    template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int16_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int16_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%hi"), v);
       }
     /// 输出 hex(XXXX)。
-    template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint16_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint16_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%04X"), v);
       }
     /// 输出 dec 值。
-    template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int32_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int32_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%i"), v);
       }
     /// 输出 hex(XXXXXXXX)。
-    template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint32_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint32_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%08X"), v);
       }
     /// 输出 dec 值。
-    template<typename T> std::enable_if_t<std::is_signed_v<T> && sizeof(T) == sizeof(int64_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int64_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%lli"), v);
       }
     /// 输出 hex(XXXXXXXXXXXXXXXX)。
-    template<typename T> std::enable_if_t<std::is_unsigned_v<T> && sizeof(T) == sizeof(uint64_t), xmsg&> operator<<(const T& v)
+    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint64_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
       {
       return prt(XMSGT("%08X%08X"), (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
       }

@@ -19,6 +19,10 @@ SHOW_TEST_HEAD(constructor u8);
 done = xmsg(XMSGS("AA转换测试BB")) == XMSGWS(L"AA转换测试BB");
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(prt);
+done = xmsg().prt("%s", "AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42") == XMSGWS(L"AA转换测试BB");
+SHOW_TEST_RESULT;
+
 SHOW_TEST_HEAD(int8_t);
 done = (xmsg() << (int8_t)-1) == XMSGS("-1");
 SHOW_TEST_RESULT;

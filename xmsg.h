@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.1.2.220624
+  \version    5.1.3.220629
   \note       For All
 
   \author     triones
@@ -72,6 +72,23 @@ class xmsg : public std::u8string
       std::vsnprintf((char*)buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
       va_end(ap);
       append(buffer);
+      return *this;
+      }
+    /// 针对 UTF-8 对齐问题， %s 格式化建议使用 char* 。
+    xmsg& prt(const char* const fmt, ...)
+      {
+      if(nullptr == fmt) return *this;
+      va_list ap;
+      va_start(ap, fmt);
+      const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
+      va_end(ap);
+      if(0 >= need) return *this;
+      std::string buffer;
+      buffer.resize(need);
+      va_start(ap, fmt);
+      std::vsnprintf(buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
+      va_end(ap);
+      append(XMSGAS(buffer));
       return *this;
       }
     /// 输出 dec 值。

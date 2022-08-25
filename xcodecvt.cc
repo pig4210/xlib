@@ -4,7 +4,13 @@
 
 #ifdef XLIB_NOCXX20
 #pragma message("!!! use fake std::u8string !!!")
+#ifndef XCODECVTHFILE
 std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
+#endif
+#endif
+
+#ifdef XCODECVTHFILE
+#pragma message("!!! use XCODECVTHFILE !!!")
 #endif
 
 SHOW_TEST_INIT(XCODECVT)
@@ -37,6 +43,14 @@ SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(u82as);
 done = asbuf == u82as(u8buf);
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(u82ws emoji);
+done = L"🚚" == u82ws((const char8_t*)u8"🚚");
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(ws2u8 emoji);
+done = (const char8_t*)u8"🚚" == ws2u8(L"🚚");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

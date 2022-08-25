@@ -2,7 +2,7 @@
   \file  xcodecvt.h
   \brief 用于 ANSI 与 UNICODE 及 UTF8 等编码的本地化转换。
 
-  \version    2.3.1.2200309
+  \version    2.4.0.220825
 
   \author     triones
   \date       2019-08-02
@@ -23,6 +23,7 @@
   - 2020-05-14 加入贪婪处理方式。 2.1 。
   - 2021-08-04 处理 ws 转换 emoji 不正确的 BUG。 2.2 。
   - 2022-01-05 支持 c++17 。 2.3 。
+  - 2022-08-25 支持替换为三方编码转换。
 */
 #ifndef _XLIB_XCODECVT_H_
 #define _XLIB_XCODECVT_H_
@@ -31,6 +32,17 @@
 #include <locale>
 
 #include "xcompilerspecial.h"
+
+#if defined(XLIB_NOCXX20) && defined(_DLL) && !defined(XCODECVTHFILE)
+#error "VS2017 with MD, please #define XCODECVTHFILE "xcodecvt_win.h""
+// 或者可以添加编译选项： /DXCODECVTHFILE=\"xcodecvt_win.h\" 。（注意 \"）
+#endif
+
+#ifdef XCODECVTHFILE
+
+#include XCODECVTHFILE
+
+#else   // XCODECVTHFILE
 
 /// 允许通过设置 LOCALE_AS_WS 宏，改变默认 ANSI 编码。
 #ifndef LOCALE_AS_WS
@@ -69,7 +81,7 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
-  rd = read = 0;
+  read = 0;
 
   size_t write = 0;
 
@@ -340,7 +352,7 @@ inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr
   for(const auto& c : as)
     {
     const uint8_t ch = (uint8_t)c;
-    if((ch < ' ') || (ch > '~')) return ws2u8(as2ws(as, lpread));
+    if(!(isprint(ch) || isspace(ch))) return ws2u8(as2ws(as, lpread));
     }
   // 纯英文字符，无需转换。
   size_t rd;
@@ -363,7 +375,7 @@ inline std::string u82as(const std::u8string& u8, size_t* const lpread = nullptr
   for(const auto& c : u8)
     {
     const uint8_t ch = (uint8_t)c;
-    if((ch < ' ') || (ch > '~')) return ws2as(u82ws(u8, lpread));
+    if(!(isprint(ch) || isspace(ch))) return ws2as(u82ws(u8, lpread));
     }
   // 纯英文字符，无需转换。
   size_t rd;
@@ -371,5 +383,10 @@ inline std::string u82as(const std::u8string& u8, size_t* const lpread = nullptr
   read = u8.size();
   return std::string((const char*)u8.c_str(), u8.size());
   }
+
+#undef LOCALE_AS_WS
+#undef LOCALE_WS_U8
+
+#endif  // XCODECVTHFILE
 
 #endif  // _XLIB_XCODECVT_H_

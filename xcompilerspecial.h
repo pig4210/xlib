@@ -1,6 +1,7 @@
 ﻿#ifndef _XLIB_XCOMPILERSPECIAL_H_
 #define _XLIB_XCOMPILERSPECIAL_H_
 
+// VS2017 无法使用 c++20 。
 #if defined(_WIN32) || defined(_WIN64)
 
 #if _MSVC_LANG <= 202002L

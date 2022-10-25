@@ -41,7 +41,10 @@ void XLogout(const xmsg& msg);
 #ifndef XLOGOUT
   #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
+    #define NOMINMAX
     #include <windows.h>
+    #undef NOMINMAX
+    #undef WIN32_LEAN_AND_MEAN
     inline void XLogout(const xmsg& msg)
       {
       OutputDebugStringA(msg.toas().c_str());

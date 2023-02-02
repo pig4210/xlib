@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.3.0.220309
+  \version    2.4.0.230202
 
   \author     triones
   \date       2011-07-22
@@ -29,6 +29,7 @@
   - 2019-11-05 改进声明。 2.1 。
   - 2020-11-12 适配 xmsg 升级。 2.2 。
   - 2021-08-05 分段输出改进。 2.3 。
+  - 2023-02-02 改进输出，使重载后的输出更加灵活。 2.4 。
 */
 #ifndef _XLIB_XLOG_H_
 #define _XLIB_XLOG_H_
@@ -88,18 +89,22 @@ class xlog : public xmsg
       {
       do_out();
       }
+    virtual void raw_out(const xmsg& msg)
+      {
+      return XLogout(msg);
+      }
     xlog& do_out()
       {
       if(empty())  return *this;
       if constexpr (0 == XLOG_MAX_BYTES)
         {
-        XLogout(*this);
+        raw_out(*this);
         clear();
         return *this;
         }
       if(XLOG_MAX_BYTES >= size())
         {
-        XLogout(*this);
+        raw_out(*this);
         clear();
         return *this;
         }
@@ -109,7 +114,7 @@ class xlog : public xmsg
         {
         if(ll >= XLOG_MAX_BYTES)
           {
-          XLogout(std::u8string(begin() + ss, begin() + i));
+          raw_out(std::u8string(begin() + ss, begin() + i));
           ss = i;
           ll = 0;
           }
@@ -128,7 +133,7 @@ class xlog : public xmsg
         }
       if(ss < size())
         {
-        XLogout(std::u8string(begin() + ss, end()));
+        raw_out(std::u8string(begin() + ss, end()));
         }
       clear();
       return *this;

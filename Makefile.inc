@@ -14,14 +14,14 @@ xbin.o              : xswap.h varint.h xbin.h
 
 %.o : xlib_test.h
 
-OBJS    := xlib_test.o \
-           xcrc.o \
-           xswap.o \
-           xrand.o \
-           xblk.o \
-           xcodecvt.o \
-           xmsg.o \
-           xlog.o \
-           hexbin.o \
-           varint.o \
-           xbin.o
+OBJS := xlib_test.o \
+        xcrc.o \
+        xswap.o \
+        xrand.o \
+        xblk.o \
+        xcodecvt.o \
+        xmsg.o \
+        xlog.o \
+        hexbin.o \
+        varint.o \
+        xbin.o

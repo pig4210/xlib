@@ -2,7 +2,7 @@
   \file  xblk.h
   \brief 定义了内存块比对操作的类。
 
-  \version    2.0.1.210620
+  \version    2.0.1.230207
 
   \author     triones
   \date       2012-09-12
@@ -61,7 +61,7 @@ class xblk
       {
       }
     /// 判定目标块与本块的关系。
-    constexpr PosDcrpt checkin(const xblk& blk) const
+    constexpr PosDcrpt check(const xblk& blk) const
       {
       const char* const s = (const char*)start;
       const char* const e = (const char*)end;
@@ -77,21 +77,21 @@ class xblk
       if(ee > e)  return HeadIn;
       return WholeIn;
       }
-    template<typename T> constexpr PosDcrpt checkin(const T* const a, const T* const b) const
+    template<typename T> constexpr PosDcrpt check(const T* const a, const T* const b) const
       {
-      return checkin(xblk(a, b));
+      return check(xblk(a, b));
       }
-    template<typename T> constexpr PosDcrpt checkin(const T* const a, const intptr_t diff = 1) const
+    template<typename T> constexpr PosDcrpt check(const T* const a, const intptr_t diff = 1) const
       {
-      return checkin(xblk(a, diff));
+      return check(xblk(a, diff));
       }
-    constexpr PosDcrpt checkin(const void* const a, const intptr_t diff = 1) const
+    constexpr PosDcrpt check(const void* const a, const intptr_t diff = 1) const
       {
-      return checkin(xblk(a, diff));
+      return check(xblk(a, diff));
       }
-    constexpr PosDcrpt checkin(const void* const a, const void* b) const
+    constexpr PosDcrpt check(const void* const a, const void* b) const
       {
-      return checkin(xblk(a, b));
+      return check(xblk(a, b));
       }
     /// 比较操作。
     constexpr bool operator==(const xblk& blk) const

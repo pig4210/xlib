@@ -28,7 +28,7 @@
 
 /// 允许通过设置 LOCALE_AS_WS 宏，改变默认 ANSI 编码。
 #ifndef LOCALE_AS_WS
-#define LOCALE_AS_WS   CP_ACP
+#define LOCALE_AS_WS  CP_ACP
 #endif
 
 /// 允许通过设置 LOCALE_WS_U8 宏，改变默认 UTF8 编码。
@@ -163,7 +163,7 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
   \code
     auto u8(ws2u8(L"文字"));
   \endcode
-  */
+*/
 inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullptr)
   {
   if(ws.empty())  return std::u8string();
@@ -202,7 +202,7 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
   \code
     auto u8(as2u8("文字"));
   \endcode
-  */
+*/
 inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr)
   {
   for(const auto& c : as)

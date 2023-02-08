@@ -2,7 +2,7 @@
   \file  varint.h
   \brief 定义了 zig 、 zag 、 varint 相关操作。
 
-  \version    2.0.0.200313
+  \version    2.0.0.230208
   \note       For All
 
   \author     triones
@@ -24,7 +24,7 @@
 #include <array>
 
 template<typename T> constexpr
-std::enable_if_t<std::is_integral_v<T>, typename std::make_unsigned_t<T>>
+std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, typename std::make_unsigned_t<T>>
 inline zig(const T& value)
   {
   using U = typename std::make_unsigned_t<T>;
@@ -42,7 +42,7 @@ inline zig(const T& value)
   }
 
 template<typename T> constexpr
-std::enable_if_t<std::is_integral_v<T>, typename std::make_signed_t<T>>
+std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, typename std::make_signed_t<T>>
 inline zag(const T& value)
   {
   using S = typename std::make_signed_t<T>;
@@ -59,7 +59,7 @@ inline zag(const T& value)
     }
   }
 
-template<typename T, std::enable_if_t<std::is_integral_v<T>, int> = 0>
+template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, int> = 0>
 class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
   {
   public:

@@ -2,7 +2,7 @@
   \file  xbin.h
   \brief 定义了便捷数据组织的类，常用于封包的组织与解析。
 
-  \version    2.1.1.200313
+  \version    2.1.1.230208
 
   \author     triones
   \date       2010-03-26
@@ -129,6 +129,15 @@ class xbin : public std::basic_string<uint8_t>
       }
     /**
       \code
+        xbin << true;
+      \endcode
+    */
+    xbin& operator<<(bool const b)
+      {
+      return operator<<((uint8_t)b);
+      }
+    /**
+      \code
         xbin << "2121321";
         xbin << L"12312";
       \endcode
@@ -222,6 +231,16 @@ class xbin : public std::basic_string<uint8_t>
     xbin& operator>>(void*& p)
       {
       return operator>>((size_t&)p);
+      }
+    /**
+      \code
+        bool b;
+        xbin >> b;
+      \endcode
+    */
+    xbin& operator>>(bool& b)
+      {
+      return operator>>(*(uint8_t*)&b);
       }
     /**
       \code

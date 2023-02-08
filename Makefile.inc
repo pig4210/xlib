@@ -1,6 +1,6 @@
 ﻿# 这个 Makefile 用于 编译 xlib 的文件包含 。
 
-xlib_test.o         : 
+xlib_test.o         : xsig.h
 xcrc.o              : xcrc.h
 xswap.o             : xswap.h
 xrand.o             : xcompilerspecial.h xrand.h

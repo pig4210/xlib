@@ -18,6 +18,16 @@ done = lb.size() == sizeof(void*) && *(void**)lb.c_str() == (void*)0x12345678 &&
        vb.size() == 4 && *(const uint32_t*)vb.c_str() == (uint32_t)0x05F1C2CE;
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(<< bool);
+lb.clear(); gb.clear(); vb.clear();
+lb << true;
+gb << false;
+vb << true;
+done = lb.size() == sizeof(bool) && *(bool*)lb.c_str() == true &&
+       gb.size() == sizeof(bool) && *(bool*)gb.c_str() == false &&
+       vb.size() == 1 && *(bool*)vb.c_str() == true;
+SHOW_TEST_RESULT;
+
 SHOW_TEST_HEAD(<< T*);
 lb.clear(); gb.clear(); vb.clear();
 lb << "123456";
@@ -72,9 +82,9 @@ SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(>> void*);
 lb.clear(); gb.clear(); vb.clear();
-lb << (void*)0x12345678 << "123456" << '\0';
-gb << (void*)0x12345678 << "123456";
-vb << (void*)0x12345678 << "123456" << '\0';
+lb << (void*)0x12345678 << true  << "123456" << '\0';
+gb << (void*)0x12345678 << false << "123456";
+vb << (void*)0x12345678 << true  << "123456" << '\0';
 void* vva;
 void* vvb;
 void* vvc;
@@ -82,6 +92,16 @@ lb >> vva;
 gb >> vvb;
 vb >> vvc;
 done = vva == (void*)0x12345678 && vvb == vva && vvc == vva;
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(>> bool);
+bool vba;
+bool vbb;
+bool vbc;
+lb >> vba;
+gb >> vbb;
+vb >> vbc;
+done = vba == true && vbb == false && vbc == true;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(>> T*);

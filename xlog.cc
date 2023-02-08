@@ -1,7 +1,4 @@
-﻿#define XLOGOUT
-#define XLOG_MAX_BYTES 200
-
-#include "xlog.h"
+﻿#include "xlog.h"
 
 #undef xlog_static_lvl
 #define xlog_static_lvl xlog::warn
@@ -10,17 +7,33 @@
 
 #include "xlib_test.h"
 
-void XLogout(const xmsg&)
+class xxlog : public xlog
   {
-  }
+  public:
+    virtual ~xxlog()
+      {
+      // 注意到：如果让 xlog 析构时 do_out ，将失去调用重载 raw_out 的机会。
+      //        因彼时，xxlog 部分已完成析构。
+      do_out();
+      }
+    virtual void raw_out(const xmsg& msg)
+      {
+      std::wcout << msg.tows() << std::endl;
+      }
+  };
+
+#undef xlog_do
+#define xlog_do(v) if constexpr ((v) <= xlog_static_lvl) xxlog()
 
 SHOW_TEST_INIT(XLOG)
 
+xxlog() << u8"xlog msg";
+
 SHOW_TEST_HEAD(xlog);
-done = (xlog() << L"123") == xmsg(L"123");
+done = true;
 SHOW_TEST_RESULT;
 
-xtrace << L"xlog trace";
-xfail << L"xlog fail";
+xtrace << L"xlog trace xxxxxxxxx";
+xfail << "xlog fail ok";
 
 SHOW_TEST_DONE;

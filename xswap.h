@@ -70,6 +70,10 @@ std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == si
   return (T)xbswap64(values);
   }
 
+#undef xbswap16
+#undef xbswap32
+#undef xbswap64
+
 /**
   当 A > B 时，对调两值，并返回真。否则不变，返回假。
   \param    a   任意类型非常量值。

@@ -36,25 +36,22 @@
 
 #include "xmsg.h"
 
-/// 允许设置 XLOGOUT 改变 xlog 默认输出行为。
-#ifndef XLOGOUT
-  #ifdef _WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-    #undef WIN32_LEAN_AND_MEAN
-  #else
-    #include <iostream>
-  #endif
+/*
+  放弃 XLOGOUT 外部预定义 void XLogout(const xmsg& msg) 行为，
+  因可能多处包含 xlog.h ，但 XLOGOUT 可能不全局，将导致多为 .o 文件默认定义。
+  也可能导致不同 .o 的 xlog 行为不一致。
+  所以改变 xlog 行为建议重载 xlog 实现。
+*/
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #define NOMINMAX
+  #include <windows.h>
+  #undef NOMINMAX
+  #undef WIN32_LEAN_AND_MEAN
 #else
-  void XLogout(const xmsg& msg);
+  #include <iostream>
 #endif
 
-// 允许设置 XLOG_MAX_BYTES 用于消息过长分段输出。
-#ifndef XLOG_MAX_BYTES
-#define XLOG_MAX_BYTES 0
-#endif
 /**
   xlog 用于基本的调试信息输出。
   
@@ -77,32 +74,27 @@ class xlog : public xmsg
       on,     ///< 全输出。
       };
   public:
-    virtual ~xlog()
-      {
-      do_out();
-      }
+    virtual ~xlog() { do_out(); }
     virtual void raw_out(const xmsg& msg)
       {
-#ifndef XLOGOUT
-  #ifdef _WIN32
+#ifdef _WIN32
       OutputDebugStringA(msg.toas().c_str());
-  #else
-      std::wcout << msg.tows() << std::endl;
-  #endif
 #else
-      return XLogout(msg);
+      std::wcout << msg.tows() << std::endl;
 #endif
       }
     xlog& do_out()
       {
       if(empty())  return *this;
-      if constexpr (0 == XLOG_MAX_BYTES)
-        {
-        raw_out(*this);
-        clear();
-        return *this;
-        }
-      if(XLOG_MAX_BYTES >= size())
+      raw_out(*this);
+      clear();
+      return *this;
+      }
+    // 分行输出请重载 xlog 后调用此函数用于输出。
+    xlog& do_out(const size_t line_max)
+      {
+      if(empty())  return *this;
+      if(line_max >= size())
         {
         raw_out(*this);
         clear();
@@ -112,7 +104,7 @@ class xlog : public xmsg
       size_t ll = 0;
       for(size_t i = ss; i < size();)
         {
-        if(ll >= XLOG_MAX_BYTES)
+        if(ll >= line_max)
           {
           raw_out(std::u8string(begin() + ss, begin() + i));
           ss = i;

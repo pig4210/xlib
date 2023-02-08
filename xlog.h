@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.4.0.230202
+  \version    2.4.0.230208
 
   \author     triones
   \date       2011-07-22
@@ -29,34 +29,21 @@
   - 2019-11-05 改进声明。 2.1 。
   - 2020-11-12 适配 xmsg 升级。 2.2 。
   - 2021-08-05 分段输出改进。 2.3 。
-  - 2023-02-02 改进输出，使重载后的输出更加灵活。 2.4 。
+  - 2023-02-08 改进输出，使重载后的输出更加灵活。 2.4 。
 */
 #ifndef _XLIB_XLOG_H_
 #define _XLIB_XLOG_H_
 
 #include "xmsg.h"
 
-void XLogout(const xmsg& msg);
-
-/// 允许设置 XLOGOUT 改变 xlog 默认输出行为。
-#ifndef XLOGOUT
-  #ifdef _WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #define NOMINMAX
-    #include <windows.h>
-    #undef NOMINMAX
-    #undef WIN32_LEAN_AND_MEAN
-    inline void XLogout(const xmsg& msg)
-      {
-      OutputDebugStringA(msg.toas().c_str());
-      }
-  #else
-    #include <iostream>
-    inline void XLogout(const xmsg& msg)
-      {
-      std::wcout << msg.tows() << std::endl;
-      }
-  #endif
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #define NOMINMAX
+  #include <windows.h>
+  #undef NOMINMAX
+  #undef WIN32_LEAN_AND_MEAN
+#else
+  #include <iostream>
 #endif
 
 // 允许设置 XLOG_MAX_BYTES 用于消息过长分段输出。
@@ -91,7 +78,11 @@ class xlog : public xmsg
       }
     virtual void raw_out(const xmsg& msg)
       {
-      return XLogout(msg);
+#ifdef _WIN32
+    OutputDebugStringA(msg.toas().c_str());
+#else
+    std::wcout << msg.tows() << std::endl;
+#endif
       }
     xlog& do_out()
       {

@@ -1,5 +1,5 @@
 ﻿/**
-  \file  varint.h
+  \file  xvarint.h
   \brief 定义了 zig 、 zag 、 varint 相关操作。
 
   \version    2.0.0.230208
@@ -16,8 +16,8 @@
   - 2019-11-06 重构 zig 、 zag 。 1.2 。
   - 2020-03-13 重构 varint 。 2.0 。
 */
-#ifndef _XLIB_VARINT_H_
-#define _XLIB_VARINT_H_
+#ifndef _XLIB_XVARINT_H_
+#define _XLIB_XVARINT_H_
 
 #include <climits>
 #include <string>
@@ -25,7 +25,7 @@
 
 template<typename T> constexpr
 std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, typename std::make_unsigned_t<T>>
-inline zig(const T& value)
+inline xzig(const T& value)
   {
   using U = typename std::make_unsigned_t<T>;
   // 无符号值或枚举值，不转换。
@@ -43,7 +43,7 @@ inline zig(const T& value)
 
 template<typename T> constexpr
 std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, typename std::make_signed_t<T>>
-inline zag(const T& value)
+inline xzag(const T& value)
   {
   using S = typename std::make_signed_t<T>;
   // 有符号值，不转换。
@@ -60,17 +60,17 @@ inline zag(const T& value)
   }
 
 template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, int> = 0>
-class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
+class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
   {
   public:
     using base = std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>;
   private:
     T _value;
   public:
-    constexpr varint(const T& value) : std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>(), _value(value)
+    constexpr xvarint(const T& value) : std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>(), _value(value)
       {
       // g++ 这里有 will be initialized after 警告，可忽略。
-      auto v = zig(value);
+      auto v = xzig(value);
       for(auto& pv : *this)
         {
         const auto vv = (uint8_t)(v & 0x7F);
@@ -106,7 +106,7 @@ class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
       {
       return _value;
       }
-    constexpr varint(const char* p):_value(0)
+    constexpr xvarint(const char* p) : _value(0)
       {
       using U = typename std::make_unsigned_t<T>;
       U v = 0;
@@ -118,16 +118,16 @@ class varint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
         ++count;
         if(0 == (pv & 0x80))
           {
-          _value = (std::is_signed_v<T>) ? (T)zag((U)v) : (T)v;
+          _value = (std::is_signed_v<T>) ? (T)xzag((U)v) : (T)v;
           break;
           }
         }
       }
     template<typename Ty,
     std::enable_if_t<(sizeof(Ty) == 1) || std::is_void<Ty>::value, int> = 0>
-    varint(const Ty* p):varint((const char*)p)
+    xvarint(const Ty* p) : xvarint((const char*)p)
       {
       }
   };
 
-#endif  // _XLIB_VARINT_H_
+#endif  // _XLIB_XVARINT_H_

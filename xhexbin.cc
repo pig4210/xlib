@@ -1,8 +1,8 @@
-﻿#include "hexbin.h"
+﻿#include "xhexbin.h"
 
 #include "xlib_test.h"
 
-SHOW_TEST_INIT(HEXBIN)
+SHOW_TEST_INIT(XHEXBIN)
 
 SHOW_TEST_HEAD(bin2hex as);
 done = "3132333435363738" == bin2hex(std::string("12345678"));

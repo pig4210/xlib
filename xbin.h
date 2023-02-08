@@ -95,7 +95,7 @@
 #include <stdexcept>
 
 #include "xswap.h"
-#include "varint.h"
+#include "xvarint.h"
 
 /**
   xbin 用于便捷的数据组织操作。
@@ -191,7 +191,7 @@ class xbin : public std::basic_string<uint8_t>
         }
       else
         {
-        const varint v(argvs);
+        const xvarint v(argvs);
         append((xbin::const_pointer)v.data(), v.size());
         }
       return *this;
@@ -207,7 +207,7 @@ class xbin : public std::basic_string<uint8_t>
         }
       else
         {
-        const varint v(size());
+        const xvarint v(size());
         insert(0, (xbin::const_pointer)v.data(), v.size());
         }
       return *this;
@@ -332,7 +332,7 @@ class xbin : public std::basic_string<uint8_t>
         }
       else
         {
-        const varint<T> vi(data());
+        const xvarint<T> vi(data());
         argvs = vi;
         const size_t typesize = vi.size();
 #ifndef XBIN_NOEXCEPT
@@ -380,7 +380,7 @@ class xbin : public std::basic_string<uint8_t>
 using lbin = xbin<uint16_t, false, false, false>;
 /// gbin 数据头为 word ，不包含自身，大端顺序，处理结尾 0 。
 using gbin = xbin<uint16_t, false, true, true>;
-/// vbin 为 varint 格式，忽略后继所有设置。
+/// vbin 为 xvarint 格式，忽略后继所有设置。
 using vbin = xbin<void, false, false, false>;
 
 #endif  // _XLIB_XBIN_H_

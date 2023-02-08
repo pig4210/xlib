@@ -1,5 +1,5 @@
 ﻿/**
-  \file  hex_bin.h
+  \file  xhex_bin.h
   \brief 定义了 hex 与 bin 的转换操作。
 
   \version    3.2.0.210620
@@ -43,8 +43,8 @@
   - 2020-11-12 改进 showbin 返回 xmsg 。 3.1 。
   - 2021-06-20 改进 showbin 的前缀类型。 3.2 。
 */
-#ifndef _XLIB_HEXBIN_H_
-#define _XLIB_HEXBIN_H_
+#ifndef _XLIB_XHEXBIN_H_
+#define _XLIB_XHEXBIN_H_
 
 #include <climits>
 #include <string>
@@ -713,4 +713,4 @@ template<typename T> auto showbin(const T& data, const xmsg& prews)
   return showbin(data.data(), data.size(), CheckBinCode<T>(), prews);
   }
 
-#endif  // _XLIB_HEXBIN_H_
+#endif  // _XLIB_XHEXBIN_H_

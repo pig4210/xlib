@@ -36,14 +36,19 @@
 
 #include "xmsg.h"
 
-#ifdef _WIN32
-  #define WIN32_LEAN_AND_MEAN
-  #define NOMINMAX
-  #include <windows.h>
-  #undef NOMINMAX
-  #undef WIN32_LEAN_AND_MEAN
+/// 允许设置 XLOGOUT 改变 xlog 默认输出行为。
+#ifndef XLOGOUT
+  #ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #define NOMINMAX
+    #include <windows.h>
+    #undef NOMINMAX
+    #undef WIN32_LEAN_AND_MEAN
+  #else
+    #include <iostream>
+  #endif
 #else
-  #include <iostream>
+  void XLogout(const xmsg& msg);
 #endif
 
 // 允许设置 XLOG_MAX_BYTES 用于消息过长分段输出。
@@ -78,10 +83,14 @@ class xlog : public xmsg
       }
     virtual void raw_out(const xmsg& msg)
       {
-#ifdef _WIN32
-    OutputDebugStringA(msg.toas().c_str());
+#ifndef XLOGOUT
+  #ifdef _WIN32
+      OutputDebugStringA(msg.toas().c_str());
+  #else
+      std::wcout << msg.tows() << std::endl;
+  #endif
 #else
-    std::wcout << msg.tows() << std::endl;
+      return XLogout(msg);
 #endif
       }
     xlog& do_out()

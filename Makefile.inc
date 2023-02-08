@@ -8,9 +8,9 @@ xblk.o              : xblk.h
 xcodecvt.o          : xcompilerspecial.h xcodecvt.h
 xmsg.o              : xcompilerspecial.h xcodecvt.h xmsg.h
 xlog.o              : xcompilerspecial.h xcodecvt.h xmsg.h xlog.h
-hexbin.o            : xswap.h xcompilerspecial.h xcodecvt.h xmsg.h hexbin.h
-varint.o            : varint.h
-xbin.o              : xswap.h varint.h xbin.h
+xhexbin.o           : xswap.h xcompilerspecial.h xcodecvt.h xmsg.h xhexbin.h
+xvarint.o           : xvarint.h
+xbin.o              : xswap.h xvarint.h xbin.h
 
 %.o : xlib_test.h
 
@@ -22,6 +22,6 @@ OBJS := xlib_test.o \
         xcodecvt.o \
         xmsg.o \
         xlog.o \
-        hexbin.o \
-        varint.o \
+        xhexbin.o \
+        xvarint.o \
         xbin.o

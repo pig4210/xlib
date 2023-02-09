@@ -25,16 +25,16 @@ class xblk
   public:
     enum PosDcrpt
       {
-      NoIn,         ///< 不在块内。
-      WholeIn,      ///< 全部在块内。
-      HeadIn,       ///< 前部在块内，尾部在块外。
-      TailIn,       ///< 前部在块外，尾部在块内。
-      SubIn,        ///< 中间部分在块内。
+      NoIn,         //< 不在块内。
+      WholeIn,      //< 全部在块内。
+      HeadIn,       //< 前部在块内，尾部在块外。
+      TailIn,       //< 前部在块外，尾部在块内。
+      SubIn,        //< 中间部分在块内。
       };
   public:
-    const void*   start;    ///< 块首。
-    const void*   end;      ///< 块尾。
-    const size_t  size;     ///< 块大小。
+    const void*   start;    //< 块首。
+    const void*   end;      //< 块尾。
+    const size_t  size;     //< 块大小。
   public:
     /// 默认构造表示非法块。
     constexpr xblk():start(nullptr), end(nullptr), size(0)

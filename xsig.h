@@ -18,6 +18,8 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <filesystem>
+#include <fstream>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -775,17 +777,17 @@ class xsig {
  public:
   /// 返回对象的词法是否有效。
   bool valid() const {
-    if(lexs.empty()) return false;
+    if(lexs.size() < 2) return false;
     return Lexical::LT_End == (*lexs.rbegin())->type;
   }
   /// 特征码串生成 特征码词法组。
-  void make_lexs(const char* const s) {
+  bool make_lexs(const char* const s) {
     Sign sig(s);
     lexs.clear();
     xsdbg << "---------------------------------------------------------------- lexical start";
     while(make_lex(sig));
     xsdbg << "---------------------------------------------------------------- lexical end";
-    if(!valid()) return;
+    if(!valid()) return false;
 
     xsdbg << "---------------------------------------------------------------- optimization start";
     optimization();
@@ -796,6 +798,7 @@ class xsig {
       xsdbg << lex->show();
     }
     xsdbg << "```";
+    return valid();
   }
 //////////////////////////////////////////////////////////////// match 内核
   /// 匹配内核。
@@ -892,7 +895,73 @@ class xsig {
     }
     return reps;
   }
-public:
+  /// 转换为二进制。
+  vbin to_bin() const {
+    vbin bs;
+    if(!valid()) {
+      xserr << "xsig invalid, no bin !";
+      return bs;
+    }
+    for(const auto& lex : lexs) {
+      lex->bins(bs);
+    }
+    return bs;
+  }
+  /// 从二进制读取。
+  bool from_bin(vbin& bs) {
+    lexs.clear();
+    try {
+      while(!bs.empty()) {
+        Lexical::Type t;
+        Range range(0);
+
+        bs >> t >> range.Min >> range.Max;
+
+        switch(t) {
+          case Lexical::LT_End: {
+            lexs.push_back(std::make_shared<Lexical::End>());
+            return true;
+          }
+          case Lexical::LT_Dot: {
+            lexs.push_back(std::make_shared<Lexical::Dot>(range));
+            break;
+          }
+          case Lexical::LT_Record: {
+            char f;
+            vbin n;
+            bool b;
+            bs >> f >> b >> n;
+            lexs.push_back(std::make_shared<Lexical::Record>(
+              f, range, std::string((const char*)n.data(), n.size()), b));
+            break;
+          }
+          case Lexical::LT_String: {
+            vbin s;
+            bs >> s;
+            lexs.push_back(std::make_shared<Lexical::String>(
+              std::string((const char*)s.data(), s.size())));
+            break;
+          }
+          case Lexical::LT_Const: {
+            uint8_t hex;
+            bs >> hex;
+            lexs.push_back(std::make_shared<Lexical::Const>(hex, range));
+            break;
+          }
+          default: {
+            xserr << "Unknow type : " << (uint8_t)t;
+            return false;
+          }
+        }
+        xsdbg << (*lexs.rbegin())->show();
+      }
+      xserr << "No End !";
+    } catch(...) {
+      xserr << xfunexpt;
+    }
+    return false;
+  }
+ public:
   /// 指定块，检查内存可读。注意到：有些模块可读范围可能中断，导致匹配异常。
   static Blks check_blk(const xblk& blk) {
 #ifndef _WIN32
@@ -948,6 +1017,46 @@ public:
     blks.push_back(xblk(as, ae));
     return blks;
 #endif
+  }
+  /// 读取特征码串。
+  static std::vector<xsig> read_sig(const std::string& data) {
+    std::vector<xsig> sigs;
+    std::vector<std::string> ss;
+
+    for(size_t p = 0; p != data.npos;) {
+      const auto pp = data.find("\n/", p);
+      if(data.npos == pp) {
+        ss.push_back(std::string(data, p));
+        break;
+      }
+      
+      p = pp;
+    }
+    return sigs;
+  }
+  /// 读取特征码文件。
+  static std::vector<xsig> read_sigs(const std::filesystem::path& path) {
+    std::vector<xsig> sigs;
+    std::ifstream file;
+    file.open(path, std::ios_base::in | std::ios_base::binary);
+    if(!file) {
+      xserr << "open sig file fail !";
+      return sigs;
+    }
+    
+    file.seekg(0, std::ios_base::end);
+    const size_t filelen = (size_t)file.tellg();
+    if(0 == filelen) {
+      xserr << "sig file empty !";
+      return sigs;
+    }
+    file.seekg(0, std::ios_base::beg);
+    std::string data;
+    data.resize(filelen);
+    file.read((char*)data.data(), filelen);
+    file.close();
+
+    return sigs;
   }
  private:
   Lexicals      lexs; //< 特征码词法组。

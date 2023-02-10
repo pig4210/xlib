@@ -2,7 +2,7 @@
   \file  xvarint.h
   \brief 定义了 zig 、 zag 、 varint 相关操作。
 
-  \version    2.0.0.230208
+  \version    2.0.0.230210
   \note       For All
 
   \author     triones
@@ -106,7 +106,7 @@ class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
       {
       return _value;
       }
-    constexpr xvarint(const char* p) : _value(0)
+    constexpr xvarint(const char* p) : _value(T())
       {
       using U = typename std::make_unsigned_t<T>;
       U v = 0;

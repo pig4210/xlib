@@ -29,20 +29,6 @@ int main()
   }
 
 
-
-class XXX {
- public:
-  enum Type : uint8_t { LT_XX };
-  template<Type T, bool X>
-  class B {};
-
-  class XX : B<LT_XX, true> {};
-};
-
-
-
-
-
 #define xsig_need_debug
 #include "xsig.h"
 

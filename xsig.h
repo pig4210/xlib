@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <map>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -32,11 +33,33 @@
 #include "xbin.h"
 #include "xhexbin.h"
 
+/*
+  默认不编译 dbg 信息。
+  如需要编译 dbg 信息，请添加 xsig_need_debug 宏。
+  默认 dbg 信息不输出。如果需输出，请设置 xsig::dbglog = true;
+
+  设置宏 xslog 以改变日志输出行为。
+*/
+
 #ifndef xslog
-#define xslog(v) if constexpr ((v) <= xlog_static_lvl) xlog()
+#define xslog xlog()
 #endif
-#define xsdbg if(xsig::dbglog) xslog(xlog::debug)
-#define xserr xslog(xlog::error)
+
+#ifdef xsig_need_debug
+#define xsdbg if(xsig::dbglog) xslog
+#else
+#define xsdbg if constexpr (false) xslog
+#endif
+#define xserr xslog
+
+#ifdef _WIN32
+#ifdef _WIN64
+#define xsig_is_x64
+#endif
+#else
+// 非 windows 一律认为是 x64
+#define xsig_is_x64
+#endif
 
 class xsig {
  public:
@@ -58,13 +81,8 @@ class xsig {
     Sign(const char* const sig) : s(sig), p(0) {}
     /// 返回当前处理的字符。
     inline char ch() const { return s[p]; }
-    inline operator char() const { return ch(); }
     /// 向后移动一个字符。
     inline void step() { ++p; }
-    /// 前缀自增。先向后移动一个字符，再返回当前字符。
-    inline char operator++() { step(); return ch(); }
-    /// 后缀自增。向后移动一个字符，返回之前位置的字符。
-    inline char operator++(int) { const auto c = ch(); step(); return c; }
    public:
     /// 计算当前位置行列信息，指示位置。
     inline xmsg pos() const {
@@ -96,14 +114,10 @@ class xsig {
     inline static constexpr Type ErrType = -1;
     /// 用以标识初始范围指示值。
     inline static constexpr Type InitType = -1;
-
     /// 简单初始化。
     constexpr Range(const Type min, const Type max) : Min(min), Max(max) {}
     /// 指定固定范围。
     constexpr Range(const Type min) : Min(min), Max(min) {}
-    Range() = delete;
-    constexpr Range(const Range&) = default;
-    Range& operator=(const Range&) = default;
     /// 比较范围是否相同。
     bool operator==(const Range& r) const {
       return (Min == r.Min) && (Max == r.Max);
@@ -116,6 +130,7 @@ class xsig {
       const auto max = Max + r.Max;
       Max = (max < r.Max) ? MaxType : max;
 
+      if(Min > Max) std::swap(Min, Max);
       return *this;
     }
     /// 尝试重新组织并输出特征串。
@@ -164,7 +179,7 @@ class xsig {
     class Base : std::enable_shared_from_this<Base> {
      public:
       Base(Type t, const Range& r = {1, 1})
-        : type(t), range(r), match_count(Range::InitType) {}
+        : type(t), range(r) { reset_match(); }
       /// 匹配重置。
       void reset_match() {
         match_count = Range::InitType;
@@ -186,57 +201,49 @@ class xsig {
         \param blk  匹配范围。
         \param lp   当前指针。注意是引用，内部会修改其值。
 
-        \return 1   成功匹配。
-        \return 0   失败，但可回退。
-        \return -1  失败，不可回退。内存范围不足继续匹配。
+        \return -2  失败，不可回退。内存范围不足继续匹配。
+        \return -1  失败，但可回退。
+        \return     其他返回表示 成功匹配，返回匹配字节数。（注意可能返回 0）
       */
-      int match(const xblk& blk, Range::Type& lp) {
+      intptr_t match(const xblk& blk, const intptr_t& lp) {
         void* pp = (uint8_t*)blk.start + lp;
         // 如果匹配达到最大，指针回退，允许继续。
         if(match_count >= range.Max) {
-          xsdbg << pp << ' ' << show() << " : max match, back.";
-          lp -= match_count;
-          reset_match();
-          return 0;
+          xsdbg << pp << " | `" << show() << "` max match, back.";
+          return -1;
         }
         // 如果尚未匹配，则先进行最小匹配。
         if(match_count < range.Min) {
-          reset_match();
           // 如果内存范围已经不足以进行最低匹配，则彻底失败。
           if((Range::Type)blk.size < (lp + range.Min)) {
-            xsdbg << pp << ' ' << show() << " min match fail !";
-            lp = Range::MaxType;
-            return -1;
+            xsdbg << pp << " | `" << show() << "` min match fail !";
+            return -2;
           }
-          xsdbg << pp << ' ' << show() << " min matching...";
+          xsdbg << pp << " | `" << show() << "` min matching...";
+          // 记录匹配地址。注意应在 test 之前，因 test 可能会使用它。
+          match_mem = pp; 
           // 最低匹配失败，允许回退继续。
           if(!test(xblk(pp, range.Min))) {
-            xsdbg << pp << ' ' << show() << " min match fail, back.";
-            return 0;
+            xsdbg << pp << " | `" << show() << "` min match fail, back.";
+            return -1;
           }
-          match_mem = pp;
           match_count = range.Min;
-          lp += match_count;
-          return 1;
+          return range.Min;
         }
 
         // 如果内存范围已经不足以进行递进匹配，则彻底失败。
         if((Range::Type)blk.size < (lp + 1)) {
           xsdbg << pp << ' ' << show() << " stepping fail !";
-          lp = Range::MaxType;
-          return 0;
+          return -2;
         }
         xsdbg << pp << ' ' << show() << " stepping : " << match_count + 1;
         // 递进匹配失败，允许回退继续。
         if(!test(xblk(pp, 1))) {
           xsdbg << pp << ' ' << show() << " stepping fail, back.";
-          lp -= match_count;
-          match_count = Range::InitType;
-          return 0;
+          return -1;
         }
-        ++lp;
         ++match_count;
-        return 1; 
+        return 1;
         }
       /// 输出词法 bin 。
       void bins(vbin& bs) const {
@@ -263,9 +270,11 @@ class xsig {
      public:
       Dot(const Range& r) : Base(LT_Dot, r) {}
       virtual xmsg show() const {
-        if constexpr (xlog::debug <= xlog_static_lvl)
-          return xmsg() << '.' << range.show();
+#ifdef xsig_need_debug
+        return xmsg() << '.' << range.show();
+#else
         return xmsg();
+#endif
       }
       virtual void bin(vbin&) const {}
       virtual bool fusion(const std::shared_ptr<Base>& lex) {
@@ -278,29 +287,38 @@ class xsig {
 //////////////////////////////////////////////////////////////// 词法 record
     class Record : public Base {
      public:
-      Record(const char t, const Range& r, const std::string& n, const bool offset)
-        : Base(LT_Record, r), type(t), name(n), isoff(offset) {}
+      Record(const char f, const Range& r, const std::string& n, const bool b)
+        : Base(LT_Record, r), flag(f), name(n), isoff(b) {}
       virtual xmsg show() const {
-        if constexpr (xlog::debug <= xlog_static_lvl) {
-          xmsg ss;
-          ss << '<';
-          if(isoff) ss << '^';
-          ss << (char)std::toupper(type);
-          if(!name.empty()) ss << ' ' << name;
-          ss << '>';
-          return ss;
-        }
+#ifdef xsig_need_debug
+        xmsg ss;
+        ss << '<';
+        if(isoff) ss << '^';
+        ss << (char)std::toupper(flag);
+        if(!name.empty()) ss << ' ' << name;
+        ss << '>';
+        return ss;
+#else
         return xmsg();
+#endif
       }
       virtual void bin(vbin& bs) const {
-        bs << type << isoff << name.size() << name;
+        bs << flag << isoff << name.size() << name;
       }
       virtual bool fusion(const std::shared_ptr<Base>&) { return false; }
-      virtual bool test(const xblk&) const { return true; }
-      value pick_value(void* start) const {
+      virtual bool test(const xblk&) const {
+        // 没有需要校验的引用，直接返回 true 。
+        if(!ref) return true;
+        // 无视类型，直接比较。
+        const auto v = pick_value(nullptr);
+        const auto rv = ref->pick_value(nullptr);
+        xsdbg << "check : " << name << " : " << v.q << " == " << rv.q;
+        return v.q == rv.q;
+        }
+      value pick_value(const void* start) const {
         value rv;
         rv.q = 0;
-        switch(type) {
+        switch(flag) {
           case 'A': case 'a': {
             rv.t = 'p';
             rv.p = match_mem;
@@ -323,7 +341,7 @@ class xsig {
           case 'D': case 'd': {
             rv.t = 'd';
             rv.d = *(uint32_t*)match_mem;
-#if !defined(_WIN32) || !defined(_WIN64) 
+#ifndef xsig_is_x64
             if(isoff) rv.d = rv.d - (uint32_t)start;
 #endif
             return rv;
@@ -338,23 +356,25 @@ class xsig {
             rv.b = *(uint8_t*)match_mem;
             return rv;
           }
-          default: ;
+          default: rv.t = 'n'; return rv;
         }
-        return rv;
       }
-     private:
-      const char        type;
-      const std::string name;
-      const bool        isoff;
+     public:
+      const char              flag;
+      const std::string       name;
+      const bool              isoff;
+      std::shared_ptr<Record> ref;
     };
 //////////////////////////////////////////////////////////////// 词法 string
     class String : public Base {
      public:
       String(const std::string& s) : Base(LT_String, Range(s.size())), str(s) {}
       virtual xmsg show() const {
-        if constexpr (xlog::debug <= xlog_static_lvl)
-          return xmsg() << bin2hex(str, true);
+#ifdef xsig_need_debug
+        return xmsg() << bin2hex(str, true);
+#else
         return xmsg();
+#endif
       }
       virtual void bin(vbin& bs) const { bs << str.size() << str; }
       virtual bool fusion(const std::shared_ptr<Base>& lex) {
@@ -365,8 +385,8 @@ class xsig {
       }
       virtual bool test(const xblk& blk) const {
         xsdbg << "    matching string : \r\n"
-              << "       " << bin2hex(str, true) << "\r\n"
-              << "       " << bin2hex(blk.start, blk.size, true);
+              << "                | " << bin2hex(str, true) << "\r\n"
+              << "       " << blk.start << " | " << bin2hex(blk.start, blk.size, true);
         if(blk.size != str.size())  return false;
         return memcmp(str.data(), blk.start, str.size()) == 0;
       }
@@ -379,9 +399,11 @@ class xsig {
       Const(const uint8_t c, const Range& range)
         : Base(LT_Const, range), hex(c) {}
       virtual xmsg show() const {
-        if constexpr (xlog::debug <= xlog_static_lvl)
-          return xmsg() << hex << range.show();
+#ifdef xsig_need_debug
+        return xmsg() << hex << range.show();
+#else
         return xmsg();
+#endif
       }
       virtual void bin(vbin& bs) const { bs << hex; }
       virtual bool fusion(const std::shared_ptr<Base>& lex) {
@@ -392,8 +414,8 @@ class xsig {
       }
       virtual bool test(const xblk& blk) const {
         xsdbg << "    matching const : \r\n"
-              << "       " << hex << "...\r\n"
-              << "       " << bin2hex(blk.start, blk.size, true);
+              << "                | " << hex << "...\r\n"
+              << "       " << blk.start << " | " << bin2hex(blk.start, blk.size, true);
         auto lp = (const uint8_t*)blk.start;  
         for(size_t i = 0; i < blk.size; ++i)
           if(hex != lp[i]) return false;
@@ -405,6 +427,7 @@ class xsig {
   };
   using Lexicals = std::vector<std::shared_ptr<Lexical::Base>>;
   using Blks = std::vector<xblk>;
+  using Reports = std::map<std::string, value>;
  private:
 //////////////////////////////////////////////////////////////// 词法 hex 识别函数
   /// 匹配 hex 词法，返回值 < 0 表示非此词法。
@@ -505,18 +528,18 @@ class xsig {
     xsdbg.prt("  make range = { %tX, %tX }", Min, Max);
     return Range(Min, Max);
   }
-//////////////////////////////////////////////////////////////// hexhex 识别函数
+//////////////////////////////////////////////////////////////// 词法 hexhex 识别函数
   /// 返回 nullptr 表示识别失败。
-  static std::shared_ptr<Lexical::Const> match_hexhex(Sign& sig) {
+  static std::shared_ptr<Lexical::Base> match_hexhex(Sign& sig) {
     const auto pos = sig.pos();
 
     const auto ch0 = match_hex(sig);
-    if(ch0 < 0) return std::shared_ptr<Lexical::Const>();
+    if(ch0 < 0) return std::shared_ptr<Lexical::Base>();
     // hex 必须配对。
     const auto ch1 = match_hex(sig);
     if(ch1 < 0) {
       xsdbg << sig.pos() << " hexhex unpaired !";
-      return std::shared_ptr<Lexical::Const>();
+      return std::shared_ptr<Lexical::Base>();
     }
 
     const uint8_t hex = ((uint8_t)ch0 << 4) | (uint8_t)ch1;
@@ -579,15 +602,32 @@ class xsig {
           case 'A': case 'a': range = Range(0); break;
           case 'F': case 'f': range = Range(sizeof(void*)); break;
           case 'Q': case 'q': range = Range(sizeof(uint64_t)); break;
-          case 'D': case 'd': range = Range(sizeof(uint32_t)); break;
-          case 'W': case 'w': range = Range(sizeof(uint16_t)); break;
-          case 'B': case 'b': range = Range(sizeof(uint8_t)); break;
+          case 'D': case 'd': range = Range(sizeof(uint32_t));
+#ifdef xsig_is_x64
+            if(offset) {
+              xserr << sig.pos() << " record ^D not allow !";
+              return false;
+            }
+#endif
+            break;
+          case 'W': case 'w': range = Range(sizeof(uint16_t));
+            if(offset) {
+              xserr << sig.pos() << " record ^W not allow !";
+              return false;
+            }
+            break;
+          case 'B': case 'b': range = Range(sizeof(uint8_t));
+            if(offset) {
+              xserr << sig.pos() << " record ^B not allow !";
+              return false;
+            }
+            break;
           default:
             xserr << sig.pos() << " record need [AFQDWB] !";
             return false;
         }
         sig.step();
-
+        // 去除前缀空白符。
         while(std::isblank(sig.ch())) sig.step();
 
         std::string name;
@@ -612,8 +652,18 @@ class xsig {
         while(std::isblank(*name.rbegin())) name.pop_back();
 
         auto lex = std::make_shared<Lexical::Record>(type, range, name, offset);
+        // 插入前先查询是否存在同名 record ，做引用。空名不做引用。
+        if(!name.empty())
+          for(const auto& x : lexs) {
+            if(Lexical::LT_Record != x->type) continue;
+            auto& xx = *(const Lexical::Record*)x.get();
+            if(xx.name.empty()) continue;
+            if(xx.name == name) lex->ref = *(std::shared_ptr<Lexical::Record>*)&x;
+          }
+
         lexs.push_back(lex);
-        xsdbg << "                " << lex->show();
+        xsdbg << "                " << lex->show() <<
+          ((lex->ref) ? " Has ref*" : "");
         return true;
       }
 //////////////////////////////////////////////////////////////// 词法 :x 识别逻辑
@@ -749,25 +799,55 @@ class xsig {
   }
 //////////////////////////////////////////////////////////////// match 内核
   /// 匹配内核。
-  bool match(const xblk& blk, intptr_t lp) {
+  bool match_core(const xblk& blk, intptr_t& start) {
     try {
       xsdbg << "---------------------------------------------------------------- match start";
-      for(const auto& v : lexs) { v->reset_match(); }
+      Range fixRange(0);
+      for(const auto& v : lexs) {
+        fixRange += v->range;
+        v->reset_match();
+      }
+      xsdbg << "match need : " << fixRange.Min << " - " << fixRange.Max;
+      if(xblk::WholeIn != blk.check(xblk(
+        (void*)((size_t)blk.start + start), fixRange.Min))) {
+        xsdbg << "rest mem not enough";
+        return false;
+      }
 
+      intptr_t lp = start;
       for(auto it = lexs.begin(); it != lexs.end();) {
-        const auto lex = *it;
+        const auto lex = *it; // 注意非引用。
         const auto r = lex->match(blk, lp);
         // 匹配成功，继续。
-        if(0 < r) { ++it; continue; }
+        if(r >= 0) { lp += r;  ++it;  continue;  }
         // 匹配彻底失败，跳出。
-        if(r < 0) {
+        if(r != -1) {
           xsdbg << "---------------------------------------------------------------- match fail";
           return false;
         }
-        // 无法回退，跳出。
-        if(it == lexs.begin()) break;
-        // 正常回退。
-        --it;
+        // 逐步回退到未能最大匹配的特征。
+        for(; it != (lexs.begin() - 1); --it) {
+          const auto& x = *it;
+          const auto c = x->match_count;
+          if(c >= x->range.Min) {
+            if(c < x->range.Max) break;
+            xdbg << "back " << c;
+            lp -= c;
+          }
+          x->reset_match();
+        }
+
+        if(it != (lexs.begin() - 1)) continue;
+        // 前面所有特征都达到了最大匹配，无法回退。则 回到顶，递增继续。
+        xsdbg << "reset and inc...";
+        ++lp;
+        start = lp;
+        it = lexs.begin();
+        if(xblk::WholeIn != blk.check(xblk(
+          (void*)((size_t)blk.start + start), fixRange.Min))) {
+          xsdbg << "rest mem not enough";
+          return false;
+        }
       }
 
       xsdbg << "---------------------------------------------------------------- match done";
@@ -777,11 +857,40 @@ class xsig {
       return false;
     }
   }
+  /// 指定块组，匹配特征。
   bool match(const Blks blks) {
     for(const auto& blk : blks) {
-      if(match(blk, 0)) return true;
+      intptr_t start = 0;
+      if(match_core(blk, start)) return true;
     }
     return false;
+  }
+  /// 提取特征匹配结果。
+  Reports report(const void* start) const {
+    Reports reps;
+    if(!valid()) {
+      xserr << "xsig invalid, no report !";
+      return reps;
+    }
+    if(nullptr == (*lexs.rbegin())->match_mem) {
+      xserr << "xsig no matched, no report !";
+      return reps;
+    }
+    int inoname = 0;
+    for(const auto& lex : lexs) {
+      if(Lexical::LT_Record != lex->type) continue;
+      const auto& r = *(const Lexical::Record*)lex.get();
+      auto name = r.name;
+      if(name.empty()) name.assign(xmsg().prt("noname%d", inoname++).toas());
+      reps.insert({name, r.pick_value(start)});
+    }
+    if(reps.empty()) {
+      value v;
+      v.t = 'p';
+      v.p = (*lexs.begin())->match_mem;
+      reps.insert({"noname", v});
+    }
+    return reps;
   }
 public:
   /// 指定块，检查内存可读。注意到：有些模块可读范围可能中断，导致匹配异常。
@@ -802,16 +911,17 @@ public:
 
     const size_t asize = blk.size / 2;
     //xsdbg << "a>>" << blk.start << " : " << asize;
-    auto av = check_blk(xblk(blk.start, asize));
-    for(const auto& v : av) blks.push_back(v);
+    for(const auto& v : check_blk(xblk(blk.start, asize)))
+      blks.push_back(v);
 
     auto bsize = blk.size - asize;
     //xsdbg << "b>>" << (void*)((size_t)blk.start + asize) << " : " << bsize;
-    auto bv = check_blk(xblk((void*)((size_t)blk.start + asize), bsize));
-    for(const auto& v : bv) blks.push_back(v);
+    for(const auto& v : check_blk(xblk((void*)((size_t)blk.start + asize), bsize)))
+      blks.push_back(v);
 
     if(blks.empty()) return blks;
 
+    // 优化，整合连续的块。
     auto opts(std::move(blks));
 
     auto it = opts.begin();
@@ -842,9 +952,12 @@ public:
  private:
   Lexicals      lexs; //< 特征码词法组。
  public:
+#ifdef xsig_need_debug
   inline static bool dbglog = false;  //< 指示是否输出 debug 信息。
+#endif
   inline static ShowBinCode showcode = CheckBinCode<void>();
 };
+#undef xsig_is_x64
 #undef xserr
 #undef xsdbg
 #undef xslog

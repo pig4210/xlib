@@ -41,6 +41,10 @@ xsig operator"" _sig(const char* signature, std::size_t) {
 static const auto gkb = []{
   xsig::dbglog = true;
 
+const auto sigs = xsig::read_sig("/\n12345\r\n/\r\n6789\n/\n1111\n/22222\n/\n   \n/\n\t\t\n/\n33333");
+
+xsig::read_sig_file(TEXT("xsig.sig"));
+
 const std::string ss(hex2bin(std::string(
 "0000000000000000"
 "64 A3 00000000"

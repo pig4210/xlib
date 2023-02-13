@@ -20,6 +20,7 @@
 #include <map>
 #include <filesystem>
 #include <fstream>
+#include <regex>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -1018,45 +1019,92 @@ class xsig {
     return blks;
 #endif
   }
-  /// 读取特征码串。
-  static std::vector<xsig> read_sig(const std::string& data) {
-    std::vector<xsig> sigs;
-    std::vector<std::string> ss;
+  /// 读取特征码串。要求多段特征码串，以 单行 / 分隔。
+  static std::vector<std::string> read_sig(const std::string& _data) {
+    std::vector<std::string> sigs;
+    /*
+      注意到，这里不适合用 正则表达式分割文本。
 
-    for(size_t p = 0; p != data.npos;) {
-      const auto pp = data.find("\n/", p);
-      if(data.npos == pp) {
-        ss.push_back(std::string(data, p));
-        break;
+      - 加前缀 \n 是应对起始 / 的情况，可以组成 \n/ 。
+        - 起始为 / 时，可使起始简单形成一个 空串。空串被忽略。
+        - 起始非 / 时，\n 被加入 文本串，无影响。
+      - 加后缀 \n/\n 是应对无 / 结尾的情况。
+        - 结尾为 \n/ 时，使结尾简单形成一个 空串。空串被忽略。
+        - 结尾非 /n/ 时，用于标记结尾，无影响。
+    */
+    const std::string data = "\n" + _data + "\n/\n";
+    auto ds = data.begin();
+    for(size_t s = 0, e = 0, p = 0; e != data.size(); p = e + 2) {
+      e = data.find("\n/", p);
+      if(data.npos == e) e = data.size();
+
+      auto its = ds + s;
+      auto ite = ds + e;
+
+      // 如果不是单行 / ，则视为 sig 内容，继续。
+      // 注意，因为加了后缀，itn 不可能为 end() 。
+      auto itn = ite + 2; 
+      if('\r' == *itn) ++itn;
+      if('\n' != *itn) continue;
+
+      s = e + 2;  // 注意设定下个起始位。
+
+      // 前缀空白丢弃。
+      for(; its != ite; ++its) {
+        if(!std::isspace(*its)) break;
       }
-      
-      p = pp;
+      // 后缀空白丢弃。
+      for(; ite != its; --ite) {
+        if(!std::isspace(*its)) break;
+      }
+      // 空串丢弃。
+      if(its == ite) continue;
+
+      sigs.emplace_back(std::string(its, ite));
     }
+
     return sigs;
   }
+
   /// 读取特征码文件。
-  static std::vector<xsig> read_sigs(const std::filesystem::path& path) {
-    std::vector<xsig> sigs;
+  static std::vector<xsig> read_sig_file(const std::filesystem::path& path) {
+    std::vector<xsig> xsigs;
     std::ifstream file;
     file.open(path, std::ios_base::in | std::ios_base::binary);
     if(!file) {
       xserr << "open sig file fail !";
-      return sigs;
+      return xsigs;
     }
     
     file.seekg(0, std::ios_base::end);
     const size_t filelen = (size_t)file.tellg();
     if(0 == filelen) {
       xserr << "sig file empty !";
-      return sigs;
+      return xsigs;
     }
     file.seekg(0, std::ios_base::beg);
     std::string data;
     data.resize(filelen);
     file.read((char*)data.data(), filelen);
     file.close();
+    // TODO ： 暂未处理 bin 的情况。
 
-    return sigs;
+    if(data.size() >= 3 && "\xEF\xBB\xBF" == data.substr(0, 3)) {
+      data.erase(data.begin(), data.begin() + 3);
+    }
+
+    const auto sigs = read_sig(data);
+    for(const auto& sig : sigs) {
+      xsig o;
+      if(false == o.make_lexs(sig.data())) {
+        xserr << "make_lexs error !";
+        xserr << sig;
+        return std::vector<xsig>();
+      }
+      xsigs.emplace_back(o);
+    }
+
+    return xsigs;
   }
  private:
   Lexicals      lexs; //< 特征码词法组。

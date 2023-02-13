@@ -41,9 +41,40 @@ xsig operator"" _sig(const char* signature, std::size_t) {
 static const auto gkb = []{
   xsig::dbglog = true;
 
+const std::string ssss = std::string(0x500, '0') + "1";
+const std::regex rrr("0.{200,600}1");
+auto itt = std::cregex_iterator(ssss.data(), ssss.data() + ssss.size(), rrr);
+if(itt == std::cregex_iterator()) {
+  xerr << "nnnnnnn";
+} else {
+  xdbg << "xxx" << itt->position(0);
+}
+
+
 const auto sigs = xsig::read_sig("/\n12345\r\n/\r\n6789\n/\n1111\n/22222\n/\n   \n/\n\t\t\n/\n33333");
 
-xsig::read_sig_file(TEXT("xsig.sig"));
+auto xsigs = xsig::read_sig_file(TEXT("xsig.sig"));
+
+auto hmod = LoadLibrary(TEXT("D:/share/APPS/JD/pop_dd_workbench/jdwb_core.dll"));
+xdbg << "Load : " << hmod;
+if(nullptr == hmod) return false;
+
+const auto xblks = xsig::check_blk(xblk((void*)hmod, (int)0x5D2000));
+for(const auto& b : xblks) {
+  xdbg << "~~ " << b.start << " ~ " << b.end;
+}
+for(auto& s : xsigs) {
+  for(const auto& b : xblks) {
+    const auto reps = s.match_core(b);
+    xdbg << "match : " << !reps.empty();
+    for(const auto& v : reps) {
+      xdbg << "  " << v.second.q << " : " << v.first;
+    }
+    if(!reps.empty()) break;
+  }
+}
+
+if(nullptr != hmod) return false;
 
 const std::string ss(hex2bin(std::string(
 "0000000000000000"
@@ -88,9 +119,8 @@ for(const auto& v : blks) {
 }
 xdbg << showbin(ss);
 
-xdbg << "match : " << sig.match({xblk(ss.data(), ss.size())});
+const auto reps = sig.match({xblk(ss.data(), ss.size())});
 
-const auto reps = sig.report(ss.data());
 for(const auto& v : reps) {
   xdbg << v.second.p << " : " << v.first;
 }

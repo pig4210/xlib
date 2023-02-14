@@ -41,16 +41,6 @@ xsig operator"" _sig(const char* signature, std::size_t) {
 static const auto gkb = []{
   xsig::dbglog = true;
 
-const std::string ssss = std::string(0x500, '0') + "1";
-const std::regex rrr("0.{200,600}1");
-auto itt = std::cregex_iterator(ssss.data(), ssss.data() + ssss.size(), rrr);
-if(itt == std::cregex_iterator()) {
-  xerr << "nnnnnnn";
-} else {
-  xdbg << "xxx" << itt->position(0);
-}
-
-
 const auto sigs = xsig::read_sig("/\n12345\r\n/\r\n6789\n/\n1111\n/22222\n/\n   \n/\n\t\t\n/\n33333");
 
 auto xsigs = xsig::read_sig_file(TEXT("xsig.sig"));

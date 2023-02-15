@@ -49,18 +49,23 @@ auto hmod = LoadLibrary(TEXT("D:/share/APPS/JD/pop_dd_workbench/jdwb_core.dll"))
 xdbg << "Load : " << hmod;
 if(nullptr == hmod) return false;
 
+  xsig::dbglog = false;
+
 const auto xblks = xsig::check_blk(xblk((void*)hmod, (int)0x5D2000));
 for(const auto& b : xblks) {
   xdbg << "~~ " << b.start << " ~ " << b.end;
 }
 for(auto& s : xsigs) {
   for(const auto& b : xblks) {
-    const auto reps = s.match_core(b);
-    xdbg << "match : " << !reps.empty();
-    for(const auto& v : reps) {
-      xdbg << "  " << v.second.q << " : " << v.first;
+    const auto ok = s.match_core(b);
+    xdbg << "match : " << ok;
+    if(ok) {
+      const auto reps = s.report(b.start);
+      for(const auto& v : reps) {
+        xdbg << "  " << v.second.q << " : " << v.first;
+      }
+    break;
     }
-    if(!reps.empty()) break;
   }
 }
 
@@ -109,12 +114,11 @@ for(const auto& v : blks) {
 }
 xdbg << showbin(ss);
 
-const auto reps = sig.match({xblk(ss.data(), ss.size())});
+const auto bb = sig.match({xblk(ss.data(), ss.size())});
 
-for(const auto& v : reps) {
-  xdbg << v.second.p << " : " << v.first;
-}
-
+  for(const auto& v : sig.report(ss.data())) {
+    xdbg << "  " << v.second.q << " : " << v.first;
+  }
   return true;
   }();
 

@@ -39,11 +39,15 @@
 #undef WIN32_LEAN_AND_MEAN
 #endif
 
-#include "xblk.h"
 #include "xswap.h"
+#include "xblk.h"
+#include "xcompilerspecial.h"
+#include "xcodecvt.h"
+#include "xmsg.h"
 #include "xlog.h"
-#include "xbin.h"
 #include "xhexbin.h"
+#include "xvarint.h"
+#include "xbin.h"
 
 /*
   默认不编译 dbg 信息。
@@ -157,27 +161,9 @@ class xsig {
       if(Min == Max) return xmsg().prt("{%tX}", Min);
       return xmsg().prt("{%tX,%tX}", Min, Max);
     }
-    /// 输出 正则。
-    std::string regex() const {
-      if(*this == Range(1, 1)) return ""; // 1 范围不输出。
-      // 全部为非贪婪模式
-      if(*this == Range(0, 1)) return "??";
-      if(*this == Range(0, MaxType)) return "*?";
-      if(*this == Range(1, MaxType)) return "+?";
-      char buf[64];
-      if(Min == Max)
-        std::snprintf(buf, sizeof(buf), "{%td}?", Min);
-      else
-        std::snprintf(buf, sizeof(buf), "{%td,%td}?", Min, Max);
-      return buf;
-    }
   };
   /// 用以标识错误的范围。
   inline static const Range ErrRange = {Range::ErrType, Range::ErrType};
-  /// 用以标识缺省的范围。
-  inline static const Range MinRange = {1, 1};
-  /// 用以标识空的范围。
-  inline static const Range NilRange = {0, 0};
  private:
 //////////////////////////////////////////////////////////////// 词法类
   class Lexical {
@@ -190,12 +176,12 @@ class xsig {
                       //< 以下词法不单独成词。
                       //< hex          -> [0-9A-Fa-f]
                       //< range_value  -> {hex}{1,8}  |  {hex}{1,16}
-                      //< range        -> ([\*\+\?])|(\{{ws}{range_value}?{ws},?{ws}{range_value}?{ws}\})
+                      //< range        -> ([\*\+\?])|(\{{bs}{range_value}?{bs},?{bs}{range_value}?{bs}\})
                       //< hexhex       -> {hex}{2}
       LT_Dot,         //< dot          -> \.{range}?
-      LT_Record,      //< record       -> \<\^?[AFQDWB]{ws}[^\n\r\0\>]*\>
+      LT_Record,      //< record       -> \<\^?[AFQDWB]{bs}[^\n\r\0\>]*\>
                       //< const        -> {hexhex}
-      LT_Hexs,        //< hexs         -> const{1, }
+      LT_Hexs,        //< hexs         -> {const}+
     };
    public:
 //////////////////////////////////////////////////////////////// 词法基类
@@ -210,9 +196,9 @@ class xsig {
       virtual void bin(vbin&) const = 0;
       /// 输出词法 bin 。注意：默认不输出 range ，需在 bin 中自决。
       void bins(vbin& bs) const { bs << type; bin(bs); }
-      /// 词法优化。
+      /// 词法序列优化。
       std::shared_ptr<Base> optimizes() {
-        if(!child) return std::shared_ptr<Base>();
+        if(!child) return optimize();
         // 如果不是最后一条词法，则需要先优化下一条词法。
         auto newo = child->optimizes();
         if(newo) child = newo;
@@ -285,7 +271,7 @@ class xsig {
         ++match_count;
         return 1;
         }
-      /// 向链表的结尾添加一个结点。
+      /// 添加子结点。
       void push_back(std::shared_ptr<Base>& o) {
         // 如果没有子结点，则直接添加。否则让子结点添加。
         if(child) return child->push_back(o);
@@ -334,9 +320,8 @@ class xsig {
         // 同是 . ，直接融合，无需构造新对象。
         range += child->range;
         // 注意断链。
-        auto new_child = child->child;
-        new_child->parent = shared_from_this();
-        child = new_child;
+        child = child->child;
+        child->parent = shared_from_this();
 
         return std::shared_ptr<Base>();
       }
@@ -383,8 +368,9 @@ class xsig {
         auto lock = ref.lock();
         if(!lock) return true;
         // 无视类型，直接比较。
+        const auto& r = *(const Record*)lock.get();
         const auto v = pick_value(nullptr);
-        const auto rv = lock->pick_value(nullptr);
+        const auto rv = r.pick_value(nullptr);
         xsdbg << "        check : " << name << " : " << v.q << " == " << rv.q;
         return v.q == rv.q;
       }
@@ -436,7 +422,7 @@ class xsig {
       char                    flag;
       std::string             name;
       bool                    isoff;
-      std::weak_ptr<Record>   ref;
+      std::weak_ptr<Base>     ref;
     };
 //////////////////////////////////////////////////////////////// 词法 hexs
     class Hexs : public Base {
@@ -460,12 +446,13 @@ class xsig {
         if(!child) return std::shared_ptr<Base>();
         if(child->type != LT_Hexs) return std::shared_ptr<Base>();
 
-        str.append(((Hexs*)child.get())->str);
+        const auto& o = *(const Hexs*)child.get();
+        str.append(o.str);
         range = Range(str.size());
 
-        auto new_child = child->child;
-        new_child->parent = shared_from_this();
-        child = new_child;
+        child = child->child;
+        child->parent = shared_from_this();
+
         return std::shared_ptr<Base>();
       }
       virtual bool test(const xblk& blk) const {
@@ -488,6 +475,7 @@ class xsig {
   void add_lex(std::shared_ptr<Lexical::Base> o) {
     if(_lex) return _lex->push_back(o);
     _lex = o;
+    if(o->parent.lock()) xserr << "add_lex has parent !";
   }
 //////////////////////////////////////////////////////////////// 词法 hex 识别函数
   /// 匹配 hex 词法，返回值 < 0 表示非此词法。
@@ -510,7 +498,7 @@ class xsig {
       r = (r << 4) | hex;
     }
     // 其实还应该判断转换后是否超出 intprt_t ，但不好返回，也不好定位。
-    // 考虑到这么写本来就离谱，这种情况就不处理了。
+    // 考虑到特征码这么写本来就离谱，这种情况就不处理了。
     return r;
   }
   /// 匹配词法 range，返回值 == ErrRange 时，匹配错误。
@@ -526,41 +514,27 @@ class xsig {
     while(std::isblank(sig())) ++sig;
 
     auto Min = match_range_value(sig);
-    decltype(Min) Max = 0;
+    if(Min < 0) {
+      xserr << *sig << "    range.min lost !";
+      return ErrRange;
+    }
+    while(std::isblank(sig())) ++sig;
+    if('}' == sig()) {
+      ++sig;
+      return Range(Min);
+    }
+    if(',' != sig()) {         // 不存在 N 值且无分隔符，非法 {} 。
+      xserr << *sig << "    range need ',' !";
+      return ErrRange;
+    }
+    ++sig;
 
     while(std::isblank(sig())) ++sig;
 
-    constexpr char separator = ',';
-
-    bool need_max = true;
-    if(Min >= 0) {                        // 存在 N 值。
-      //xsdbg.prt("  match range N : %tX", Min);
-      if(sig() != separator) {         // 存在 N 值，但没有分隔符 {N} 。
-        //xsdbg << "    range mis ',' , skip M.";
-        Max = Min; need_max = false;      // 没有分隔符的情况下，不能继续提取 M 值。
-      } else {
-        ++sig;                       // 存在 N 值且有分隔符的情况下，可能是 {N, } | {N, M} 。
-      }
-    } else {                                // 不存在 N 值
-      //xsdbg << "  range mis N.";
-      if(sig() != separator) {         // 不存在 N 值且无分隔符，非法 {} 。
-        xserr << *sig << "    range match fail !";
-        return ErrRange;
-      }
-      ++sig;
-      //xsdbg << "     range has ',' , N = 0";
-      Min = 0;                            // 不存在 N 值但有分隔符，可能是 {, } | {, M} 。
-    }
-
-    if(need_max) {
-      while(std::isblank(sig())) ++sig;
-      Max = match_range_value(sig);
-      if(Max >= 0) {                      // 存在 M 值 {N, M} | {, M} 。
-        //xsdbg.prt("  range M : %tX", Max);
-      } else {                              // 不存在 M 值 {N, } | { , } 。
-        //xsdbg << "  range mis M, M = max.";
-        Max = Range::MaxType;
-      }
+    auto Max = match_range_value(sig);
+    if(Min < 0) {
+      xserr << *sig << "    range.max lost !";
+      return ErrRange;
     }
 
     while(std::isblank(sig())) ++sig;
@@ -675,7 +649,10 @@ class xsig {
             if(Lexical::LT_Record != x->type) continue;
             auto& xx = *(const Lexical::Record*)x.get();
             if(xx.name.empty()) continue;
-            if(xx.name == name) lex->ref = *(std::shared_ptr<Lexical::Record>*)&x;
+            if(xx.name == name) {
+              lex->ref = x;
+              break;
+            }
           }
 
         xsdbg << pos << " Lexical record  " << lex->sig() <<
@@ -707,8 +684,15 @@ class xsig {
     }
   }
  public:
-  /// 返回对象的词法是否有效。
-  bool valid() const { return _lex.operator bool(); }
+  /// 返回对象的词法是否有效。非空，且以 End 结尾。
+  bool valid() const {
+    if(!_lex) return false;
+    // 故意直接取子结点， 而放弃 _lex 的检查。
+    for(auto x = _lex->child; x; x = x->child) {
+      if(Lexical::LT_End == x->type && !x->child) return true;
+    }
+    return false;
+  }
   /// 特征码串生成 特征码词法组。
   bool make_lexs(const char* const s) {
     _lex.reset();
@@ -733,9 +717,95 @@ class xsig {
 
     return true;
   }
-//////////////////////////////////////////////////////////////// match 内核
+ public:
+//////////////////////////////////////////////////////////////// BM 算法
+  /*
+    网上有不少算法经实验有 BUG 。
+
+    只有 一个 GS 好后缀表 的那种算法。
+    模式串 0000C745FC00000000E8 在匹配 FF50C745E800000000E80000C745FC00000000E8 时，将陷入死循环。
+  */
+  class BM {
+   public:
+    /// 不允许默认构造。
+    BM() = delete;
+   public:
+    /// 用 模式串初始化对象。
+    BM(const std::string& pat) : _pattern(pat) {
+      const auto pattern = (const uint8_t*)_pattern.data();
+      const intptr_t pattern_len = _pattern.size();
+
+      // 计算坏字符表，坏字符表最大是 256 。
+      _bad_char.reset(new intptr_t[0x100](-1));
+      const auto bad_char = _bad_char.get();
+
+      for(intptr_t i = 0; i < pattern_len; ++i)
+        bad_char[pattern[i]] = i;
+
+      // 计算好后缀表。好后缀表最大不超过模式串大小。
+      _suffix.reset(new intptr_t[pattern_len](-1));
+      const auto suffix = _suffix.get();
+      _prefix.reset(new bool[pattern_len](false));
+      const auto prefix = _prefix.get();
+
+      for(intptr_t i = 0; i < pattern_len - 1; ++i) {
+        auto j = i;
+        intptr_t k = 0;
+        while(j >= 0 && pattern[j] == pattern[pattern_len - 1 - k]) {
+          --j;
+          ++k;
+          suffix[k] = j + 1;
+        }
+        if(j == -1) prefix[k] = true;
+      }
+    }
+   public:
+    intptr_t operator()(const uint8_t* mem, const intptr_t size) {
+      const auto pattern = (const uint8_t*)_pattern.data();
+      const intptr_t pattern_len = _pattern.size();
+      
+      const auto bad_char = _bad_char.get();
+      const auto suffix = _suffix.get();
+      const auto prefix = _prefix.get();
+
+      const auto match_suffix = [&](const intptr_t j) {
+        const intptr_t k = pattern_len - 1 - j;
+        if(suffix[k] != -1) {
+          return j - suffix[k] + 1;
+        }
+        for(intptr_t r = j + 2; r <= pattern_len - 1; ++r) {
+          if(prefix[pattern_len - r]) return r;
+        }
+        return pattern_len;
+      };
+
+      intptr_t mem_pos = 0;
+      while(mem_pos <= size - pattern_len) {
+        intptr_t pat_pos = pattern_len - 1;
+
+        while(pat_pos >= 0 && mem[mem_pos + pat_pos] == pattern[pat_pos]) --pat_pos;
+
+        if(pat_pos < 0) return mem_pos;
+
+        intptr_t x = pat_pos - bad_char[mem[mem_pos + pat_pos]];
+        intptr_t y = 0;
+        if(pat_pos < pattern_len - 1) y = match_suffix(pat_pos);
+        if(x < 0 || y < 0) xsdbg << "=== " << (uint64_t)pat_pos << " " << (uint64_t)mem_pos << " " << x << " " << y;
+        mem_pos += std::max(x, y);
+      }
+      return (intptr_t)-1;
+    }
+   public:
+    const std::string _pattern;
+   private:
+    std::shared_ptr<intptr_t> _bad_char;
+    std::shared_ptr<intptr_t> _suffix;
+    std::shared_ptr<bool>     _prefix;
+  };
+ public:
+//////////////////////////////////////////////////////////////// match with preprocess
   /**
-    匹配预处理。
+    加入 预处理 的匹配。
 
     1. 找到最长的 hexs 串。 SS
     1. 确定 SS 前 词法匹配范围最大值的总和。 LA
@@ -771,82 +841,23 @@ class xsig {
     }
     xsdbg << "LB = " << (uint64_t)LB;
 
-    // 开始 BM 算法。
-    const auto pattern = (const uint8_t*)ss.data();
-    const auto pattern_len = (intptr_t)ss.size();
-    // 计算坏字符表，坏字符表最大是 256 。
-    const auto pbc = std::unique_ptr<intptr_t>(new intptr_t[0x100](-1));
-    const auto bc = pbc.get();
-    for(intptr_t i = 0; i < pattern_len; ++i) {
-      const auto c = pattern[i];
-      bc[c] = i;
-    }
-    //xsdbg << "bmBC :";
-    //xsdbg << showbin((void*)&bc[0], sizeof(bc), SBC_ANSI, xmsg() << "    ", false, true);
-
-    // 计算好后缀表，好后缀表不超过 pattern 大小。
-    const auto psuffix = std::unique_ptr<intptr_t>(new intptr_t[pattern_len](-1));
-    const auto suffix = psuffix.get();
-    const auto pprefix = std::unique_ptr<bool>(new bool[pattern_len](false));
-    const auto prefix = pprefix.get();
-
-    for(intptr_t i = 0; i < pattern_len - 1; ++i) {
-      auto j = i;
-      intptr_t k = 0;
-      while(j >= 0 && pattern[j] == pattern[pattern_len - 1 - k]) {
-        --j;
-        ++k;
-        suffix[k] = j + 1;
-      }
-      if(j == -1) prefix[k] = true;
-    }
-
-    auto match_suffix = [&](const intptr_t j) {
-      intptr_t k = pattern_len - 1 - j;
-      if(suffix[k] != -1) return j - suffix[k] + 1;
-      for(intptr_t r = j + 2; r <= pattern_len - 1; ++r) {
-        if(prefix[pattern_len - r]) return r;
-      }
-      return pattern_len;
-    };
-
+    BM bm(ss);
     intptr_t lp = 0;
-    // BM算法匹配
-    auto BM = [&] {
-      const auto bin = (const uint8_t*)blk.start + lp;
-      const auto bin_len = (intptr_t)blk.size - lp;
+    while(lp < (intptr_t)blk.size) {
+      xsdbg << "start lp " << (uint64_t)lp;
+      const auto MM = bm((const uint8_t*)blk.start + lp, blk.size - lp);
+      xsdbg << "    skip " << (uint64_t)MM;
+      if(MM < 0) return false;
+      auto a = (size_t)blk.start + lp + MM - LA;
+      auto b = (size_t)blk.start + lp + MM + LB;
+      if(match_core(xblk((const void*)a, (const void*)b))) return true;
+      lp += MM + 1;
+    }
 
-      xsdbg << "lp : " << (uint64_t)lp;
-      intptr_t i = 0;
-      while(i <= bin_len - pattern_len) {
-        intptr_t j = pattern_len - 1;
-
-        while(j >= 0 && bin[i + j] == pattern[j]) --j;
-
-        if(j < 0) return i;
-
-        intptr_t x = j - bc[bin[i + j]];
-        intptr_t y = 0;
-        if(j < pattern_len - 1) y = match_suffix(j);
-        if(x < 0 || y < 0) xsdbg << "=== " << (uint64_t)j << " " << (uint64_t)i << " " << x << " " << y;
-        i += std::max(x, y);
-      }
-      return (intptr_t)-1;
-    };
-
-  while(lp < (intptr_t)blk.size) {
-    xsdbg << "start lp " << (uint64_t)lp;
-    auto skip = BM();
-    xsdbg << "    skip " << (uint64_t)skip;
-    if(skip < 0) return false;
-    auto a = (size_t)blk.start + lp + skip - LA;
-    auto b = (size_t)blk.start + lp + skip + LB;
-    if(match_core(xblk((const void*)a, (const void*)b))) return true;
-    lp += skip + 1;
+    return false;
   }
-  return false;
-  }
-  /// 匹配内核。
+//////////////////////////////////////////////////////////////// match 内核
+  /// 匹配内核。朴素匹配。
   bool match_core(const xblk& blk) {
     try {
       xsdbg << gk_separation_line << "match... " <<
@@ -901,8 +912,9 @@ class xsig {
   }
   /// 指定块组，匹配特征。
   bool match(const Blks blks) {
+    auto match_func = exmatch ? &xsig::match_with_preprocess : &xsig::match_core;
     for(const auto& blk : blks) {
-      if(match_core(blk)) return true;
+      if((this->*match_func)(blk)) return true;
     }
     return false;
   }
@@ -1090,7 +1102,7 @@ class xsig {
 #ifdef xsig_need_debug
   inline static bool dbglog = false;  //< 指示是否输出 debug 信息。
 #endif
-  inline static ShowBinCode showcode = CheckBinCode<void>();
+  inline static bool exmatch = true;  //< match 函数使用 预处理。
 };
 #undef xsig_is_x64
 #undef xserr

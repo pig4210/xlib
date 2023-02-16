@@ -49,7 +49,7 @@ auto hmod = LoadLibrary(TEXT("D:/share/APPS/JD/pop_dd_workbench/jdwb_core.dll"))
 xdbg << "Load : " << hmod;
 if(nullptr == hmod) return false;
 
-xsig::dbglog = false;
+  xsig::dbglog = false;
 
 const auto xblks = xsig::check_blk(xblk((void*)hmod, (int)0x5D2000));
 for(const auto& b : xblks) {

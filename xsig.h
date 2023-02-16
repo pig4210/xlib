@@ -438,7 +438,7 @@ class xsig {
       bool                    isoff;
       std::weak_ptr<Record>   ref;
     };
-//////////////////////////////////////////////////////////////// 词法 string
+//////////////////////////////////////////////////////////////// 词法 hexs
     class Hexs : public Base {
      public:
       Hexs(const std::string& s) : Base(LT_Hexs, Range(s.size())), str(s) {}
@@ -475,7 +475,7 @@ class xsig {
         if(blk.size != str.size())  return false;
         return memcmp(str.data(), blk.start, str.size()) == 0;
       }
-     private:
+     public:
       std::string str;
     };
   };
@@ -734,6 +734,118 @@ class xsig {
     return true;
   }
 //////////////////////////////////////////////////////////////// match 内核
+  /**
+    匹配预处理。
+
+    1. 找到最长的 hexs 串。 SS
+    1. 确定 SS 前 词法匹配范围最大值的总和。 LA
+    1. 确定 SS 后 词法匹配范围最大值的总和。 LB
+    1. BM 算法扫描 全块，匹配 SS 。 得到匹配位置。 MM
+    1. 重新给出块 {MM - LA, MM + SS.size() + LB}
+  */
+  bool match_with_preprocess(const xblk& blk) {
+    std::shared_ptr<Lexical::Base> lex;
+    std::string ss;
+    for(auto x = _lex; x; x = x->child) {
+      if(x->type != Lexical::LT_Hexs) continue;
+      auto& o = *(Lexical::Hexs*)x.get();
+      if(o.str.size() <= ss.size()) continue;
+      lex = x;
+      ss = o.str;
+    }
+    xsdbg << "max string is " << bin2hex(ss, true);
+    // 找不到最长 hexs 串的情况，虽然很离谱，但也处理一下。
+    if(!lex) return match_core(blk);
+
+    intptr_t LA = 0;
+    for(auto x = lex->parent.lock(); x; x = x->parent.lock()) {
+      const auto k = LA + x->range.Max;
+      LA = (k >= LA) ? k : Range::MaxType;
+    }
+    xsdbg << "LA = " << (uint64_t)LA;
+
+    intptr_t LB = 0;
+    for(auto x = lex; x; x = x->child) {
+      const auto k = LB + x->range.Max;
+      LB = (k >= LB) ? k : Range::MaxType;
+    }
+    xsdbg << "LB = " << (uint64_t)LB;
+
+    // 开始 BM 算法。
+    const auto pattern = (const uint8_t*)ss.data();
+    const auto pattern_len = (intptr_t)ss.size();
+    // 计算坏字符表，坏字符表最大是 256 。
+    const auto pbc = std::unique_ptr<intptr_t>(new intptr_t[0x100](-1));
+    const auto bc = pbc.get();
+    for(intptr_t i = 0; i < pattern_len; ++i) {
+      const auto c = pattern[i];
+      bc[c] = i;
+    }
+    //xsdbg << "bmBC :";
+    //xsdbg << showbin((void*)&bc[0], sizeof(bc), SBC_ANSI, xmsg() << "    ", false, true);
+
+    // 计算好后缀表，好后缀表不超过 pattern 大小。
+    const auto psuffix = std::unique_ptr<intptr_t>(new intptr_t[pattern_len](-1));
+    const auto suffix = psuffix.get();
+    const auto pprefix = std::unique_ptr<bool>(new bool[pattern_len](false));
+    const auto prefix = pprefix.get();
+
+    for(intptr_t i = 0; i < pattern_len - 1; ++i) {
+      auto j = i;
+      intptr_t k = 0;
+      while(j >= 0 && pattern[j] == pattern[pattern_len - 1 - k]) {
+        --j;
+        ++k;
+        suffix[k] = j + 1;
+      }
+      if(j == -1) prefix[k] = true;
+    }
+
+    auto match_suffix = [&](const intptr_t j) {
+      intptr_t k = pattern_len - 1 - j;
+      if(suffix[k] != -1) return j - suffix[k] + 1;
+      for(intptr_t r = j + 2; r <= pattern_len - 1; ++r) {
+        if(prefix[pattern_len - r]) return r;
+      }
+      return pattern_len;
+    };
+
+    intptr_t lp = 0;
+    // BM算法匹配
+    auto BM = [&] {
+      const auto bin = (const uint8_t*)blk.start + lp;
+      const auto bin_len = (intptr_t)blk.size - lp;
+
+      xsdbg << "lp : " << (uint64_t)lp;
+      intptr_t i = 0;
+      while(i <= bin_len - pattern_len) {
+        intptr_t j = pattern_len - 1;
+
+        while(j >= 0 && bin[i + j] == pattern[j]) --j;
+
+        if(j < 0) return i;
+
+        intptr_t x = j - bc[bin[i + j]];
+        intptr_t y = 0;
+        if(j < pattern_len - 1) y = match_suffix(j);
+        if(x < 0 || y < 0) xsdbg << "=== " << (uint64_t)j << " " << (uint64_t)i << " " << x << " " << y;
+        i += std::max(x, y);
+      }
+      return (intptr_t)-1;
+    };
+
+  while(lp < (intptr_t)blk.size) {
+    xsdbg << "start lp " << (uint64_t)lp;
+    auto skip = BM();
+    xsdbg << "    skip " << (uint64_t)skip;
+    if(skip < 0) return false;
+    auto a = (size_t)blk.start + lp + skip - LA;
+    auto b = (size_t)blk.start + lp + skip + LB;
+    if(match_core(xblk((const void*)a, (const void*)b))) return true;
+    lp += skip + 1;
+  }
+  return false;
+  }
   /// 匹配内核。
   bool match_core(const xblk& blk) {
     try {
@@ -778,17 +890,12 @@ class xsig {
         xsdbg << "reset and inc...";
         ++lp;
         lex = _lex;
-        if(xblk::WholeIn != blk.check(xblk(
-          (void*)((size_t)blk.start + lp), fixRange.Min))) {
-          xsdbg << "rest mem not enough";
-          return false;
-        }
       }
 
       xsdbg << gk_separation_line << "match done";
       return true;
     } catch(...) {
-      xserr << gk_separation_line << " match error !";
+      xserr << gk_separation_line << "match error !";
       return false;
     }
   }

@@ -1,5 +1,5 @@
 ﻿64 A3 00000000
-FF 15 <^D core@HttpClient::curlGlobalInit>
+FF 15 <D core@HttpClient::curlGlobalInit>
 6A <B sizeof(JDWBCore)>
 E8 <^F core@operator_new>
 8B F0
@@ -17,7 +17,7 @@ C6 45 FC 01
 /
 
 64 A3 00000000
-FF 15 <^D core@HttpClient::curlGlobalInit>
+FF 15 <D core@HttpClient::curlGlobalInit>
 6A 08               # sizeof(JDWBCore)
 E8 <^F core@operator_new>
 8B F0

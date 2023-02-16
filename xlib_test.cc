@@ -39,9 +39,9 @@ xsig operator"" _sig(const char* signature, std::size_t) {
 }
 
 static const auto gkb = []{
-  xsig::dbglog = true;
 
-const auto sigs = xsig::read_sig("/\n12345\r\n/\r\n6789\n/\n1111\n/22222\n/\n   \n/\n\t\t\n/\n33333");
+  xsig::dbglog = true;
+  
 
 auto xsigs = xsig::read_sig_file(TEXT("xsig.sig"));
 
@@ -49,7 +49,7 @@ auto hmod = LoadLibrary(TEXT("D:/share/APPS/JD/pop_dd_workbench/jdwb_core.dll"))
 xdbg << "Load : " << hmod;
 if(nullptr == hmod) return false;
 
-  xsig::dbglog = false;
+xsig::dbglog = false;
 
 const auto xblks = xsig::check_blk(xblk((void*)hmod, (int)0x5D2000));
 for(const auto& b : xblks) {
@@ -57,7 +57,7 @@ for(const auto& b : xblks) {
 }
 for(auto& s : xsigs) {
   for(const auto& b : xblks) {
-    const auto ok = s.match_core(b);
+    const auto ok = s.match_with_preprocess(b);
     xdbg << "match : " << ok;
     if(ok) {
       const auto reps = s.report(b.start);
@@ -92,7 +92,7 @@ const std::string ss(hex2bin(std::string(
 )));
 
 xsig sig = 
-"64 A3 00{ 1, 4 }"
+"64 A3 00000000"
 "FF 15 <D core@HttpClient::curlGlobalInit>"
 "6A <B sizeof(JDWBCore)>"
 "E8 <^F core@operator_new>"
@@ -105,7 +105,7 @@ xsig sig =
 "89 45 ."
 "8B C8"
 "C6 45 FC 01 <A>...."_sig;
-
+/*
 auto s = (size_t)GetModuleHandle(nullptr);
 s -= 0x100;
 const auto blks = xsig::check_blk(xblk((void*)s, 0x80000));
@@ -113,8 +113,10 @@ for(const auto& v : blks) {
   xdbg << v.start << " - " << v.end;
 }
 xdbg << showbin(ss);
+*/
+const auto bb = sig.match_with_preprocess({xblk(ss.data(), ss.size())});
 
-const auto bb = sig.match({xblk(ss.data(), ss.size())});
+  xdbg << "match @ " << bb;
 
   for(const auto& v : sig.report(ss.data())) {
     xdbg << "  " << v.second.q << " : " << v.first;

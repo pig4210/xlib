@@ -43,7 +43,17 @@ static const auto gkb = []{
   xsig::dbglog = true;
   
 
-auto xsigs = xsig::read_sig_file(TEXT("xsig.sig"));
+std::vector<xsig> xsigs;
+
+    for(const auto& sig : xsig::read_sig_file(TEXT("xsig.sig"))) {
+      xsig o;
+      if(false == o.make_lexs(sig.data())) {
+        xerr << "make_lexs error !";
+        xerr << sig;
+        break;
+      }
+      xsigs.emplace_back(o);
+    }
 
 auto hmod = LoadLibrary(TEXT("D:/share/APPS/JD/pop_dd_workbench/jdwb_core.dll"));
 xdbg << "Load : " << hmod;

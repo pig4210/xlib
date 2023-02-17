@@ -79,6 +79,8 @@
 
 class xsig {
  public:
+  xsig() = default;
+  xsig(const std::string& sig) { make_lexs(sig.data()); }
 //////////////////////////////////////////////////////////////// value 结构
   struct value {
     char        t;   //< qdwbp n（错误）。
@@ -846,7 +848,7 @@ class xsig {
     while(lp < (intptr_t)blk.size) {
       xsdbg << "start lp " << (uint64_t)lp;
       const auto MM = bm((const uint8_t*)blk.start + lp, blk.size - lp);
-      xsdbg << "    skip " << (uint64_t)MM;
+      xsdbg << "    MM " << (uint64_t)MM;
       if(MM < 0) return false;
       auto a = (size_t)blk.start + lp + MM - LA;
       auto b = (size_t)blk.start + lp + MM + LB;
@@ -953,6 +955,57 @@ class xsig {
     }
     return bs;
   }
+  /// 从二进制读取。
+  bool from_bin(vbin& bs) {
+    _lex.reset();
+    std::shared_ptr<Lexical::Base> lex;
+    try {
+      while(!bs.empty()) {
+        Lexical::Type t;
+        bs >> t;
+
+        Range range(0);
+        vbin s;
+        switch(t) {
+          case Lexical::LT_End: 
+            lex = std::make_shared<Lexical::End>();
+            break;
+          case Lexical::LT_Dot:
+            bs >> range.Min >> range.Max;
+            lex = std::make_shared<Lexical::Dot>(range);
+          case Lexical::LT_Record: {
+            char f;
+            bool b;
+            bs >> f >> b >> s;
+            lex = std::make_shared<Lexical::Record>(
+              f, std::string((const char*)s.data(), s.size()), b);
+            break;
+          }
+          case Lexical::LT_Hexs: {
+            bs >> s;
+            lex = std::make_shared<Lexical::Hexs>(
+              std::string((const char*)s.data(), s.size()));
+            break;
+          }
+          default: {
+            xserr << "Unknow type : " << (uint8_t)t;
+            return false;
+          }
+        }
+        add_lex(lex);
+        xsdbg << lex->sig();
+        if(t == Lexical::LT_End) {
+          if(lex->parent.lock()) return true;
+          xserr << "bins empty !";
+          return false;
+        }
+      }
+      xserr << "No End !";
+    } catch(...) {
+      xserr << xfunexpt;
+    }
+    return false;
+  }
  public:
   /// 指定块，检查内存可读。注意到：有些模块可读范围可能中断，导致匹配异常。
   static Blks check_blk(const xblk& blk) {
@@ -1057,20 +1110,20 @@ class xsig {
     return sigs;
   }
   /// 读取特征码文件。
-  static std::vector<xsig> read_sig_file(const std::filesystem::path& path) {
-    std::vector<xsig> xsigs;
+  static std::vector<std::string> read_sig_file(const std::filesystem::path& path) {
+    std::vector<std::string> sigs;
     std::ifstream file;
     file.open(path, std::ios_base::in | std::ios_base::binary);
     if(!file) {
       xserr << "open sig file fail !";
-      return xsigs;
+      return sigs;
     }
     
     file.seekg(0, std::ios_base::end);
     const size_t filelen = (size_t)file.tellg();
     if(0 == filelen) {
       xserr << "sig file empty !";
-      return xsigs;
+      return sigs;
     }
     file.seekg(0, std::ios_base::beg);
     std::string data;
@@ -1083,18 +1136,7 @@ class xsig {
       data.erase(data.begin(), data.begin() + 3);
     }
 
-    const auto sigs = read_sig(data);
-    for(const auto& sig : sigs) {
-      xsig o;
-      if(false == o.make_lexs(sig.data())) {
-        xserr << "make_lexs error !";
-        xserr << sig;
-        return std::vector<xsig>();
-      }
-      xsigs.emplace_back(o);
-    }
-
-    return xsigs;
+    return read_sig(data);
   }
  private:
   std::shared_ptr<Lexical::Base> _lex; //< 特征码起始词法。是一个双向链表。

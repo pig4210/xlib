@@ -127,11 +127,11 @@ class xsig {
     Type  Min;  //< 最小匹配次数。
     Type  Max;  //< 最大匹配次数。
     /// 用以标识最大范围指示值。
-    inline static constexpr Type MaxType = INTPTR_MAX;
+    static inline constexpr Type MaxType = INTPTR_MAX;
     /// 用以标识错误范围指示值。
-    inline static constexpr Type ErrType = -1;
+    static inline constexpr Type ErrType = -1;
     /// 用以标识初始范围指示值。
-    inline static constexpr Type InitType = -1;
+    static inline constexpr Type InitType = -1;
     /// 故意删除默认初始化，请用 其他构造 或 {} 构造。
     Range() = delete;
     /// 简单初始化。
@@ -165,7 +165,7 @@ class xsig {
     }
   };
   /// 用以标识错误的范围。
-  inline static const Range ErrRange = {Range::ErrType, Range::ErrType};
+  static inline const Range ErrRange = {Range::ErrType, Range::ErrType};
  private:
 //////////////////////////////////////////////////////////////// 词法类
   class Lexical {
@@ -468,10 +468,11 @@ class xsig {
       std::string str;
     };
   };
+ public:
   using Blks = std::vector<xblk>;
   using Reports = std::map<std::string, value>;
  private:
-  inline static const auto gk_separation_line =
+  static inline const auto gk_separation_line =
     "---------------------------------------------------------------- ";
   /// 添加一个词法。
   void add_lex(std::shared_ptr<Lexical::Base> o) {
@@ -481,7 +482,7 @@ class xsig {
   }
 //////////////////////////////////////////////////////////////// 词法 hex 识别函数
   /// 匹配 hex 词法，返回值 < 0 表示非此词法。
-  static char match_hex(Sign& sig) {
+  static inline char match_hex(Sign& sig) {
     const auto ch = sig();
     if(!std::isxdigit(ch)) return -1;
     ++sig;
@@ -490,7 +491,7 @@ class xsig {
   }
 //////////////////////////////////////////////////////////////// 词法 range 提取函数
   /// 匹配词法 range_value ，返回值 < 0 表示非此词法。
-  static Range::Type match_range_value(Sign& sig) {
+  static inline Range::Type match_range_value(Sign& sig) {
     auto hex = match_hex(sig);
     if(hex < 0) return Range::ErrType;
     Range::Type r = hex;
@@ -504,7 +505,7 @@ class xsig {
     return r;
   }
   /// 匹配词法 range，返回值 == ErrRange 时，匹配错误。
-  static Range match_range(Sign& sig) {
+  static inline Range match_range(Sign& sig) {
     switch(sig()) {
       case '*': ++sig; return {0, Range::MaxType};
       case '+': ++sig; return {1, Range::MaxType};
@@ -1008,7 +1009,7 @@ class xsig {
   }
  public:
   /// 指定块，检查内存可读。注意到：有些模块可读范围可能中断，导致匹配异常。
-  static Blks check_blk(const xblk& blk) {
+  static inline Blks check_blk(const xblk& blk) {
 #ifndef _WIN32
     // 非 windows 暂不确定如何判断内存可读。
     return {blk};
@@ -1064,7 +1065,7 @@ class xsig {
 #endif
   }
   /// 读取特征码串。要求多段特征码串，以 单行 / 分隔。
-  static std::vector<std::string> read_sig(const std::string& _data) {
+  static inline std::vector<std::string> read_sig(const std::string& _data) {
     std::vector<std::string> sigs;
     /*
       注意到，这里不适合用 正则表达式分割文本。
@@ -1086,10 +1087,12 @@ class xsig {
       auto ite = ds + e;
 
       // 如果不是单行 / ，则视为 sig 内容，继续。
-      // 注意，因为加了后缀，itn 不可能为 end() 。
-      auto itn = ite + 2; 
-      if('\r' == *itn) ++itn;
-      if('\n' != *itn) continue;
+      if(data.end() != ite) {
+        // 注意，因为加了后缀，itn 不可能为 end() 。
+        auto itn = ite + 2; 
+        if('\r' == *itn) ++itn;
+        if('\n' != *itn) continue;
+      }
 
       s = e + 2;  // 注意设定下个起始位。
 
@@ -1110,7 +1113,7 @@ class xsig {
     return sigs;
   }
   /// 读取特征码文件。
-  static std::vector<std::string> read_sig_file(const std::filesystem::path& path) {
+  static inline std::vector<std::string> read_sig_file(const std::filesystem::path& path) {
     std::vector<std::string> sigs;
     std::ifstream file;
     file.open(path, std::ios_base::in | std::ios_base::binary);
@@ -1142,9 +1145,9 @@ class xsig {
   std::shared_ptr<Lexical::Base> _lex; //< 特征码起始词法。是一个双向链表。
  public:
 #ifdef xsig_need_debug
-  inline static bool dbglog = false;  //< 指示是否输出 debug 信息。
+  static inline bool dbglog = false;  //< 指示是否输出 debug 信息。
 #endif
-  inline static bool exmatch = true;  //< match 函数使用 预处理。
+  static inline bool exmatch = true;  //< match 函数使用 预处理。
 };
 #undef xsig_is_x64
 #undef xserr

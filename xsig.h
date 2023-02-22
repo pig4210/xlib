@@ -166,7 +166,7 @@ class xsig {
   };
   /// 用以标识错误的范围。
   static inline const Range ErrRange = {Range::ErrType, Range::ErrType};
- private:
+ public:
 //////////////////////////////////////////////////////////////// 词法类
   class Lexical {
    public:
@@ -184,6 +184,7 @@ class xsig {
       LT_Record,      //< record       -> \<\^?[AFQDWB]{bs}[^\n\r\0\>]*\>
                       //< const        -> {hexhex}
       LT_Hexs,        //< hexs         -> {const}+
+      LT_Sets,
     };
    public:
 //////////////////////////////////////////////////////////////// 词法基类
@@ -467,6 +468,38 @@ class xsig {
      public:
       std::string str;
     };
+//////////////////////////////////////////////////////////////// 非词法 sets
+    class Sets : public Base {
+     public:
+      Sets() : Base(LT_Sets, {0, 0}) {}
+      virtual xmsg sig() const {
+        xmsg msg;
+        msg << '@';
+        for(const auto& v : _mods) {
+          msg << v << ',';
+        }
+        for(const auto& v : _blks) {
+          msg << v.start << ',' << v.end << ',';
+        }
+        for(const auto& v : _cfgs) {
+          msg << v << ',';
+        }
+        return msg;
+      }
+      virtual void bin(vbin& bs) const {
+        bs << _mods.size();
+        for(const auto& v : _mods) { bs << v.size() << v; }
+        bs << _blks.size();
+        for(const auto& v : _blks) { bs << v.start << v.end; }
+        bs << _cfgs.size();
+        for(const auto& v : _cfgs) { bs << v.size() << v; }
+      }
+      virtual bool test(const xblk&) const { return true; }
+     public:
+      std::vector<std::string>  _mods;
+      std::vector<xblk>         _blks;
+      std::vector<std::string>  _cfgs;
+    };
   };
  public:
   using Blks = std::vector<xblk>;
@@ -504,7 +537,7 @@ class xsig {
     // 考虑到特征码这么写本来就离谱，这种情况就不处理了。
     return r;
   }
-  /// 匹配词法 range，返回值 == ErrRange 时，匹配错误。
+  /// 匹配词法 range ，返回值 == ErrRange 时，匹配错误。
   static inline Range match_range(Sign& sig) {
     switch(sig()) {
       case '*': ++sig; return {0, Range::MaxType};
@@ -557,6 +590,79 @@ class xsig {
     //xsdbg.prt("  make range = { %tX, %tX }", Min, Max);
     return Range(Min, Max);
   }
+  /// 匹配设置 sets 。
+  static inline std::shared_ptr<Lexical::Sets> match_sets(Sign& sig) {
+    std::string data;
+    while('\0' != sig()) { data.push_back(sig()); ++sig; }
+    data.push_back(',');
+
+    std::vector<std::string> vec;
+    auto ds = data.begin();
+    for(size_t s = 0, e = 0; e != data.size();) {
+      e = data.find_first_of(',', s);
+      if(data.npos == e) break;
+
+      auto its = ds + s;
+      auto ite = ds + e;
+
+      ++e;
+      s = e;  // 注意设定下个起始位。
+
+      // 前缀空白丢弃。
+      for(; its != ite; ++its) {
+        if(!std::isspace(*its)) break;
+      }
+      // 后缀空白丢弃。
+      for(; ite != its; --ite) {
+        if(!std::isspace(*(ite - 1))) break;
+      }
+      // 空串丢弃。
+      if(its == ite) continue;
+
+      vec.emplace_back(std::string(its, ite));
+    }
+
+    data.clear();
+    auto sets = std::make_shared<Lexical::Sets>();
+
+    std::vector<size_t> bs;
+    for(const auto& v : vec) {
+      if(':' == *v.begin()) {
+        sets->_cfgs.push_back(v);
+        continue;
+      }
+      bool bhex = true;
+      for(const auto ch : v) {
+        if(!std::isxdigit(ch)) {
+          bhex = false;
+          break;
+        }
+      }
+      if(!bhex) {
+        sets->_mods.push_back(v);
+        continue;
+      }
+      try {
+#ifdef xsig_is_x64
+        const auto u = std::stoull(v, 0, 16);
+#else
+        const auto u = std::stoul(v, 0, 16);
+#endif
+        bs.push_back(u);
+        if(0 == (bs.size() % 2)) {
+          sets->_blks.push_back(xblk((void*)*(bs.rbegin() + 1), u));
+        }
+      } catch(...) {
+        xserr << *sig << " : " << v << " stoull error !";
+        return std::shared_ptr<Lexical::Sets>();
+      }
+    }
+    if(0 != (bs.size() % 2)) {
+      xserr << *sig << " : blks no pair !";
+      return std::shared_ptr<Lexical::Sets>();
+    }
+    return sets;
+  }
 //////////////////////////////////////////////////////////////// 一次词法识别
   /// 一次词法识别。返回 false 表示 失败 或 结束。
   bool make_lex(Sign& sig) {
@@ -574,6 +680,17 @@ class xsig {
 //////////////////////////////////////////////////////////////// 词法 ws 识别逻辑
       // 只是跳过 ws ，一律返回 true 。
       case ' ': case '\t': case '\n': case '\r': ++sig; return true;
+      case '@': {
+        if(_lex) {
+          xserr << pos << "@ must first character !";
+          return false;
+        }
+        ++sig;
+        const auto lex = match_sets(sig);
+        if(!lex) return false;
+        add_lex(lex);
+        return true;
+      }
 //////////////////////////////////////////////////////////////// 词法 note 识别逻辑
       // 只是跳过 note ，一律返回 true 。
       case '#': {
@@ -1007,6 +1124,11 @@ class xsig {
     }
     return false;
   }
+  std::shared_ptr<Lexical::Sets> get_sets() const {
+    if(!_lex) return std::shared_ptr<Lexical::Sets>();
+    if(Lexical::LT_Sets != _lex->type) return std::shared_ptr<Lexical::Sets>();
+    return *(std::shared_ptr<Lexical::Sets>*)&_lex;
+  }
  public:
   /// 指定块，检查内存可读。注意到：有些模块可读范围可能中断，导致匹配异常。
   static inline Blks check_blk(const xblk& blk) {
@@ -1081,18 +1203,16 @@ class xsig {
     auto ds = data.begin();
     for(size_t s = 0, e = 0, p = 0; e != data.size(); p = e + 2) {
       e = data.find("\n/", p);
-      if(data.npos == e) e = data.size();
+      if(data.npos == e) break;
 
       auto its = ds + s;
       auto ite = ds + e;
 
       // 如果不是单行 / ，则视为 sig 内容，继续。
-      if(data.end() != ite) {
-        // 注意，因为加了后缀，itn 不可能为 end() 。
-        auto itn = ite + 2; 
-        if('\r' == *itn) ++itn;
-        if('\n' != *itn) continue;
-      }
+      // 注意，因为加了后缀，itn 不可能为 end() 。
+      auto itn = ite + 2; 
+      if('\r' == *itn) ++itn;
+      if('\n' != *itn) continue;
 
       s = e + 2;  // 注意设定下个起始位。
 
@@ -1102,7 +1222,7 @@ class xsig {
       }
       // 后缀空白丢弃。
       for(; ite != its; --ite) {
-        if(!std::isspace(*its)) break;
+        if(!std::isspace(*(ite - 1))) break;
       }
       // 空串丢弃。
       if(its == ite) continue;
@@ -1133,7 +1253,6 @@ class xsig {
     data.resize(filelen);
     file.read((char*)data.data(), filelen);
     file.close();
-    // TODO ： 暂未处理 bin 的情况。
 
     if(data.size() >= 3 && "\xEF\xBB\xBF" == data.substr(0, 3)) {
       data.erase(data.begin(), data.begin() + 3);

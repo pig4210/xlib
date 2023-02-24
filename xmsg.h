@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.1.3.220629
+  \version    5.1.3.230224
   \note       For All
 
   \author     triones
@@ -31,203 +31,182 @@
 #ifndef _XLIB_XMSG_H_
 #define _XLIB_XMSG_H_
 
-#include <string>
-#include <cstdio>
-#include <cstdarg>
 #include <climits>
+#include <cstdarg>
+#include <cstdio>
+#include <string>
 
 #include "xcodecvt.h"
 
+namespace xlib {
+
 #ifdef XLIB_NOCXX20
-#define XMSGT(text) (const char8_t*)u8 ## text
+#define XMSGT(text) (const char8_t*)u8##text
 #else
-#define XMSGT(text) u8 ## text
+#define XMSGT(text) u8##text
 #endif
-#define XMSGAS(v) as2u8(v)
-#define XMSGWS(v) ws2u8(v)
+#define XMSGAS(v) xlib::as2u8(v)
+#define XMSGWS(v) xlib::ws2u8(v)
 #define XMSGU8(v) v
 
-class xmsg : public std::u8string
-  {
-  public:
-    using std::u8string::u8string;
-  public:
-    xmsg() {}
-    xmsg(const std::string& as)   : std::u8string(XMSGAS(as)) {}
-    xmsg(const std::wstring& ws)  : std::u8string(XMSGWS(ws)) {}
-    xmsg(const std::u8string& u8) : std::u8string(XMSGU8(u8)) {}
-  public:
-    /// 指定格式输出。
-    xmsg& prt(const char8_t* const fmt, ...)
-      {
-      if(nullptr == fmt) return *this;
-      va_list ap;
-      va_start(ap, fmt);
-      const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
-      va_end(ap);
-      if(0 >= need) return *this;
-      std::u8string buffer;
-      buffer.resize(need);
-      va_start(ap, fmt);
-      std::vsnprintf((char*)buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
-      va_end(ap);
-      append(buffer);
-      return *this;
-      }
-    /// 针对 UTF-8 对齐问题， %s 格式化建议使用 char* 。
-    xmsg& prt(const char* const fmt, ...)
-      {
-      if(nullptr == fmt) return *this;
-      va_list ap;
-      va_start(ap, fmt);
-      const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
-      va_end(ap);
-      if(0 >= need) return *this;
-      std::string buffer;
-      buffer.resize(need);
-      va_start(ap, fmt);
-      std::vsnprintf(buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
-      va_end(ap);
-      append(XMSGAS(buffer));
-      return *this;
-      }
-    /// 输出 dec 值。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int8_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%hhi"), v);
-      }
-    /// 输出 hex(XX)。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint8_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%02X"), v);
-      }
-    /// 输出 dec 值。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int16_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%hi"), v);
-      }
-    /// 输出 hex(XXXX)。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint16_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%04X"), v);
-      }
-    /// 输出 dec 值。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int32_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%i"), v);
-      }
-    /// 输出 hex(XXXXXXXX)。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint32_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%08X"), v);
-      }
-    /// 输出 dec 值。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(int64_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%lli"), v);
-      }
-    /// 输出 hex(XXXXXXXXXXXXXXXX)。
-    template<typename T> std::enable_if_t<sizeof(T) == sizeof(uint64_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v)
-      {
-      return prt(XMSGT("%08X%08X"), (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
-      }
-    /// 输出 hex 指针。
-    xmsg& operator<<(const void* const v)
-      {
-      return operator<<((uintptr_t)v);
-      }
-    /// 输出 true 或 false。
-    xmsg& operator<<(const bool& v)
-      {
-      return operator<<(v ? XMSGT("true") : XMSGT("false"));
-      }
-    /// 输出 ANSI 字符 转换。
-    xmsg& operator<<(const char& v)
-      {
-      append(XMSGAS(std::string(1, v)));
-      return *this;
-      }
-    /// 输出 ANSI 字符串 转换。
-    xmsg& operator<<(const char* const v)
-      {
-      if(nullptr != v) append(XMSGAS(v));
-      return *this;
-      }
-    /// 输出 ASNI 字符串 转换。
-    xmsg& operator<<(const std::string& v)
-      {
-      append(XMSGAS(v));
-      return *this;
-      }
-    /// 输出 UNICCODE 字符 转换。
-    xmsg& operator<<(const wchar_t& v)
-      {
-      append(XMSGWS(std::wstring(1, v)));
-      return *this;
-      }
-    /// 输出 UNICCODE 字符串 转换。
-    xmsg& operator<<(const wchar_t* const v)
-      {
-      if(nullptr != v) append(XMSGWS(v));
-      return *this;
-      }
-    /// 输出 UNICCODE 字符串 转换。
-    xmsg& operator<<(const std::wstring& v)
-      {
-      append(XMSGWS(v));
-      return *this;
-      }
+class xmsg : public std::u8string {
+ public:
+  using std::u8string::u8string;
+
+ public:
+  xmsg() {}
+  xmsg(const std::string& as)   : std::u8string(XMSGAS(as)) {}
+  xmsg(const std::wstring& ws)  : std::u8string(XMSGWS(ws)) {}
+  xmsg(const std::u8string& u8) : std::u8string(XMSGU8(u8)) {}
+
+ public:
+  /// 指定格式输出。
+  xmsg& prt(const char8_t* const fmt, ...) {
+    if (nullptr == fmt) return *this;
+    va_list ap;
+    va_start(ap, fmt);
+    const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
+    va_end(ap);
+    if (0 >= need) return *this;
+    std::u8string buffer;
+    buffer.resize(need);
+    va_start(ap, fmt);
+    std::vsnprintf((char*)buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
+    va_end(ap);
+    append(buffer);
+    return *this;
+  }
+  /// 针对 UTF-8 对齐问题， %s 格式化建议使用 char* 。
+  xmsg& prt(const char* const fmt, ...) {
+    if (nullptr == fmt) return *this;
+    va_list ap;
+    va_start(ap, fmt);
+    const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
+    va_end(ap);
+    if (0 >= need) return *this;
+    std::string buffer;
+    buffer.resize(need);
+    va_start(ap, fmt);
+    std::vsnprintf(buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
+    va_end(ap);
+    append(XMSGAS(buffer));
+    return *this;
+  }
+  /// 输出 dec 值。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int8_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%hhi"), v);
+  }
+  /// 输出 hex(XX)。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint8_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%02X"), v);
+  }
+  /// 输出 dec 值。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int16_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%hi"), v);
+  }
+  /// 输出 hex(XXXX)。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint16_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%04X"), v);
+  }
+  /// 输出 dec 值。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int32_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%i"), v);
+  }
+  /// 输出 hex(XXXXXXXX)。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint32_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%08X"), v);
+  }
+  /// 输出 dec 值。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int64_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%lli"), v);
+  }
+  /// 输出 hex(XXXXXXXXXXXXXXXX)。
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint64_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+    return prt(XMSGT("%08X%08X"), (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
+  }
+  /// 输出 hex 指针。
+  xmsg& operator<<(const void* const v) {
+    return operator<<((uintptr_t)v);
+  }
+  /// 输出 true 或 false。
+  xmsg& operator<<(const bool& v) {
+    return operator<<(v ? XMSGT("true") : XMSGT("false"));
+  }
+  /// 输出 ANSI 字符 转换。
+  xmsg& operator<<(const char& v) {
+    append(XMSGAS(std::string(1, v)));
+    return *this;
+  }
+  /// 输出 ANSI 字符串 转换。
+  xmsg& operator<<(const char* const v) {
+    if (nullptr != v) append(XMSGAS(v));
+    return *this;
+  }
+  /// 输出 ASNI 字符串 转换。
+  xmsg& operator<<(const std::string& v) {
+    append(XMSGAS(v));
+    return *this;
+  }
+  /// 输出 UNICCODE 字符 转换。
+  xmsg& operator<<(const wchar_t& v) {
+    append(XMSGWS(std::wstring(1, v)));
+    return *this;
+  }
+  /// 输出 UNICCODE 字符串 转换。
+  xmsg& operator<<(const wchar_t* const v) {
+    if (nullptr != v) append(XMSGWS(v));
+    return *this;
+  }
+  /// 输出 UNICCODE 字符串 转换。
+  xmsg& operator<<(const std::wstring& v) {
+    append(XMSGWS(v));
+    return *this;
+  }
 #ifndef XLIB_NOCXX20
-    /// 输出 UTF-8 字符 转换。
-    xmsg& operator<<(const char8_t& v)
-      {
-      append(XMSGU8(std::u8string(1, v)));
-      return *this;
-      }
+  /// 输出 UTF-8 字符 转换。
+  xmsg& operator<<(const char8_t& v) {
+    append(XMSGU8(std::u8string(1, v)));
+    return *this;
+  }
 #endif
-    /// 输出 UTF-8 字符串 转换。
-    xmsg& operator<<(const char8_t* v)
-      {
-      if(nullptr != v) append(XMSGU8(v));
-      return *this;
-      }
-    /// 输出 UTF-8 字符串 转换。
-    xmsg& operator<<(const std::u8string& v)
-      {
-      append(XMSGU8(v));
-      return *this;
-      }
-    /// 输出 dec 浮点数。
-    xmsg& operator<<(const float& v)
-      {
-      return prt(XMSGT("%f"), v);
-      }
-    /// 输出 dec 浮点数。
-    xmsg& operator<<(const double& v)
-      {
-      return prt(XMSGT("%f"), v);
-      }
-    /// 输出 内容。
-    xmsg& operator<<(const xmsg& v)
-      {
-      append(v);
-      return *this;
-      }
-    /// 转换 ASCII 。
-    std::string toas() const
-      {
-      return u82as(*this);
-      }
-    /// 转换 UNICODE 。
-    std::wstring tows() const
-      {
-      return u82ws(*this);
-      }
-  };
+  /// 输出 UTF-8 字符串 转换。
+  xmsg& operator<<(const char8_t* v) {
+    if (nullptr != v) append(XMSGU8(v));
+    return *this;
+  }
+  /// 输出 UTF-8 字符串 转换。
+  xmsg& operator<<(const std::u8string& v) {
+    append(XMSGU8(v));
+    return *this;
+  }
+  /// 输出 dec 浮点数。
+  xmsg& operator<<(const float& v) {
+    return prt(XMSGT("%f"), v);
+  }
+  /// 输出 dec 浮点数。
+  xmsg& operator<<(const double& v) {
+    return prt(XMSGT("%f"), v);
+  }
+  /// 输出 内容。
+  xmsg& operator<<(const xmsg& v) {
+    append(v);
+    return *this;
+  }
+  /// 转换 ASCII 。
+  std::string toas() const {
+    return u82as(*this);
+  }
+  /// 转换 UNICODE 。
+  std::wstring tows() const {
+    return u82ws(*this);
+  }
+};
 
 #undef XMSGT
 #undef XMSGAS
 #undef XMSGWS
 #undef XMSGU8
+
+}  // namespace xlib
 
 #endif  // _XLIB_XMSG_H_

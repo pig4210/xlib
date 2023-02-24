@@ -22,35 +22,35 @@ const std::wstring  wsbuf(L"AA转换测试BB\0CC", 11);
 const std::u8string u8buf((const char8_t*)u8"AA转换测试BB\0CC", 19);
 
 SHOW_TEST_HEAD(as2ws);
-done = wsbuf == as2ws(asbuf);
+done = wsbuf == xlib::as2ws(asbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(ws2as);
-done = asbuf == ws2as(wsbuf);
+done = asbuf == xlib::ws2as(wsbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(u82ws);
-done = wsbuf == u82ws(u8buf);
+done = wsbuf == xlib::u82ws(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(ws2u8);
-done = u8buf == ws2u8(wsbuf);
+done = u8buf == xlib::ws2u8(wsbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(as2u8);
-done = u8buf == as2u8(asbuf);
+done = u8buf == xlib::as2u8(asbuf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(u82as);
-done = asbuf == u82as(u8buf);
+done = asbuf == xlib::u82as(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(u82ws emoji);
-done = L"🚚" == u82ws((const char8_t*)u8"🚚");
+done = L"🚚" == xlib::u82ws((const char8_t*)u8"🚚");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(ws2u8 emoji);
-done = (const char8_t*)u8"🚚" == ws2u8(L"🚚");
+done = (const char8_t*)u8"🚚" == xlib::ws2u8(L"🚚");
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

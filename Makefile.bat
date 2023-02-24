@@ -107,7 +107,7 @@
     
 :baseconfig
     set MyPath=%CD%
-    set MAKE=E:/work/gnu/make/make.exe
+    set MAKE=D:/work/gnu/make/make.exe
 
     for /d %%P in (.) do set ProjectName=%%~nP
     if "%ProjectName%"=="" (

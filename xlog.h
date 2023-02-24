@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.4.0.230208
+  \version    2.4.0.230224
 
   \author     triones
   \date       2011-07-22
@@ -52,6 +52,8 @@
   #include <iostream>
 #endif
 
+namespace xlib {
+
 /**
   xlog 用于基本的调试信息输出。
   
@@ -59,78 +61,69 @@
   - **注意** 类本身没有输出控制（节省资源，加快运行），需要通过宏完成。（宏的具体操作参见之后说明）
   - 如果需要扩展功能，如输出到文件等，可选择继承之，或仿造实现之。
 */
-class xlog : public xmsg
-  {
-  public:
-    enum xlog_level
-      {
-      off,    ///< 屏蔽输出。
-      fatal,  ///< 致命错误，程序无法继续执行。
-      error,  ///< 反映错误，例如一些 API 的调用失败。
-      warn,   ///< 反映某些需要注意的可能有潜在危险的情况，可能会造成崩溃或逻辑错误之类。
-      info,   ///< 表示程序进程的信息。
-      debug,  ///< 普通的调试信息，这类信息发布时一般不输出。
-      trace,  ///< 最精细的调试信息，多用于定位错误，查看某些变量的值。
-      on,     ///< 全输出。
-      };
-  public:
-    virtual ~xlog() { do_out(); }
-    virtual void raw_out(const xmsg& msg)
-      {
+class xlog : public xmsg {
+ public:
+  enum xlog_level {
+    off,    ///< 屏蔽输出。
+    fatal,  ///< 致命错误，程序无法继续执行。
+    error,  ///< 反映错误，例如一些 API 的调用失败。
+    warn,   ///< 反映某些需要注意的可能有潜在危险的情况，可能会造成崩溃或逻辑错误之类。
+    info,   ///< 表示程序进程的信息。
+    debug,  ///< 普通的调试信息，这类信息发布时一般不输出。
+    trace,  ///< 最精细的调试信息，多用于定位错误，查看某些变量的值。
+    on,     ///< 全输出。
+  };
+ public:
+  virtual ~xlog() { do_out(); }
+  virtual void raw_out(const xmsg& msg) {
 #ifdef _WIN32
-      OutputDebugStringA(msg.toas().c_str());
+    OutputDebugStringA(msg.toas().c_str());
 #else
-      std::wcout << msg.tows() << std::endl;
+    std::wcout << msg.tows() << std::endl;
 #endif
-      }
-    xlog& do_out()
-      {
-      if(empty())  return *this;
+  }
+  xlog& do_out() {
+    if (empty()) return *this;
+    raw_out(*this);
+    clear();
+    return *this;
+  }
+  // 分行输出请重载 xlog 后调用此函数用于输出。
+  xlog& do_out(const size_t line_max) {
+    if (empty()) return *this;
+    if (line_max >= size()) {
       raw_out(*this);
       clear();
       return *this;
+    }
+    size_t ss = 0;
+    size_t ll = 0;
+    for (size_t i = ss; i < size();) {
+      if (ll >= line_max) {
+        raw_out(std::u8string(begin() + ss, begin() + i));
+        ss = i;
+        ll = 0;
       }
-    // 分行输出请重载 xlog 后调用此函数用于输出。
-    xlog& do_out(const size_t line_max)
-      {
-      if(empty())  return *this;
-      if(line_max >= size())
-        {
-        raw_out(*this);
-        clear();
-        return *this;
-        }
-      size_t ss = 0;
-      size_t ll = 0;
-      for(size_t i = ss; i < size();)
-        {
-        if(ll >= line_max)
-          {
-          raw_out(std::u8string(begin() + ss, begin() + i));
-          ss = i;
-          ll = 0;
-          }
-        const uint8_t ch = *(begin() + i);
-        // 如果内部自带换行，则避免过多切分。
-        if(ch == '\n') { ++i;     ll = 0;   continue; }
-        if(ch <= 0x7F) { ++i;     ++ll;     continue; }
-        // 忽略首字节非法。
-        if(ch < 0xC0)  { ++i;     ++ll;     continue; }
-        if(ch < 0xE0)  { i += 2;  ll += 2;  continue; }
-        if(ch < 0xF0)  { i += 3;  ll += 3;  continue; }
-        if(ch < 0xF8)  { i += 4;  ll += 4;  continue; }
-        if(ch < 0xFC)  { i += 5;  ll += 5;  continue; }
-        if(ch < 0xFE)  { i += 6;  ll += 6;  continue; }
-        ++i;     ++ll;
-        }
-      if(ss < size())
-        {
-        raw_out(std::u8string(begin() + ss, end()));
-        }
-      clear();
-      return *this;
-      }
-  };
+      const uint8_t ch = *(begin() + i);
+      // 如果内部自带换行，则避免过多切分。
+      if(ch == '\n') { ++i;     ll = 0;   continue; }
+      if(ch <= 0x7F) { ++i;     ++ll;     continue; }
+      // 忽略首字节非法。
+      if(ch < 0xC0)  { ++i;     ++ll;     continue; }
+      if(ch < 0xE0)  { i += 2;  ll += 2;  continue; }
+      if(ch < 0xF0)  { i += 3;  ll += 3;  continue; }
+      if(ch < 0xF8)  { i += 4;  ll += 4;  continue; }
+      if(ch < 0xFC)  { i += 5;  ll += 5;  continue; }
+      if(ch < 0xFE)  { i += 6;  ll += 6;  continue; }
+      ++i;     ++ll;
+    }
+    if (ss < size()) {
+      raw_out(std::u8string(begin() + ss, end()));
+    }
+    clear();
+    return *this;
+  }
+};
 
 /**
   控制静态编译结果。**注意** 宏的作用是局部的，不同 CPP 可以设置不同的静态控制等级。
@@ -149,7 +142,7 @@ class xlog : public xmsg
   \endcode
 */
 #ifndef xlog_static_lvl
-#define xlog_static_lvl xlog::on
+#define xlog_static_lvl xlib::xlog::on
 #endif
 
 /**
@@ -160,14 +153,14 @@ class xlog : public xmsg
     xfail << "xfail"; // 除非 xlog_static_lvl == xlog::off ，否则此句输出。
   \endcode
 */
-#define xlog_do(v) if constexpr ((v) <= xlog_static_lvl) xlog()
+#define xlog_do(v) if constexpr ((v) <= xlog_static_lvl) xlib::xlog()
 
-#define xtrace  xlog_do(xlog::trace)
-#define xdbg    xlog_do(xlog::debug)
-#define xinfo   xlog_do(xlog::info)
-#define xwarn   xlog_do(xlog::warn)
-#define xerr    xlog_do(xlog::error)
-#define xfail   xlog_do(xlog::fatal)
+#define xtrace  xlog_do(xlib::xlog::trace)
+#define xdbg    xlog_do(xlib::xlog::debug)
+#define xinfo   xlog_do(xlib::xlog::info)
+#define xwarn   xlog_do(xlib::xlog::warn)
+#define xerr    xlog_do(xlib::xlog::error)
+#define xfail   xlog_do(xlib::xlog::fatal)
 
 /**
   便捷宏，用于便捷插入函数名及行号。
@@ -185,5 +178,7 @@ class xlog : public xmsg
   \endcode
 */
 #define xfunexpt "[" __FUNCTION__ "]: exception."
+
+}  // namespace xlib
 
 #endif  // _XLIB_XLOG_H_

@@ -19,10 +19,9 @@
 using char8_t = unsigned char;
 
 // 违反规则，添加进 std ，以模拟实现。
-namespace std
-  {
-  using u8string = basic_string<char8_t, char_traits<char8_t>, allocator<char8_t>>;
-  }
+namespace std {
+using u8string = basic_string<char8_t, char_traits<char8_t>, allocator<char8_t>>;
+}
 
 #define XTEXT(__s) (const char8_t*)u8 ## __s
 #define XCHAR(__c) (char8_t)u8 ## __c

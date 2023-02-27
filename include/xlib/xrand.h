@@ -1,1 +1,0 @@
-D:/xlib/xrand.h

@@ -6,9 +6,9 @@
 
   \author     triones
   \date       2010-03-26
-  
+
   \section more 额外说明
-  
+
   - 数据不足的情况下读取数据默认将抛出 runtime_error 异常。
   - 如不愿意抛出异常，请在包含前 #define XBIN_NOEXCEPT 。注意，此时将读出未知数据。
   - xbin 类似 struct 库。不采用 pack 、 unpack 形式，有如下理由：
@@ -91,11 +91,14 @@
 #define _XLIB_XBIN_H_
 
 #include <string.h>
-#include <string>
+
 #include <stdexcept>
+#include <string>
 
 #include "xswap.h"
 #include "xvarint.h"
+
+namespace xlib {
 
 /**
   xbin 用于便捷的数据组织操作。
@@ -104,296 +107,247 @@
   \param  bigendian   输入输出的数据是否转换成大端序（默认小端）。
   \param  zeroend     指示处理流时是否追加处理结尾 0 。
 */
-template<
-        typename  headtype,
-        bool      headself,
-        bool      bigendian,
-        bool      zeroend
-        >
-class xbin : public std::basic_string<uint8_t>
-  {
-  public:
-    /*========================  数据输入  ========================*/
-    /**
-      \code
-        xbin << (void*)p;
-      \endcode
-    */
-    xbin& operator<<(const void* const p)
-      {
-      return operator<<((size_t)p);
-      }
-    xbin& operator<<(void* const p)
-      {
-      return operator<<((size_t)p);
-      }
-    /**
-      \code
-        xbin << true;
-      \endcode
-    */
-    xbin& operator<<(bool const b)
-      {
-      return operator<<((uint8_t)b);
-      }
-    /**
-      \code
-        xbin << "2121321";
-        xbin << L"12312";
-      \endcode
-    */
-    template<typename T> xbin& operator<<(const T* const str)
-      {
-      if(str == nullptr)  return *this;
+template <typename headtype, bool headself, bool bigendian, bool zeroend>
+class xbin : public std::basic_string<uint8_t> {
+ public:
+  /*========================  数据输入  ========================*/
+  /**
+    \code
+      xbin << (void*)p;
+    \endcode
+  */
+  xbin& operator<<(const void* const p) { return operator<<((size_t)p); }
+  xbin& operator<<(void* const p) { return operator<<((size_t)p); }
+  /**
+    \code
+      xbin << true;
+    \endcode
+  */
+  xbin& operator<<(bool const b) { return operator<<((uint8_t)b); }
+  /**
+    \code
+      xbin << "2121321";
+      xbin << L"12312";
+    \endcode
+  */
+  template <typename T>
+  xbin& operator<<(const T* const str) {
+    if (str == nullptr) return *this;
 
-      size_t len = 0;
-      while(str[len]) ++len;
-      if constexpr (!std::is_void_v<headtype>) len += zeroend ? 1 : 0;
+    size_t len = 0;
+    while (str[len]) ++len;
+    if constexpr (!std::is_void_v<headtype>) len += zeroend ? 1 : 0;
 
-      append((xbin::const_pointer)str, len * sizeof(T));
-      return *this;
-      }
-    /**
-      \code
-        xbin << xbin;
-      \endcode
-    */
-    xbin& operator<<(const xbin& bin)
-      {
-      if(&bin == this)  return mkhead();
+    append((xbin::const_pointer)str, len * sizeof(T));
+    return *this;
+  }
+  /**
+    \code
+      xbin << xbin;
+    \endcode
+  */
+  xbin& operator<<(const xbin& bin) {
+    if (&bin == this) return mkhead();
 
-      if constexpr (!std::is_void_v<headtype>)
-        {
-        const size_t nlen = bin.size() + (headself ? sizeof(headtype) : 0);
-        operator<<((headtype)nlen);
-        }
-      else
-        {
-        operator<<(bin.size());
-        }
-      append(bin.begin(), bin.end());
-      return *this;
-      }
-    /**
-      \code
-        xbin << string("12345678");
-      \endcode
-    */
-    template<typename T> xbin& operator<<(const std::basic_string<T>& s)
-      {
-      append((xbin::const_pointer)s.c_str(), s.size() * sizeof(T));
-      return *this;
-      }
-    /**
-      \code
-        xbin << dword << word << byte;
-      \endcode
-    */
-    template<typename T>
-    std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, xbin>&
-      operator<<(const T& argvs)
-      {
-      if constexpr (!std::is_void_v<headtype>)
-        {
-        const auto v = bigendian ? bswap(argvs) :argvs;
-        append((xbin::const_pointer)&v, sizeof(v));
-        }
-      else
-        {
-        const xvarint v(argvs);
-        append((xbin::const_pointer)v.data(), v.size());
-        }
-      return *this;
-      }
+    if constexpr (!std::is_void_v<headtype>) {
+      const size_t nlen = bin.size() + (headself ? sizeof(headtype) : 0);
+      operator<<((headtype)nlen);
+    } else {
+      operator<<(bin.size());
+    }
+    append(bin.begin(), bin.end());
+    return *this;
+  }
+  /**
+    \code
+      xbin << string("12345678");
+    \endcode
+  */
+  template <typename T>
+  xbin& operator<<(const std::basic_string<T>& s) {
+    append((xbin::const_pointer)s.c_str(), s.size() * sizeof(T));
+    return *this;
+  }
+  /**
+    \code
+      xbin << dword << word << byte;
+    \endcode
+  */
+  template <typename T>
+  std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, xbin>&
+  operator<<(const T& argvs) {
+    if constexpr (!std::is_void_v<headtype>) {
+      const auto v = bigendian ? bswap(argvs) : argvs;
+      append((xbin::const_pointer)&v, sizeof(v));
+    } else {
+      const xvarint v(argvs);
+      append((xbin::const_pointer)v.data(), v.size());
+    }
+    return *this;
+  }
 
-    xbin& mkhead()
-      {
-      if constexpr (!std::is_void_v<headtype>)
-        {
-        const auto nlen = size() + (headself ? sizeof(headtype) : 0);
-        const auto v = (bigendian ? bswap((headtype)nlen) : (headtype)nlen);
-        insert(0, (xbin::const_pointer)&v, sizeof(v));
-        }
-      else
-        {
-        const xvarint v(size());
-        insert(0, (xbin::const_pointer)v.data(), v.size());
-        }
-      return *this;
-      }
-  public:
-    /*========================  数据输出  ========================*/
-    /**
-      \code
-        xbin >> (void*)p;
-      \endcode
-    */
-    xbin& operator>>(void*& p)
-      {
-      return operator>>((size_t&)p);
-      }
-    /**
-      \code
-        bool b;
-        xbin >> b;
-      \endcode
-    */
-    xbin& operator>>(bool& b)
-      {
-      return operator>>(*(uint8_t*)&b);
-      }
-    /**
-      \code
-        xbin >> (char*)lpstr;
-      \endcode
-      \exception  数据不足时，抛出 runtime_error 异常。
-      \note       允许空指针，这样将丢弃一串指定类型的数据。
-    */
-    template<typename T> xbin& operator>>(T* str)
-      {
-      const T* lpstr = (const T*)c_str();
+  xbin& mkhead() {
+    if constexpr (!std::is_void_v<headtype>) {
+      const auto nlen = size() + (headself ? sizeof(headtype) : 0);
+      const auto v = (bigendian ? bswap((headtype)nlen) : (headtype)nlen);
+      insert(0, (xbin::const_pointer)&v, sizeof(v));
+    } else {
+      const xvarint v(size());
+      insert(0, (xbin::const_pointer)v.data(), v.size());
+    }
+    return *this;
+  }
 
-      size_t strlen = 0;
-      while(lpstr[strlen]) ++strlen;
-      if constexpr (!std::is_void_v<headtype>) strlen += zeroend ? 1 : 0;
-      strlen *= sizeof(T);
+ public:
+  /*========================  数据输出  ========================*/
+  /**
+    \code
+      xbin >> (void*)p;
+    \endcode
+  */
+  xbin& operator>>(void*& p) { return operator>>((size_t&)p); }
+  /**
+    \code
+      bool b;
+      xbin >> b;
+    \endcode
+  */
+  xbin& operator>>(bool& b) { return operator>>(*(uint8_t*)&b); }
+  /**
+    \code
+      xbin >> (char*)lpstr;
+    \endcode
+    \exception  数据不足时，抛出 runtime_error 异常。
+    \note       允许空指针，这样将丢弃一串指定类型的数据。
+  */
+  template <typename T>
+  xbin& operator>>(T* str) {
+    const T* lpstr = (const T*)c_str();
+
+    size_t strlen = 0;
+    while (lpstr[strlen]) ++strlen;
+    if constexpr (!std::is_void_v<headtype>) strlen += zeroend ? 1 : 0;
+    strlen *= sizeof(T);
 
 #ifndef XBIN_NOEXCEPT
-      if(strlen > size())
-        {
-        throw std::runtime_error("xbin >> T* 数据不足");
-        }
+    if (strlen > size()) {
+      throw std::runtime_error("xbin >> T* 数据不足");
+    }
 #endif
 
-      if(nullptr != str) memcpy(str, lpstr, strlen);
+    if (nullptr != str) memcpy(str, lpstr, strlen);
 
-      erase(0, strlen);
+    erase(0, strlen);
 
-      return *this;
-      }
-    /**
-      \code
-        xbin >> xbin;
-      \endcode
-      \exception  数据不足时，抛出 runtime_error 异常。
-      \note       当操作自身时，按数据头长度截断。
-    */
-    xbin& operator>>(xbin& bin)
-      {
-      size_t nlen;
-      if constexpr (!std::is_void_v<headtype>)
-        {
-        headtype xlen;
-        operator>>(xlen);
+    return *this;
+  }
+  /**
+    \code
+      xbin >> xbin;
+    \endcode
+    \exception  数据不足时，抛出 runtime_error 异常。
+    \note       当操作自身时，按数据头长度截断。
+  */
+  xbin& operator>>(xbin& bin) {
+    size_t nlen;
+    if constexpr (!std::is_void_v<headtype>) {
+      headtype xlen;
+      operator>>(xlen);
 
-        nlen = (headtype)xlen;
-        nlen -= (headself ? sizeof(headtype) : 0);
-        }
-      else
-        {
-        operator>>(nlen);
-        }
+      nlen = (headtype)xlen;
+      nlen -= (headself ? sizeof(headtype) : 0);
+    } else {
+      operator>>(nlen);
+    }
 
 #ifndef XBIN_NOEXCEPT
-      if(nlen > size())
-        {
+    if (nlen > size()) {
+      throw std::runtime_error("xbin >> xbin& 数据不足");
+    }
+#endif
+
+    if (&bin == this) {
+      erase(begin() + nlen, end());
+      return *this;
+    }
+
+    bin.assign(c_str(), nlen);
+    erase(0, nlen);
+
+    return *this;
+  }
+  /**
+    模板适用于标准库字符串。数据倾倒。
+
+    \code
+      xbin >> string;
+    \endcode
+  */
+  template <typename T>
+  xbin& operator>>(std::basic_string<T>& s) {
+    s.assign((const T*)c_str(), size() / sizeof(T));
+    clear();
+    return *this;
+  }
+  /**
+    模板适用于内置类型，结构体等。
+
+    \code
+      xbin >> dword >> word >> byte;
+    \endcode
+    \exception 数据不足时，抛出 runtime_error 异常。
+  */
+  template <typename T>
+  inline std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, xbin>&
+  operator>>(T& argvs) {
+    if constexpr (!std::is_void_v<headtype>) {
+#ifndef XBIN_NOEXCEPT
+      if (sizeof(T) > size()) {
+        throw std::runtime_error("xbin >> T& 数据不足");
+      }
+#endif
+      memcpy(&argvs, c_str(), sizeof(T));
+      erase(0, sizeof(T));
+      argvs = bigendian ? bswap(argvs) : argvs;
+    } else {
+      const xvarint<T> vi(data());
+      argvs = vi;
+      const size_t typesize = vi.size();
+#ifndef XBIN_NOEXCEPT
+      if (typesize == 0 || typesize > size()) {
+        throw std::runtime_error("xbin >> T& 数据错误/不足");
+      }
+#endif
+      erase(0, typesize);
+    }
+
+    return *this;
+  }
+  /**
+    目的用以跳过某些不需要的数据。
+
+    \code
+      xbin >> cnull >> snull >> 0;
+    \endcode
+    \exception 数据不足时，抛出 runtime_error 异常。
+  */
+  template <typename T>
+  xbin& operator>>(const T&) {
+    if constexpr (!std::is_void_v<headtype>) {
+#ifndef XBIN_NOEXCEPT
+      if (sizeof(T) > size()) {
         throw std::runtime_error("xbin >> xbin& 数据不足");
-        }
-#endif
-
-      if(&bin == this)
-        {
-        erase(begin() + nlen, end());
-        return *this;
-        }
-
-      bin.assign(c_str(), nlen);
-      erase(0, nlen);
-
-      return *this;
       }
-    /**
-      模板适用于标准库字符串。数据倾倒。
-
-      \code
-        xbin >> string;
-      \endcode
-    */
-    template<typename T> xbin& operator>>(std::basic_string<T>& s)
-      {
-      s.assign((const T*)c_str(), size() / sizeof(T));
-      clear();
-      return *this;
-      }
-    /**
-      模板适用于内置类型，结构体等。
-
-      \code
-        xbin >> dword >> word >> byte;
-      \endcode
-      \exception 数据不足时，抛出 runtime_error 异常。
-    */
-    template<typename T>
-    inline std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, xbin>&
-      operator>>(T& argvs)
-      {
-      if constexpr (!std::is_void_v<headtype>)
-        {
-#ifndef XBIN_NOEXCEPT
-        if(sizeof(T) > size())
-          {
-          throw std::runtime_error("xbin >> T& 数据不足");
-          }
 #endif
-        memcpy(&argvs, c_str(), sizeof(T));
-        erase(0, sizeof(T));
-        argvs = bigendian ? bswap(argvs) : argvs;
-        }
-      else
-        {
-        const xvarint<T> vi(data());
-        argvs = vi;
-        const size_t typesize = vi.size();
-#ifndef XBIN_NOEXCEPT
-        if(typesize == 0 || typesize > size())
-          {
-          throw std::runtime_error("xbin >> T& 数据错误/不足");
-          }
-#endif
-        erase(0, typesize);
-        }
+      erase(0, sizeof(T));
+    } else {
+      T argvs;
+      return operator>>(argvs);
+    }
 
-      return *this;
-      }
-    /**
-      目的用以跳过某些不需要的数据。
-
-      \code
-        xbin >> cnull >> snull >> 0;
-      \endcode
-      \exception 数据不足时，抛出 runtime_error 异常。
-    */
-    template<typename T> xbin& operator>>(const T&)
-      {
-      if constexpr (!std::is_void_v<headtype>)
-        {
-#ifndef XBIN_NOEXCEPT
-        if(sizeof(T) > size())
-          {
-          throw std::runtime_error("xbin >> xbin& 数据不足");
-          }
-#endif
-        erase(0, sizeof(T));
-        }
-      else
-        {
-        T argvs;
-        return operator>>(argvs);
-        }
-
-      return *this;
-      }
-  };
+    return *this;
+  }
+};
 
 /// lbin 数据头为 word ，不包含自身，小端序，不处理结尾 0 。
 using lbin = xbin<uint16_t, false, false, false>;
@@ -401,5 +355,7 @@ using lbin = xbin<uint16_t, false, false, false>;
 using gbin = xbin<uint16_t, false, true, true>;
 /// vbin 为 xvarint 格式，忽略后继所有设置。
 using vbin = xbin<void, false, false, false>;
+
+}  // namespace xlib
 
 #endif  // _XLIB_XBIN_H_

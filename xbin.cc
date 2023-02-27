@@ -4,9 +4,9 @@
 
 SHOW_TEST_INIT(XBIN)
 
-lbin lb, aa;
-gbin gb, bb;
-vbin vb, cc;
+xlib::lbin lb, aa;
+xlib::gbin gb, bb;
+xlib::vbin vb, cc;
 
 SHOW_TEST_HEAD(<< void*);
 lb.clear(); gb.clear(); vb.clear();

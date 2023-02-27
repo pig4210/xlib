@@ -19,115 +19,105 @@
 #ifndef _XLIB_XVARINT_H_
 #define _XLIB_XVARINT_H_
 
+#include <array>
 #include <climits>
 #include <string>
-#include <array>
 
-template<typename T> constexpr
+namespace xlib {
+
+template <typename T> constexpr
 std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, typename std::make_unsigned_t<T>>
-inline xzig(const T& value)
-  {
+inline xzig(const T& value) {
   using U = typename std::make_unsigned_t<T>;
   // 无符号值或枚举值，不转换。
-  if constexpr (std::is_unsigned_v<T>)
-    {
+  if constexpr (std::is_unsigned_v<T>) {
     return (U)value;
-    }
+  }
   // 有符号值，转换成无符号值。
-  else
-    {
+  else {
     const T v = value;
     return (U)((v << 1) ^ (v >> (sizeof(T) * CHAR_BIT - 1)));
-    }
   }
+}
 
-template<typename T> constexpr
+template <typename T> constexpr
 std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, typename std::make_signed_t<T>>
-inline xzag(const T& value)
-  {
+inline xzag(const T& value) {
   using S = typename std::make_signed_t<T>;
   // 有符号值，不转换。
-  if constexpr (std::is_signed_v<T>)
-    {
+  if constexpr (std::is_signed_v<T>) {
     return (S)value;
-    }
+  }
   // 无符号值，转换成有符号值。
-  else
-    {
+  else {
     const S v = (S)value;
     return ((-(v & 0x01)) ^ ((v >> 1) & ~((T)1 << (sizeof(T) * CHAR_BIT - 1))));
+  }
+}
+
+template <typename T, std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, int> = 0>
+class xvarint
+    : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)> {
+ public:
+  using base = std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>;
+
+ private:
+  T _value;
+
+ public:
+  constexpr xvarint(const T& value)
+      : std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>(),
+        _value(value) {
+    // g++ 这里有 will be initialized after 警告，可忽略。
+    auto v = xzig(value);
+    for (auto& pv : *this) {
+      const auto vv = (uint8_t)(v & 0x7F);
+      v >>= (CHAR_BIT - 1);
+      if (0 == v) {
+        pv = vv;
+        break;
+      }
+      pv = vv | 0x80;
     }
   }
+  constexpr uint8_t* data() const noexcept {
+    return (uint8_t*)base::data();
+  }
+  constexpr size_t size() const noexcept {
+    size_t n = 0;
+    for (const auto& v : *this) {
+      ++n;
+      // g++ 这里有 may be used uninitialized in this function 警告，可忽略。
+      if (0 == (v & 0x80)) break;
+    }
+    return n;
+  }
+  constexpr operator T() const noexcept {
+    return _value;
+  }
+  constexpr T operator()() const noexcept {
+    return _value;
+  }
+  constexpr xvarint(const char* p) : _value(T()) {
+    using U = typename std::make_unsigned_t<T>;
+    U v = 0;
+    size_t count = 0;
+    for (auto& pv : *this) {
+      pv = *p;
+      ++p;
+      v |= ((pv & 0x7F) << (count * (CHAR_BIT - 1)));
+      ++count;
+      if (0 == (pv & 0x80)) {
+        _value = (std::is_signed_v<T>) ? (T)xzag((U)v) : (T)v;
+        break;
+      }
+    }
+  }
+  template <typename Ty,
+            std::enable_if_t<(sizeof(Ty) == 1) || std::is_void<Ty>::value, int> = 0>
+  xvarint(const Ty* p) : xvarint((const char*)p) {}
+};
 
-template<typename T, std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, int> = 0>
-class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
-  {
-  public:
-    using base = std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>;
-  private:
-    T _value;
-  public:
-    constexpr xvarint(const T& value) : std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>(), _value(value)
-      {
-      // g++ 这里有 will be initialized after 警告，可忽略。
-      auto v = xzig(value);
-      for(auto& pv : *this)
-        {
-        const auto vv = (uint8_t)(v & 0x7F);
-        v >>= (CHAR_BIT - 1);
-        if(0 == v)
-          {
-          pv = vv;
-          break;
-          }
-        pv = vv | 0x80;
-        }
-      }
-    constexpr uint8_t* data() const noexcept
-      {
-      return (uint8_t*)base::data();
-      }
-    constexpr size_t size() const noexcept
-      {
-      size_t n = 0;
-      for(const auto& v : *this)
-        {
-        ++n;
-        // g++ 这里有 may be used uninitialized in this function 警告，可忽略。
-        if(0 == (v & 0x80)) break;
-        }
-      return n;
-      }
-    constexpr operator T() const noexcept
-      {
-      return _value;
-      }
-    constexpr T operator()() const noexcept
-      {
-      return _value;
-      }
-    constexpr xvarint(const char* p) : _value(T())
-      {
-      using U = typename std::make_unsigned_t<T>;
-      U v = 0;
-      size_t count = 0;
-      for(auto& pv : *this)
-        {
-        pv = *p; ++p;
-        v |= ((pv & 0x7F) << (count * (CHAR_BIT - 1)));
-        ++count;
-        if(0 == (pv & 0x80))
-          {
-          _value = (std::is_signed_v<T>) ? (T)xzag((U)v) : (T)v;
-          break;
-          }
-        }
-      }
-    template<typename Ty,
-    std::enable_if_t<(sizeof(Ty) == 1) || std::is_void<Ty>::value, int> = 0>
-    xvarint(const Ty* p) : xvarint((const char*)p)
-      {
-      }
-  };
+}  // namespace xlib
 
 #endif  // _XLIB_XVARINT_H_

@@ -39,8 +39,8 @@ class xblk {
   template <typename T>
   constexpr xblk(const T* const a, const T* const b)
       : start(((size_t)a < (size_t)b) ? a : b),
-        end(((size_t)a > (size_t)b) ? a : b),
-        size((size_t)end - (size_t)start) {}
+        end  (((size_t)a > (size_t)b) ? a : b),
+        size ((size_t)end - (size_t)start) {}
   /// 允许设置起始位置与大小初始化，允许 diff 为负值。
   template <typename T>
   constexpr xblk(const T* const a, const intptr_t diff = 1)
@@ -51,8 +51,8 @@ class xblk {
       : xblk((const char*)a, (const char*)b) {}
   /// 判定目标块与本块的关系。
   constexpr PosDcrpt check(const xblk& blk) const {
-    const char* const s = (const char*)start;
-    const char* const e = (const char*)end;
+    const char* const s  = (const char*)start;
+    const char* const e  = (const char*)end;
     const char* const ss = (const char*)blk.start;
     const char* const ee = (const char*)blk.end;
     if (ss < s) {
@@ -85,9 +85,9 @@ class xblk {
   constexpr bool operator!=(const xblk& blk) const { return !operator==(blk); }
 
  public:
-  const void* start;  //< 块首。
-  const void* end;    //< 块尾。
-  const size_t size;  //< 块大小。
+  const void*   start;  //< 块首。
+  const void*   end;    //< 块尾。
+  const size_t  size;   //< 块大小。
 };
 
 }  // namespace xlib

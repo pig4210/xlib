@@ -1,5 +1,25 @@
-﻿#ifndef _XHOOK_H_
-#define _XHOOK_H_
+﻿/**
+  \file  xhook.h
+  \brief 用于 windows hook 。
+
+  \version    0.0.1.230227
+  \note       only for windows .
+
+  \author     triones
+  \date       2022-06-02
+
+  \section more 额外说明
+
+  - 由于链接器的【增量链接】可能会造成在使用 Hook 时出现一些莫名其妙的状况，请将之关闭！
+
+  \section history 版本记录
+
+  - 2022-06-02 新建 xhook 。
+*/
+#ifndef _XLIB_XHOOK_H_
+#define _XLIB_XHOOK_H_
+
+#ifdef _WIN32
 
 #include <memory>
 #include <string>
@@ -220,7 +240,12 @@ using HookRoutine = void(HookCalling*)(CPU_ST* lpcpu);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-/// shellcode 缓冲分配器。
+/**
+  shellcode 缓冲分配器。
+
+  \note
+    注意到：当 size() < 0x10 时，不触发，不分配空间。
+*/
 template <class T>
 struct ShellCodeAllocator {
   using value_type = T;
@@ -379,7 +404,7 @@ class xHook {
     return true;
   }
   /// UEF 回调。
-  inline static LONG __cdecl UEFHandling(_EXCEPTION_POINTERS* ExceptionInfo,
+  static inline LONG __cdecl UEFHandling(_EXCEPTION_POINTERS* ExceptionInfo,
                                          const xHook* o) {
     if (ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) {
 #ifndef _WIN64
@@ -403,8 +428,8 @@ class xHook {
     _hookcode.clear();
 #ifndef _WIN64
     /*
-    mov ecx, this
-    mov edx, [esp + 4]
+    mov ecx, [esp + 4]
+    mov edx, this
     mov eax, UEFHandling
     push edx
     push ecx
@@ -414,25 +439,22 @@ class xHook {
     retn 4
     */
     _uefshellcode
-        << '\xB9' << this
-        << "\x8B\x54\x24\x04\xB8" << &UEFHandling
+        << "\x8B\x4C\x24\x04"
+        << '\xBA' << this
+        << "\xB8" << &UEFHandling
         << "\x52\x51\xFF\xD0\x59\x5A\xC2\x04\x00";
 #else
     /*
-    mov rcx, this
-    mov rdx, [rsp + 8]
+    // rcx 已经准备好。
+    mov rdx, this
     mov rax, UEFHandling
-    push rdx
-    push rcx
-    call rax
-    pop rcx
-    pop rdx
-    ret
+    jmp rax
+    // 注意到，仿造 x86 的 push ，UEFHand 内部会出现奇怪的异常。
     */
     _uefshellcode
-        << "\x48\xB9" << this
-        << "\x48\x8B\x54\x24\x08\x48\xB8" << &UEFHandling
-        << "\x52\x51\xFF\xD0\x59\x5A\xC3";
+        << "\x48\xBA" << this
+        << "\x48\xB8" << &UEFHandling
+        << "\xFF\xE0";
 #endif
     _oldUEFHandling = SetUnhandledExceptionFilter((UEFRoutine)_uefshellcode.data());
     _hookcode << '\xCC';
@@ -736,8 +758,8 @@ class xHook {
   shellcodes        _uefshellcode;    //< UEF shellcode 。
  private:
 #ifndef _WIN64
-  inline static constexpr size_t ShellcodeNormalPrefix = 0x1C;
-  inline static constexpr size_t ShellcodeCtOffPrefix = 0x1D;
+  static inline constexpr size_t ShellcodeNormalPrefix = 0x1C;
+  static inline constexpr size_t ShellcodeCtOffPrefix = 0x1D;
   /**
     要求前置 shellcode 如下：
 
@@ -785,7 +807,7 @@ class xHook {
       }
     ```
   */
-  inline static const shellcodes ShellCodeNormal{
+  static inline const shellcodes ShellCodeNormal{
       "\xFF\x74\x24\x08\x9C\x60\x83\x44\x24\x0C\x14\x54\xFF\x54\x24\x30"
       "\x8B\x44\x24\x24\x3B\x44\x24\x30\x89\x44\x24\x30\x61\x74\x06\x9D"
       "\x8D\x64\x24\x0C\xC3\x9D\x8D\x64\x24\x04\xC2\x08"};
@@ -912,14 +934,15 @@ class xHook {
         mov     dword ptr [esp + 4 * 4], eax  // 重写可能已被修改的 CoverCall 。
         pop     eax
 
-        lea     esp, dword ptr [esp + 4 * 3]  // 跳过。           ->CoverCall argc routine retn
+        lea     esp, dword ptr [esp + 4 * 3]  // 跳过。           ->CoverCall argc routine
+        retn
 
         add     byte ptr [eax], al            // 做 0 结尾。
         }
       }
     ```
   */
-  inline static const shellcodes ShellCodeCtOff{
+  static inline const shellcodes ShellCodeCtOff{
       "\x9C\x87\x04\x24\x87\x44\x24\x04\x85\xC0\x58\x75\x43\x9D\x68\x14"
       "\x08\x23\x01\x54\x68\x10\x42\x10\x42\x89\x64\x24\x04\x9C\x60\x8B"
       "\xF4\x8B\x4C\x24\x30\x8B\xD1\xC1\xE1\x02\x8B\x5C\x24\x38\x2B\xE1"
@@ -933,8 +956,8 @@ class xHook {
       "\x24\x30\x61\x9D\x50\x8B\x44\x24\x04\x89\x44\x24\x10\x58\x8D\x64"
       "\x24\x0C\xC3"};
 #else
-  inline static constexpr size_t ShellcodeNormalPrefix = 0x3C;
-  inline static constexpr size_t ShellcodeCtOffPrefix = 0x5E;
+  static inline constexpr size_t ShellcodeNormalPrefix = 0x3C;
+  static inline constexpr size_t ShellcodeCtOffPrefix = 0x5E;
   /**
     要求前置 shellcode 如下：
 
@@ -1030,7 +1053,7 @@ class xHook {
         }
     ```
   */
-  inline static const shellcodes ShellCodeNormal{
+  static inline const shellcodes ShellCodeNormal{
       "\xFF\x74\x24\x10\x9C\x41\x57\x41\x56\x41\x55\x41\x54\x41\x53\x41"
       "\x52\x57\x56\x55\x48\x8D\x6C\x24\x50\x48\x8D\x75\x20\x56\x53\x50"
       "\x41\x51\x41\x50\x52\x51\x48\x89\xE1\x41\x51\x41\x50\x52\x51\x48"
@@ -1220,7 +1243,7 @@ class xHook {
       }
     ```
   */
-  inline static const shellcodes ShellCodeCtOff{
+  static inline const shellcodes ShellCodeCtOff{
       "\x9C\x48\x87\x04\x24\x48\x87\x44\x24\x08\x48\x85\xC0\x58\x75\x59"
       "\x9D\x68\x14\x08\x23\x01\x54\x68\x10\x42\x10\x42\x48\x89\x64\x24"
       "\x08\x9C\x57\x56\x52\x51\x50\x48\x8B\x44\x24\x58\x48\x8B\x4C\x24"
@@ -1244,5 +1267,7 @@ class xHook {
 };
 
 }  // namespace xlib
+
+#endif  //_WIN32
 
 #endif  //_XHOOK_H_

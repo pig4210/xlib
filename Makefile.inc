@@ -11,6 +11,7 @@ xlog.o              : xcompilerspecial.h xcodecvt.h xmsg.h xlog.h
 xhexbin.o           : xswap.h xcompilerspecial.h xcodecvt.h xmsg.h xhexbin.h
 xvarint.o           : xvarint.h
 xbin.o              : xswap.h xvarint.h xbin.h
+xhook.o             : xhook.h
 
 %.o : xlib_test.h
 
@@ -24,4 +25,5 @@ OBJS := xlib_test.o \
         xlog.o \
         xhexbin.o \
         xvarint.o \
-        xbin.o
+        xbin.o \
+        xhook.o

@@ -4,4 +4,4 @@ pushd "%~dp0"
 
 if not exist .\include\xlib mkdir .\include\xlib
 
-mklink .\include\xlib\*.h D:\xlib\*.h
+for %%F in (D:\xlib\*.h) do mklink .\include\xlib\%%~nF.h %%F

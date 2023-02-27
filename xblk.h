@@ -34,13 +34,13 @@ class xblk {
 
  public:
   /// 默认构造表示非法块。
-  constexpr xblk() : start(nullptr), end(nullptr), size(0) {}
+  constexpr xblk() : _beg(nullptr), _end(nullptr), _size(0) {}
   /// 允许设置起始与结束位置初始化，自动识别起始与结束。
   template <typename T>
   constexpr xblk(const T* const a, const T* const b)
-      : start(((size_t)a < (size_t)b) ? a : b),
-        end  (((size_t)a > (size_t)b) ? a : b),
-        size ((size_t)end - (size_t)start) {}
+      : _beg (((size_t)a < (size_t)b) ? a : b),
+        _end (((size_t)a > (size_t)b) ? a : b),
+        _size ((size_t)_end - (size_t)_beg) {}
   /// 允许设置起始位置与大小初始化，允许 diff 为负值。
   template <typename T>
   constexpr xblk(const T* const a, const intptr_t diff = 1)
@@ -49,12 +49,24 @@ class xblk {
       : xblk((const char*)a, (const char*)a + diff) {}
   constexpr xblk(const void* const a, const void* const b)
       : xblk((const char*)a, (const char*)b) {}
+  constexpr auto begin() const {
+    return _beg;
+  }
+  constexpr auto end() const {
+    return _end;
+  }
+  constexpr auto size() const {
+    return _size;
+  }
+  constexpr auto data() const {
+    return _beg;
+  }
   /// 判定目标块与本块的关系。
   constexpr PosDcrpt check(const xblk& blk) const {
-    const char* const s  = (const char*)start;
-    const char* const e  = (const char*)end;
-    const char* const ss = (const char*)blk.start;
-    const char* const ee = (const char*)blk.end;
+    const char* const s  = (const char*)_beg;
+    const char* const e  = (const char*)_end;
+    const char* const ss = (const char*)blk.begin();
+    const char* const ee = (const char*)blk.end();
     if (ss < s) {
       if (ee < s) return NoIn;
       if (ee > e) return SubIn;
@@ -80,14 +92,14 @@ class xblk {
   }
   /// 比较操作。
   constexpr bool operator==(const xblk& blk) const {
-    return (start == blk.start) && (end == blk.end);
+    return (_beg == blk.begin()) && (_end == blk.end());
   }
   constexpr bool operator!=(const xblk& blk) const { return !operator==(blk); }
 
- public:
-  const void*   start;  //< 块首。
-  const void*   end;    //< 块尾。
-  const size_t  size;   //< 块大小。
+ private:
+  const void*   _beg;   //< 块首。
+  const void*   _end;   //< 块尾。
+  size_t        _size;  //< 块大小。
 };
 
 }  // namespace xlib

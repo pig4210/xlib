@@ -2,7 +2,7 @@
   \file  xbin.h
   \brief 定义了便捷数据组织的类，常用于封包的组织与解析。
 
-  \version    2.1.1.230208
+  \version    2.1.1.230227
 
   \author     triones
   \date       2010-03-26
@@ -116,14 +116,20 @@ class xbin : public std::basic_string<uint8_t> {
       xbin << (void*)p;
     \endcode
   */
-  xbin& operator<<(const void* const p) { return operator<<((size_t)p); }
-  xbin& operator<<(void* const p) { return operator<<((size_t)p); }
+  xbin& operator<<(const void* const p) {
+    return operator<<((size_t)p);
+  }
+  xbin& operator<<(void* const p) {
+    return operator<<((size_t)p);
+  }
   /**
     \code
       xbin << true;
     \endcode
   */
-  xbin& operator<<(bool const b) { return operator<<((uint8_t)b); }
+  xbin& operator<<(bool const b) {
+    return operator<<((uint8_t)b);
+  }
   /**
     \code
       xbin << "2121321";
@@ -155,6 +161,7 @@ class xbin : public std::basic_string<uint8_t> {
     } else {
       operator<<(bin.size());
     }
+
     append(bin.begin(), bin.end());
     return *this;
   }
@@ -205,14 +212,18 @@ class xbin : public std::basic_string<uint8_t> {
       xbin >> (void*)p;
     \endcode
   */
-  xbin& operator>>(void*& p) { return operator>>((size_t&)p); }
+  xbin& operator>>(void*& p) {
+    return operator>>((size_t&)p);
+  }
   /**
     \code
       bool b;
       xbin >> b;
     \endcode
   */
-  xbin& operator>>(bool& b) { return operator>>(*(uint8_t*)&b); }
+  xbin& operator>>(bool& b) {
+    return operator>>(*(uint8_t*)&b);
+  }
   /**
     \code
       xbin >> (char*)lpstr;
@@ -231,7 +242,7 @@ class xbin : public std::basic_string<uint8_t> {
 
 #ifndef XBIN_NOEXCEPT
     if (strlen > size()) {
-      throw std::runtime_error("xbin >> T* 数据不足");
+      throw std::runtime_error("xbin >> T* not enough data");
     }
 #endif
 
@@ -262,7 +273,7 @@ class xbin : public std::basic_string<uint8_t> {
 
 #ifndef XBIN_NOEXCEPT
     if (nlen > size()) {
-      throw std::runtime_error("xbin >> xbin& 数据不足");
+      throw std::runtime_error("xbin >> xbin& not enough data");
     }
 #endif
 
@@ -303,7 +314,7 @@ class xbin : public std::basic_string<uint8_t> {
     if constexpr (!std::is_void_v<headtype>) {
 #ifndef XBIN_NOEXCEPT
       if (sizeof(T) > size()) {
-        throw std::runtime_error("xbin >> T& 数据不足");
+        throw std::runtime_error("xbin >> T& not enough data");
       }
 #endif
       memcpy(&argvs, c_str(), sizeof(T));
@@ -315,7 +326,7 @@ class xbin : public std::basic_string<uint8_t> {
       const size_t typesize = vi.size();
 #ifndef XBIN_NOEXCEPT
       if (typesize == 0 || typesize > size()) {
-        throw std::runtime_error("xbin >> T& 数据错误/不足");
+        throw std::runtime_error("xbin >> T& not enough data / data error");
       }
 #endif
       erase(0, typesize);
@@ -336,7 +347,7 @@ class xbin : public std::basic_string<uint8_t> {
     if constexpr (!std::is_void_v<headtype>) {
 #ifndef XBIN_NOEXCEPT
       if (sizeof(T) > size()) {
-        throw std::runtime_error("xbin >> xbin& 数据不足");
+        throw std::runtime_error("xbin >> xbin& not enough data");
       }
 #endif
       erase(0, sizeof(T));

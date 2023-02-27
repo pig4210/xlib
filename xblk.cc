@@ -10,7 +10,7 @@ const size_t size = 0x100;
 const xlib::xblk blk(b, a);
 
 SHOW_TEST_HEAD(xblk);
-done = blk.start == a && blk.end == b && blk.size == size;
+done = blk.begin() == a && blk.end() == b && blk.size() == size;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xblk NoIn);

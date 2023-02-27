@@ -246,7 +246,7 @@ class xsig {
         \return     其他返回表示 成功匹配，返回匹配字节数。（注意可能返回 0）
       */
       intptr_t match(const xblk& blk, const intptr_t& lp) {
-        void* pp = (uint8_t*)blk.start + lp;
+        void* pp = (uint8_t*)blk.begin() + lp;
         // 如果匹配达到最大，指针回退，允许继续。
         if (match_count >= range.Max) {
           xsdbg << pp << " | `" << sig() << "` max match, back.";
@@ -255,7 +255,7 @@ class xsig {
         // 如果尚未匹配，则先进行最小匹配。
         if (match_count < range.Min) {
           // 如果内存范围已经不足以进行最低匹配，则彻底失败。
-          if ((Range::Type)blk.size < (lp + range.Min)) {
+          if ((Range::Type)blk.size() < (lp + range.Min)) {
             xsdbg << pp << " | `" << sig() << "` min match fail !";
             return -2;
           }
@@ -272,7 +272,7 @@ class xsig {
         }
 
         // 如果内存范围已经不足以进行递进匹配，则彻底失败。
-        if ((Range::Type)blk.size < (lp + 1)) {
+        if ((Range::Type)blk.size() < (lp + 1)) {
           xsdbg << pp << ' ' << sig() << " stepping fail !";
           return -2;
         }
@@ -470,10 +470,10 @@ class xsig {
       virtual bool test(const xblk& blk) const {
         xsdbg << "    matching string : \r\n"
               << "                | " << bin2hex(str, true) << "\r\n"
-              << "       " << blk.start << " | "
-              << bin2hex(blk.start, blk.size, true);
-        if (blk.size != str.size()) return false;
-        return memcmp(str.data(), blk.start, str.size()) == 0;
+              << "       " << blk.begin() << " | "
+              << bin2hex(blk.begin(), blk.size(), true);
+        if (blk.size() != str.size()) return false;
+        return memcmp(str.data(), blk.begin(), str.size()) == 0;
       }
 
      public:
@@ -490,7 +490,7 @@ class xsig {
           msg << v << ',';
         }
         for (const auto& v : _blks) {
-          msg << v.start << ',' << v.end << ',';
+          msg << v.begin() << ',' << v.end() << ',';
         }
         for (const auto& v : _cfgs) {
           msg << v << ',';
@@ -504,7 +504,7 @@ class xsig {
         }
         bs << _blks.size();
         for (const auto& v : _blks) {
-          bs << v.start << v.end;
+          bs << v.begin() << v.end();
         }
         bs << _cfgs.size();
         for (const auto& v : _cfgs) {
@@ -998,13 +998,13 @@ class xsig {
 
     BM bm(ss);
     intptr_t lp = 0;
-    while (lp < (intptr_t)blk.size) {
+    while (lp < (intptr_t)blk.size()) {
       xsdbg << "start lp " << (uint64_t)lp;
-      const auto MM = bm((const uint8_t*)blk.start + lp, blk.size - lp);
+      const auto MM = bm((const uint8_t*)blk.begin() + lp, blk.size() - lp);
       xsdbg << "    MM " << (uint64_t)MM;
       if (MM < 0) return false;
-      auto a = (size_t)blk.start + lp + MM - LA;
-      auto b = (size_t)blk.start + lp + MM + LB;
+      auto a = (size_t)blk.begin() + lp + MM - LA;
+      auto b = (size_t)blk.begin() + lp + MM + LB;
       if (match_core(xblk((const void*)a, (const void*)b))) return true;
       lp += MM + 1;
     }
@@ -1015,8 +1015,8 @@ class xsig {
   /// 匹配内核。朴素匹配。
   bool match_core(const xblk& blk) {
     try {
-      xsdbg << gk_separation_line << "match... " << blk.start << " - "
-            << blk.end;
+      xsdbg << gk_separation_line << "match... " << blk.begin() << " - "
+            << blk.end();
 
       intptr_t lp = 0;
       Range fixRange(0);
@@ -1026,7 +1026,7 @@ class xsig {
       }
       xsdbg << "match need : " << fixRange.Min << " - " << fixRange.Max;
       if (xblk::WholeIn !=
-          blk.check(xblk((void*)((size_t)blk.start + lp), fixRange.Min))) {
+          blk.check(xblk((void*)((size_t)blk.begin() + lp), fixRange.Min))) {
         xsdbg << "rest mem not enough";
         return false;
       }
@@ -1178,23 +1178,23 @@ class xsig {
     return {blk};
 #else
     // 内存可读直接返回。
-    if (FALSE == IsBadReadPtr(blk.start, blk.size)) {
-      // xsdbg << "kk : " << blk.start << " - " << blk.end;
+    if (FALSE == IsBadReadPtr(blk.begin(), blk.size())) {
+      // xsdbg << "kk : " << blk.begin() << " - " << blk.end();
       return {blk};
     }
     // 1 byte 都不可读，直接返回空。
-    if (blk.size <= 1) return {};
+    if (blk.size() <= 1) return {};
     // 否则按 二分法 切片 递归 判断。
     Blks blks;
 
-    const size_t asize = blk.size / 2;
-    // xsdbg << "a>>" << blk.start << " : " << asize;
-    for (const auto& v : check_blk(xblk(blk.start, asize))) blks.push_back(v);
+    const size_t asize = blk.size() / 2;
+    // xsdbg << "a>>" << blk.begin() << " : " << asize;
+    for (const auto& v : check_blk(xblk(blk.begin(), asize))) blks.push_back(v);
 
-    auto bsize = blk.size - asize;
-    // xsdbg << "b>>" << (void*)((size_t)blk.start + asize) << " : " << bsize;
+    auto bsize = blk.size() - asize;
+    // xsdbg << "b>>" << (void*)((size_t)blk.begin() + asize) << " : " << bsize;
     for (const auto& v :
-         check_blk(xblk((void*)((size_t)blk.start + asize), bsize)))
+         check_blk(xblk((void*)((size_t)blk.begin() + asize), bsize)))
       blks.push_back(v);
 
     if (blks.empty()) return blks;
@@ -1203,13 +1203,13 @@ class xsig {
     auto opts(std::move(blks));
 
     auto it = opts.begin();
-    auto as = (*it).start;
-    auto ae = (*it).end;
+    auto as = (*it).begin();
+    auto ae = (*it).end();
     ++it;
     // xsdbg << "a " << as << " - " << ae;
     while (it != opts.end()) {
-      const auto bs = (*it).start;
-      const auto be = (*it).end;
+      const auto bs = (*it).begin();
+      const auto be = (*it).end();
       ++it;
       // xsdbg << "b " << bs << " - " << be;
 

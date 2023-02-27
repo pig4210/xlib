@@ -2,7 +2,7 @@
   \file  xvarint.h
   \brief 定义了 zig 、 zag 、 varint 相关操作。
 
-  \version    2.0.0.230210
+  \version    2.0.0.230227
   \note       For All
 
   \author     triones
@@ -56,8 +56,7 @@ inline xzag(const T& value) {
 }
 
 template <typename T, std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, int> = 0>
-class xvarint
-    : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)> {
+class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)> {
  public:
   using base = std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>;
 
@@ -113,8 +112,7 @@ class xvarint
       }
     }
   }
-  template <typename Ty,
-            std::enable_if_t<(sizeof(Ty) == 1) || std::is_void<Ty>::value, int> = 0>
+  template <typename Ty, std::enable_if_t<(sizeof(Ty) == 1) || std::is_void<Ty>::value, int> = 0>
   xvarint(const Ty* p) : xvarint((const char*)p) {}
 };
 

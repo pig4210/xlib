@@ -3,8 +3,6 @@
 #undef xlog_static_lvl
 #define xlog_static_lvl xlib::xlog::warn
 
-#undef XLOG_MAX_BYTES
-
 #include "xlib_test.h"
 
 class xxlog : public xlib::xlog {

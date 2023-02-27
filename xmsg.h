@@ -41,13 +41,13 @@
 namespace xlib {
 
 #ifdef XLIB_NOCXX20
-#define XMSGT(text) (const char8_t*)u8##text
+#define XMSGT(__t) (const char8_t*)u8 ## __t
 #else
-#define XMSGT(text) u8##text
+#define XMSGT(__t) u8 ## __t
 #endif
-#define XMSGAS(v) xlib::as2u8(v)
-#define XMSGWS(v) xlib::ws2u8(v)
-#define XMSGU8(v) v
+#define XMSGAS(__v) xlib::as2u8(__v)
+#define XMSGWS(__v) xlib::ws2u8(__v)
+#define XMSGU8(__v) __v
 
 class xmsg : public std::u8string {
  public:
@@ -93,35 +93,43 @@ class xmsg : public std::u8string {
     return *this;
   }
   /// 输出 dec 值。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int8_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int8_t) && std::is_signed_v<T>, xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%hhi"), v);
   }
   /// 输出 hex(XX)。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint8_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint8_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%02X"), v);
   }
   /// 输出 dec 值。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int16_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int16_t) && std::is_signed_v<T>, xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%hi"), v);
   }
   /// 输出 hex(XXXX)。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint16_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint16_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%04X"), v);
   }
   /// 输出 dec 值。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int32_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int32_t) && std::is_signed_v<T>, xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%i"), v);
   }
   /// 输出 hex(XXXXXXXX)。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint32_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint32_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%08X"), v);
   }
   /// 输出 dec 值。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int64_t) && std::is_signed_v<T>, xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(int64_t) && std::is_signed_v<T>, xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%lli"), v);
   }
   /// 输出 hex(XXXXXXXXXXXXXXXX)。
-  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint64_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&> operator<<(const T& v) {
+  template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint64_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
+  operator<<(const T& v) {
     return prt(XMSGT("%08X%08X"), (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
   }
   /// 输出 hex 指针。

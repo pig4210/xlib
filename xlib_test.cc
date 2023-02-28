@@ -13,6 +13,8 @@ bool xlib_test(xlib_test_routine routine) {
   }
 }
 
+#include "xhexbin.h"
+
 #ifdef _WIN32
 #include <tchar.h>
 int _tmain(int , _TCHAR*)

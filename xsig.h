@@ -885,16 +885,21 @@ class xsig {
       const intptr_t pattern_len = _pattern.size();
 
       // 计算坏字符表，坏字符表最大是 256 。
-      _bad_char.reset(new intptr_t[0x100](-1));
+      _bad_char.reset(new intptr_t[0x100]());
       const auto bad_char = _bad_char.get();
+
+      memset(bad_char, -1, 0x100 * sizeof(intptr_t));
 
       for (intptr_t i = 0; i < pattern_len; ++i) bad_char[pattern[i]] = i;
 
       // 计算好后缀表。好后缀表最大不超过模式串大小。
-      _suffix.reset(new intptr_t[pattern_len](-1));
+      _suffix.reset(new intptr_t[pattern_len]());
       const auto suffix = _suffix.get();
-      _prefix.reset(new bool[pattern_len](false));
+      _prefix.reset(new bool[pattern_len]());
       const auto prefix = _prefix.get();
+
+      memset(suffix, -1, pattern_len * sizeof(intptr_t));
+      memset(prefix, false, pattern_len * sizeof(bool));
 
       for (intptr_t i = 0; i < pattern_len - 1; ++i) {
         auto j = i;
@@ -1160,14 +1165,22 @@ class xsig {
       }
       xserr << "No End !";
     } catch (...) {
-      xserr << xfunexpt;
+      xserr << XTEXT("xsig::from_bin exception !");
     }
     return false;
   }
   std::shared_ptr<Lexical::Sets> get_sets() const {
     if (!_lex) return std::shared_ptr<Lexical::Sets>();
     if (Lexical::LT_Sets != _lex->type) return std::shared_ptr<Lexical::Sets>();
-    return *(std::shared_ptr<Lexical::Sets>*)&_lex;
+
+    const auto lex = (const Lexical::Sets*)_lex.get();
+
+    std::shared_ptr<Lexical::Sets> ret;
+    ret->_mods = lex->_mods;
+    ret->_blks = lex->_blks;
+    ret->_cfgs = lex->_cfgs;
+
+    return ret;
   }
 
  public:

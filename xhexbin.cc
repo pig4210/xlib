@@ -42,7 +42,7 @@ SHOW_TEST_HEAD(escape ws);
 done = L"12\'\"\?\\\a\b\f\n\r\t\v!!0!KAA0AKxK文中文" == xlib::escape(std::wstring(
   LR"(12\'\"\?\\\a\b\f\n\r\t\v\041\410\41K\x0041\x00410\x0041K\xK\u6587\U65874E2D)"));
 #else
-done = L"12\'\"\?\\\a\b\f\n\r\t\v!!0!KAA0AKxK文" == escape(std::wstring(
+done = L"12\'\"\?\\\a\b\f\n\r\t\v!!0!KAA0AKxK文" == xlib::escape(std::wstring(
   LR"(12\'\"\?\\\a\b\f\n\r\t\v\041\410\41K\x00000041\x000000410\x00000041K\xK\u6587)"));
 #endif
 SHOW_TEST_RESULT;

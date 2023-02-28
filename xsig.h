@@ -1175,7 +1175,7 @@ class xsig {
 
     const auto lex = (const Lexical::Sets*)_lex.get();
 
-    std::shared_ptr<Lexical::Sets> ret;
+    auto ret = std::make_shared<Lexical::Sets>();
     ret->_mods = lex->_mods;
     ret->_blks = lex->_blks;
     ret->_cfgs = lex->_cfgs;

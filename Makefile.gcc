@@ -25,7 +25,7 @@ $(DSTPATH) :
 %.o : %.cc | $(DSTPATH)
 	$(CC) -c $(CFLAGS) -o"$(DSTPATH)/$(@F)" "$<"
 
-include Makefile.inc
+include Makefile.inc.inc
 
 all : test.exe
 	@echo make done.

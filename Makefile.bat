@@ -107,7 +107,7 @@
     
 :baseconfig
     set MyPath=%CD%
-    set MAKE=D:/work/gnu/make/make.exe
+    set MAKE=%CD%/make.exe
 
     for /d %%P in (.) do set ProjectName=%%~nP
     if "%ProjectName%"=="" (
@@ -174,12 +174,10 @@
     exit /B 1
 
 :make
-    if "%SUF%"=="" (
-        echo.
-        echo %MAKE% -f Makefile.msvc SRCPATH=%SRCPATH% %1
-        echo.
-    )
-    %MAKE% -f Makefile.msvc SRCPATH=%SRCPATH% %SUF% && exit /B 0
+    echo.
+    echo "%MAKE%" SRCPATH=%SRCPATH%
+    echo.
+    "%MAKE%" SRCPATH=%SRCPATH% && exit /B 0
     
     echo !!!!!!!! Make Error !!!!!!!!
     exit /B 1

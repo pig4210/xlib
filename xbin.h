@@ -351,12 +351,11 @@ class xbin : public std::basic_string<uint8_t> {
       }
 #endif
       erase(0, sizeof(T));
+      return *this;
     } else {
       T argvs;
       return operator>>(argvs);
     }
-
-    return *this;
   }
 };
 

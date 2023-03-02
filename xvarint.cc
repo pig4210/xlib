@@ -2,6 +2,14 @@
 
 #include "xlib_test.h"
 
+enum xvarint_enum {
+  XVE_0,
+  XVE_1,
+  XVE_2,
+  XVE_3,
+  XVE_4,
+};
+
 SHOW_TEST_INIT(XVARINT)
 
 SHOW_TEST_HEAD(zig unsigned);
@@ -13,11 +21,11 @@ done = 7 == xlib::xzig((int16_t)-4);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(zag unsigned);
-done = 0x091A2B3C == xlib::xzag((uint32_t)0x12345678);
+done = 0x12345678 == xlib::xzag(xlib::xzig((uint32_t)0x12345678));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(zag signed);
-done = 0x1234567812345678 == xlib::xzag((int64_t)0x1234567812345678);
+done = 0x1234567812345678 == xlib::xzag((int64_t)xlib::xzig((int64_t)0x1234567812345678));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xvarint T signed);
@@ -36,6 +44,13 @@ SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xvarint T* unsigned);
 done = 0x87654321 == xlib::xvarint<uint32_t>("\xA1\x86\x95\xBB\x08");
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(xvarint enum);
+auto ee = XVE_4;
+auto xx = xlib::xvarint(ee);
+xvarint_enum ex = xlib::xvarint<xvarint_enum>(xx.data());
+done = ex == ee;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

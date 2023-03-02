@@ -357,6 +357,15 @@ class xsig {
         vbin n;
         bs >> flag >> isoff >> n;
         name.assign((const char*)n.data(), n.size());
+        switch (flag) {
+          case 'A': case 'a': range = Range(0); break;
+          case 'F': case 'f': range = Range(sizeof(uint32_t)); break;
+          case 'Q': case 'q': range = Range(sizeof(uint64_t)); break;
+          case 'D': case 'd': range = Range(sizeof(uint32_t)); break;
+          case 'W': case 'w': range = Range(sizeof(uint16_t)); break;
+          case 'B': case 'b': range = Range(sizeof(uint8_t)); break;
+          default:            range = Range(0); break;
+        }
       }
       virtual xmsg sig() const {
 #ifdef xsig_need_debug
@@ -1124,6 +1133,7 @@ class xsig {
     std::shared_ptr<Lexical::Base> lex;
     try {
       while (!bs.empty()) {
+        lex.reset();
         Lexical::Type t;
         bs >> t;
 

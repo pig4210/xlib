@@ -105,7 +105,7 @@ class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
       v |= ((pv & 0x7F) << (count * (CHAR_BIT - 1)));
       ++count;
       if (0 == (pv & 0x80)) {
-        *(U*)&_value = xzag((T)v);
+        _value = (T)xzag((T)v);
         break;
       }
     }

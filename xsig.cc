@@ -1,7 +1,20 @@
-﻿#define xsig_need_debug
+﻿#include "xlib_test.h"
+#include "xlog.h"
+
+class xxlog : public xlib::xlog {
+ public:
+  virtual ~xxlog() {
+    do_out();
+  }
+  virtual void raw_out(const xlib::xmsg& msg) {
+    std::cout << msg.toas() << std::endl;
+  }
+};
+
+#define xslog xxlog()
+#define xsig_need_debug
 #include "xsig.h"
 
-#include "xlib_test.h"
 
 xlib::xsig operator"" _sig(const char* signature, std::size_t) {
   xlib::xsig s;
@@ -27,6 +40,17 @@ if (done) {
   const auto rep = sig.report(nullptr);
   done = rep.begin()->second.p == (ss.data() + 10);
 }
+
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(xsig bin);
+
+sig = "11223344..7788<W WWW>00"_sig;
+auto bs = sig.to_bin();
+xlib::xsig sigx;
+sigx.from_bin(bs);
+
+done = bs.empty();
 
 SHOW_TEST_RESULT;
 

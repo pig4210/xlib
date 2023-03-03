@@ -492,6 +492,31 @@ class xsig {
     class Sets : public Base {
      public:
       Sets() : Base(LT_Sets, {0, 0}) {}
+      Sets(const std::vector<std::string>&  mods,
+           const std::vector<xblk>&         blks,
+           const std::vector<std::string>&  cfgs)
+          : Base(LT_Sets, {0, 0}), _mods(mods), _blks(blks), _cfgs(cfgs) {}
+      Sets(vbin& bs) : Base(LT_Sets, {0, 0}) {
+        size_t c = 0;
+        vbin s;
+        bs >> c;
+        for (size_t i = 0; i < c; ++i ) {
+          bs >> s;
+          _mods.push_back(std::string((const char*)s.data(), s.size()));
+        }
+        bs >> c;
+        for (size_t i = 0; i < c; ++i) {
+          void* start = nullptr;
+          void* end = nullptr;
+          bs >> start >> end;
+          _blks.push_back(xblk(start, end));
+        }
+        bs >> c;
+        for (size_t i = 0; i < c; ++i) {
+          bs >> s;
+          _cfgs.push_back(std::string((const char*)s.data(), s.size()));
+        }
+      }
       virtual xmsg sig() const {
         xmsg msg;
         msg << '@';
@@ -1146,6 +1171,7 @@ class xsig {
           case Lexical::LT_Dot:
             bs >> range.Min >> range.Max;
             lex = std::make_shared<Lexical::Dot>(range);
+            break;
           case Lexical::LT_Record: {
             char f;
             bool b;
@@ -1158,6 +1184,31 @@ class xsig {
             bs >> s;
             lex = std::make_shared<Lexical::Hexs>(
                 std::string((const char*)s.data(), s.size()));
+            break;
+          }
+          case Lexical::LT_Sets: {
+            size_t c = 0;
+            std::vector<std::string> mods;
+            bs >> c;
+            for (size_t i = 0; i < c; ++i) {
+              bs >> s;
+              mods.push_back(std::string((const char*)s.data(), s.size()));
+            }
+            std::vector<xblk> blks;
+            bs >> c;
+            for (size_t i = 0; i < c; ++i) {
+              void* start = nullptr;
+              void* end = nullptr;
+              bs >> start >> end;
+              blks.push_back(xblk(start, end));
+            }
+            std::vector<std::string> cfgs;
+            bs >> c;
+            for (size_t i = 0; i < c; ++i) {
+              bs >> s;
+              cfgs.push_back(std::string((const char*)s.data(), s.size()));
+            }
+            lex = std::make_shared<Lexical::Sets>(mods, blks, cfgs);
             break;
           }
           default: {

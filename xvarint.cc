@@ -10,7 +10,7 @@ enum xvarint_enum {
   XVE_4,
 };
 
-SHOW_TEST_INIT(XVARINT)
+SHOW_TEST_INIT(xvarint)
 
 SHOW_TEST_HEAD(zig unsigned);
 done = 0x88 == xlib::xzig((uint8_t)0x88);
@@ -25,7 +25,7 @@ done = 0x12345678 == xlib::xzag(xlib::xzig((uint32_t)0x12345678));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(zag signed);
-done = 0x1234567812345678 == xlib::xzag((int64_t)xlib::xzig((int64_t)0x1234567812345678));
+done = 0x1234567812345678 == xlib::xzag(xlib::xzig((int64_t)0x1234567812345678));
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xvarint T signed);

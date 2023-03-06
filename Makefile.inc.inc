@@ -3,16 +3,16 @@
 xlib_test.o         : xlib_test.h
 xcrc.o              : xlib_test.h xcrc.h
 xswap.o             : xlib_test.h xswap.h
-xrand.o             : xlib_test.h xcompilerspecial.h xrand.h
+xrand.o             : xlib_test.h xrand.h
 xblk.o              : xlib_test.h xblk.h
-xcodecvt.o          : xlib_test.h xcompilerspecial.h xcodecvt.h
-xmsg.o              : xlib_test.h xcompilerspecial.h xcodecvt.h xmsg.h
-xlog.o              : xlib_test.h xcompilerspecial.h xcodecvt.h xmsg.h xlog.h
-xhexbin.o           : xlib_test.h xswap.h xcompilerspecial.h xcodecvt.h xmsg.h xhexbin.h
+xcodecvt.o          : xlib_test.h xcodecvt_win.h xcodecvt.h
+xmsg.o              : xlib_test.h xcodecvt_win.h xcodecvt.h xmsg.h
+xlog.o              : xlib_test.h xcodecvt_win.h xcodecvt.h xmsg.h xlog.h
+xhexbin.o           : xlib_test.h xswap.h xcodecvt_win.h xcodecvt.h xmsg.h xlog.h xhexbin.h
 xvarint.o           : xlib_test.h xvarint.h
 xbin.o              : xlib_test.h xswap.h xvarint.h xbin.h
 xhook.o             : xlib_test.h xhook.h
-xsig.o              : xlib_test.h xswap.h xblk.h xcompilerspecial.h xcodecvt.h xmsg.h xlog.h xhexbin.h xvarint.h xbin.h xsig.h
+xsig.o              : xlib_test.h xswap.h xblk.h xcodecvt_win.h xcodecvt.h xmsg.h xlog.h xhexbin.h xvarint.h xbin.h xsig.h
 
 OBJS := xlib_test.o \
         xcrc.o \

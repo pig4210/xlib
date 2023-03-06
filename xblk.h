@@ -49,18 +49,10 @@ class xblk {
       : xblk((const char*)a, (const char*)a + diff) {}
   constexpr xblk(const void* const a, const void* const b)
       : xblk((const char*)a, (const char*)b) {}
-  constexpr auto begin() const {
-    return _beg;
-  }
-  constexpr auto end() const {
-    return _end;
-  }
-  constexpr auto size() const {
-    return _size;
-  }
-  constexpr auto data() const {
-    return _beg;
-  }
+  constexpr auto begin() const { return _beg; }
+  constexpr auto end()   const { return _end; }
+  constexpr auto size()  const { return _size; }
+  constexpr auto data()  const { return _beg; }
   /// 判定目标块与本块的关系。
   constexpr PosDcrpt check(const xblk& blk) const {
     const char* const s  = (const char*)_beg;

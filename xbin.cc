@@ -2,7 +2,7 @@
 
 #include "xlib_test.h"
 
-SHOW_TEST_INIT(XBIN)
+SHOW_TEST_INIT(xbin)
 
 xlib::lbin lb, aa;
 xlib::gbin gb, bb;
@@ -11,7 +11,7 @@ xlib::vbin vb, cc;
 SHOW_TEST_HEAD(<< void*);
 lb.clear(); gb.clear(); vb.clear();
 lb << (void*)0x12345678;
-gb << (void*)0;
+gb << (const void*)0;
 vb << (void*)12345678;
 done = lb.size() == sizeof(void*) && *(void**)lb.data() == (void*)0x12345678 &&
        gb.size() == sizeof(void*) && *(void**)gb.data() == (void*)0 &&
@@ -28,31 +28,11 @@ done = lb.size() == sizeof(bool) && *(bool*)lb.data() == true &&
        vb.size() == 1 && *(bool*)vb.data() == true;
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(<< unsigned);
-lb.clear(); gb.clear(); vb.clear();
-lb << (uint8_t)0x11;
-gb << (uint32_t)0x11;
-vb << (uint64_t)0x11;
-done = lb.size() == 1 && *(uint8_t*)lb.data() == 0x11 &&
-       gb.size() == sizeof(uint32_t) && *(uint32_t*)gb.data() == (uint32_t)0x11000000 &&
-       vb.size() == 1 && *(uint8_t*)vb.data() == 0x11;
-SHOW_TEST_RESULT;
-
-SHOW_TEST_HEAD(<< signed);
-lb.clear(); gb.clear(); vb.clear();
-lb << (int8_t)0x11;
-gb << (int32_t)0x11;
-vb << (int64_t)0x11;
-done = lb.size() == 1 && *(uint8_t*)lb.data() == 0x11 &&
-       gb.size() == sizeof(uint32_t) && *(uint32_t*)gb.data() == (uint32_t)0x11000000 &&
-       vb.size() == 1 && *(uint8_t*)vb.data() == 0x22;
-SHOW_TEST_RESULT;
-
 SHOW_TEST_HEAD(<< T*);
 lb.clear(); gb.clear(); vb.clear();
 lb << "123456";
 gb << L"123456";
-vb << "123456";
+vb << (char*)"123456";
 done = lb.size() == 6 && 0 == memcmp(lb.data(), "123456", 6) &&
        gb.size() == 7 * sizeof(wchar_t) && 0 == memcmp(gb.data(), L"123456", 6 * sizeof(wchar_t)) &&
        vb.size() == 6 && 0 == memcmp(vb.data(), "123456", 6);
@@ -78,6 +58,26 @@ vb << std::string("123456");
 done = lb.size() == 6 && 0 == memcmp(lb.data(), "123456", 6) &&
        gb.size() == 6 * sizeof(wchar_t) && 0 == memcmp(gb.data(), L"123456", 6 * sizeof(wchar_t)) &&
        vb.size() == 6 && 0 == memcmp(vb.data(), "123456", 6);
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(<< unsigned);
+lb.clear(); gb.clear(); vb.clear();
+lb << (uint8_t)0x11;
+gb << (uint32_t)0x11;
+vb << (uint64_t)0x11;
+done = lb.size() == 1 && *(uint8_t*)lb.data() == 0x11 &&
+       gb.size() == sizeof(uint32_t) && *(uint32_t*)gb.data() == (uint32_t)0x11000000 &&
+       vb.size() == 1 && *(uint8_t*)vb.data() == 0x11;
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(<< signed);
+lb.clear(); gb.clear(); vb.clear();
+lb << (int8_t)0x11;
+gb << (int32_t)0x11;
+vb << (int64_t)0x11;
+done = lb.size() == 1 && *(uint8_t*)lb.data() == 0x11 &&
+       gb.size() == sizeof(uint32_t) && *(uint32_t*)gb.data() == (uint32_t)0x11000000 &&
+       vb.size() == 1 && *(uint8_t*)vb.data() == 0x22;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(<< T&);

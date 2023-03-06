@@ -2,7 +2,11 @@
 
 #include "xlib_test.h"
 
-SHOW_TEST_INIT(XRAND)
+#ifndef __cpp_lib_bitops
+#pragma message("xlib without <bit>")
+#endif
+
+SHOW_TEST_INIT(xrand)
 
 SHOW_TEST_HEAD(xrand);
 done = xlib::xrand(0x10000) < 0x10000;

@@ -1,6 +1,6 @@
 ﻿/**
   \file  xrand.h
-  \brief 定义了随机数的生成模板。（随机平均率无法保证、刻意忽略非线程安全。）
+  \brief 定义了随机数的生成模板。（随机平均率无法保证、刻意忽略线程安全。）
 
   \version    3.0.2.220105
 
@@ -30,9 +30,7 @@
 #include <climits>
 #include <cstdint>
 
-#include "xcompilerspecial.h"
-
-#ifndef XLIB_NOCXX20
+#ifdef __cpp_lib_bitops
 #include <bit>
 #endif
 
@@ -51,7 +49,7 @@ inline uint64_t xrand(const uint64_t mod = 0) {
   static auto seed = __rdtsc();  // 经验证 seed 全局唯一。
   const auto r = __rdtsc();
   const int l = r % (CHAR_BIT * sizeof(size_t));
-#ifndef XLIB_NOCXX20
+#ifdef __cpp_lib_bitops
   seed += std::rotr(r, l);
 #else
   // x86 下的 _lrotr 行为一致。

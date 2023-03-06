@@ -29,7 +29,6 @@ namespace xlib {
 template <typename T> inline constexpr
 std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, T>
 xzig(const T& v) {
-  using U = typename std::make_unsigned_t<T>;
   if constexpr (std::is_signed_v<T>) {
     // 有符号值，转换成无符号值。
     return ((v << 1) ^ (v >> (sizeof(T) * CHAR_BIT - 1)));
@@ -43,7 +42,6 @@ xzig(const T& v) {
 template <typename T> inline constexpr
 std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>, T>
 xzag(const T& v) {
-  using S = typename std::make_signed_t<T>;
   if constexpr (std::is_signed_v<T>) {
     // 有符号值，转换成有符号值。
     return ((-(v & 0x01)) ^ ((v >> 1) & ~((T)1 << (sizeof(T) * CHAR_BIT - 1))));

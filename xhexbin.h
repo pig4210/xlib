@@ -89,9 +89,8 @@ inline std::string bin2hex(const void* const  bin,
                            const size_t       size,
                            const bool         isup = false) {
   std::string hex;
-  const BIN_VALUE_STRUCT* s = (const BIN_VALUE_STRUCT*)bin;
-  const BIN_VALUE_STRUCT* const e =
-      (const BIN_VALUE_STRUCT*)((size_t)bin + size);
+  auto s = (const BIN_VALUE_STRUCT*)bin;
+  const auto e = (const BIN_VALUE_STRUCT*)((size_t)bin + size);
   const auto fmt = isup ? "0123456789ABCDEF" : "0123456789abcdef";
   for (; s < e; ++s) {
     hex.push_back(fmt[s->high]);
@@ -417,7 +416,7 @@ std::basic_string<T> escape(const std::basic_string<T>& str) {
 enum ShowBinCode { SBC_ANSI, SBC_UNICODE, SBC_UTF8 };
 
 constexpr bool LocaleCheck() {
-#if defined(_WIN32) && defined(XLIB_NOCXX20)
+#if defined(_WIN32) && !defined(__cpp_char8_t)
   return true;
 #else
   return (uint8_t) * u8"文" != (uint8_t) * "文";
@@ -442,7 +441,7 @@ constexpr ShowBinCode inline CheckBinCode() {
   }
 }
 
-#define __SBTS(text) (const char8_t*)u8##text
+#define __SBTS(text) (const char8_t*)u8 ## text
 
 /**
   指定 BIN 串，格式化显示。

@@ -2,18 +2,19 @@
 
 #include "xlib_test.h"
 
-#ifdef XLIB_NOCXX20
-#pragma message("!!! use fake std::u8string !!!")
-#ifndef XCODECVTHFILE
-std::locale::id std::codecvt<char16_t, char, _Mbstatet>::id;
-#endif
+#ifndef __cpp_char8_t
+#pragma message("xlib define char8_t")
 #endif
 
-#ifdef XCODECVTHFILE
-#pragma message("!!! use XCODECVTHFILE !!!")
+#ifndef __cpp_lib_char8_t
+#pragma message("xlib define std::u8string")
 #endif
 
-SHOW_TEST_INIT(XCODECVT)
+#if defined(_WIN32) && _MSVC_LANG <= 202002L
+#pragma message("xlib use xcodecvt_win.h")
+#endif
+
+SHOW_TEST_INIT(xcodecvt)
 
 // 测试字符串："AA转换测试BB\0CC" 。 g++ 默认编码 UTF8 ，为了通用， ASCII 书写使用硬编码。
 // 特意加上 0 编码用于完整转换测试。

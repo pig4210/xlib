@@ -1,19 +1,17 @@
 ﻿#include "xlib_test.h"
 
-static int g_exception_count = 0;
+static int g_error_count = 0;
 
 bool xlib_test(xlib_test_routine routine) {
   try {
-    routine();
+    g_error_count += routine();
     return true;
   } catch(...) {
-    ++g_exception_count;
+    ++g_error_count;
     std::cerr << std::endl << "======== exception !!!" << std::endl;
     return false;
   }
 }
-
-#include "xhexbin.h"
 
 #ifdef _WIN32
 #include <tchar.h>
@@ -23,5 +21,5 @@ int main()
 #endif
   {
   std::cout << std::endl << "xlib test done." << std::endl;
-  return g_exception_count;
+  return g_error_count;
   }

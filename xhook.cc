@@ -1,7 +1,6 @@
-﻿
-#include "xlib_test.h"
-#include "xhook.h"
+﻿#include "xhook.h"
 
+#include "xlib_test.h"
 
 #ifdef _WIN32
 #pragma code_seg(".text")
@@ -26,7 +25,7 @@ static void HookCalling Routine(xlib::CPU_ST* lpcpu) {
   lpcpu->regXax += 1;
 }
 
-SHOW_TEST_INIT(XHOOK)
+SHOW_TEST_INIT(xhook)
 
 hook_test = (hook_test_function)&hook_test_shellcode;
 

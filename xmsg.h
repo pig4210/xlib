@@ -40,7 +40,7 @@
 
 namespace xlib {
 
-#ifdef XLIB_NOCXX20
+#ifndef __cpp_char8_t
 #define XMSGT(__t) (const char8_t*)u8 ## __t
 #else
 #define XMSGT(__t) u8 ## __t
@@ -170,7 +170,7 @@ class xmsg : public std::u8string {
     append(XMSGWS(v));
     return *this;
   }
-#ifndef XLIB_NOCXX20
+#ifdef __cpp_char8_t
   /// 输出 UTF-8 字符 转换。
   xmsg& operator<<(const char8_t& v) {
     append(XMSGU8(std::u8string(1, v)));

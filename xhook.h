@@ -245,7 +245,7 @@ using HookRoutine = void(HookCalling*)(CPU_ST* lpcpu);
 /**
   shellcode 缓冲分配器。
 
-  \note
+  \warning
     注意到：当 size() < 0x10 时，不触发，不分配空间。
 */
 template <class T>
@@ -451,7 +451,7 @@ class xHook {
     mov rdx, this
     mov rax, UEFHandling
     jmp rax
-    // 注意到，仿造 x86 的 push ，UEFHand 内部会出现奇怪的异常。
+    // 注意到，仿造 x86 的 push ，UEFHandling 内部会出现奇怪的异常。
     */
     _uefshellcode
         << "\x48\xBA" << this

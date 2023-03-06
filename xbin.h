@@ -119,15 +119,12 @@ class xbin : public std::basic_string<uint8_t> {
   xbin& operator<<(const void* const p) {
     return operator<<((size_t)p);
   }
-  xbin& operator<<(void* const p) {
-    return operator<<((size_t)p);
-  }
   /**
     \code
       xbin << true;
     \endcode
   */
-  xbin& operator<<(bool const b) {
+  xbin& operator<<(const bool b) {
     return operator<<((uint8_t)b);
   }
   /**

@@ -5,7 +5,7 @@
 #define XMSGS(text) std::u8string((const char8_t*)u8 ## text)
 #define XMSGWS(v) xlib::ws2u8(v)
 
-SHOW_TEST_INIT(XMSG)
+SHOW_TEST_INIT(xmsg)
 
 SHOW_TEST_HEAD(constructor as);
 done = xlib::xmsg(std::string("AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42")) == XMSGWS(L"AA转换测试BB");
@@ -91,7 +91,7 @@ SHOW_TEST_HEAD(wstring);
 done = (xlib::xmsg() << std::wstring(L"123")) == XMSGS("123");
 SHOW_TEST_RESULT;
 
-#ifndef XLIB_NOCXX20
+#ifdef __cpp_char8_t
 SHOW_TEST_HEAD(char8_t);
 done = (xlib::xmsg() << char8_t(u8'1')) == XMSGS("1");
 SHOW_TEST_RESULT;
@@ -119,7 +119,5 @@ SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;
 
-#undef XMSGT
-#undef XMSGAS
+#undef XMSGS
 #undef XMSGWS
-#undef XMSGU8

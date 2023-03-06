@@ -42,7 +42,6 @@
 #include "xbin.h"
 #include "xblk.h"
 #include "xcodecvt.h"
-#include "xcompilerspecial.h"
 #include "xhexbin.h"
 #include "xlog.h"
 #include "xmsg.h"
@@ -372,7 +371,7 @@ class xsig {
         xmsg ss;
         ss << '<';
         if (isoff) ss << '^';
-        ss << (char)std::toupper(flag);
+        ss << (char)toupper(flag);
         if (!name.empty()) ss << ' ' << name;
         ss << '>';
         return ss;
@@ -572,7 +571,7 @@ class xsig {
   /// 匹配 hex 词法，返回值 < 0 表示非此词法。
   static inline char match_hex(Sign& sig) {
     const auto ch = sig();
-    if (!std::isxdigit(ch)) return -1;
+    if (!isxdigit(ch)) return -1;
     ++sig;
     const char hex = ch & 0x0F;
     return (ch > '9') ? hex + 0x09 : hex;
@@ -603,14 +602,14 @@ class xsig {
       default:  return {1, 1};
     }
     // 有尝试使用正则语法匹配，但发现符合要求的正则不好实现。故这里放弃，为记。
-    while (std::isblank(sig())) ++sig;
+    while (isblank(sig())) ++sig;
 
     auto Min = match_range_value(sig);
     if (Min < 0) {
       xserr << *sig << "    range.min lost !";
       return ErrRange;
     }
-    while (std::isblank(sig())) ++sig;
+    while (isblank(sig())) ++sig;
     if ('}' == sig()) {
       ++sig;
       return Range(Min);
@@ -621,7 +620,7 @@ class xsig {
     }
     ++sig;
 
-    while (std::isblank(sig())) ++sig;
+    while (isblank(sig())) ++sig;
 
     auto Max = match_range_value(sig);
     if (Min < 0) {
@@ -629,7 +628,7 @@ class xsig {
       return ErrRange;
     }
 
-    while (std::isblank(sig())) ++sig;
+    while (isblank(sig())) ++sig;
 
     if (sig() != '}') {
       xserr << *sig << "  range mis '}' end/illegal char/out-max !";
@@ -669,11 +668,11 @@ class xsig {
 
       // 前缀空白丢弃。
       for (; its != ite; ++its) {
-        if (!std::isspace(*its)) break;
+        if (!isspace(*its)) break;
       }
       // 后缀空白丢弃。
       for (; ite != its; --ite) {
-        if (!std::isspace(*(ite - 1))) break;
+        if (!isspace(*(ite - 1))) break;
       }
       // 空串丢弃。
       if (its == ite) continue;
@@ -692,7 +691,7 @@ class xsig {
       }
       bool bhex = true;
       for (const auto ch : v) {
-        if (!std::isxdigit(ch)) {
+        if (!isxdigit(ch)) {
           bhex = false;
           break;
         }
@@ -797,7 +796,7 @@ class xsig {
         }
         ++sig;
         // 去除前缀空白符。
-        while (std::isblank(sig())) ++sig;
+        while (isblank(sig())) ++sig;
 
         std::string name;
         constexpr auto lc = '<';
@@ -818,7 +817,7 @@ class xsig {
         // 前面的简单逻辑令 > 总是被加入，这里删除之。
         name.pop_back();
         // 删除后缀空白。
-        while (std::isblank(*name.rbegin())) name.pop_back();
+        while (isblank(*name.rbegin())) name.pop_back();
 
         auto lex = std::make_shared<Lexical::Record>(t, name, offset);
 
@@ -1334,11 +1333,11 @@ class xsig {
 
       // 前缀空白丢弃。
       for (; its != ite; ++its) {
-        if (!std::isspace(*its)) break;
+        if (!isspace(*its)) break;
       }
       // 后缀空白丢弃。
       for (; ite != its; --ite) {
-        if (!std::isspace(*(ite - 1))) break;
+        if (!isspace(*(ite - 1))) break;
       }
       // 空串丢弃。
       if (its == ite) continue;

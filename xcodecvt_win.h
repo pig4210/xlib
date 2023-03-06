@@ -63,9 +63,12 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
   const DWORD dwFlags = (nullptr == lpread) ? 0 : MB_ERR_INVALID_CHARS;
 
   for (rd = as.size(); rd != 0; --rd) {
+#pragma warning(push)
+#pragma warning(disable : 4267)
     const auto write = MultiByteToWideChar(LOCALE_AS_WS, dwFlags,
                                            as.data(), rd,
                                            ws.data(), ws.size());
+#pragma warning(pop)
     if (write > 0) {
       read = rd;
       ws.resize(write);
@@ -100,10 +103,13 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
 
   for (rd = ws.size(); rd != 0; --rd) {
     BOOL UsedDefultChar = FALSE;
+#pragma warning(push)
+#pragma warning(disable : 4267)
     const auto write = WideCharToMultiByte(LOCALE_AS_WS, 0,
                                            ws.data(), rd,
                                            as.data(), as.size(),
                                            nullptr, &UsedDefultChar);
+#pragma warning(pop)
     if (write > 0) {
       if (nullptr != lpread && UsedDefultChar == TRUE) continue;
       read = rd;
@@ -141,9 +147,12 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
   const DWORD dwFlags = (nullptr == lpread) ? 0 : MB_ERR_INVALID_CHARS;
 
   for (rd = u8.size(); rd != 0; --rd) {
+#pragma warning(push)
+#pragma warning(disable : 4267)
     const auto write = MultiByteToWideChar(LOCALE_WS_U8, dwFlags,
                                            (const char*)u8.data(), rd,
                                            ws.data(), ws.size());
+#pragma warning(pop)
     if (write > 0) {
       read = rd;
       ws.resize(write);
@@ -179,10 +188,13 @@ inline std::u8string ws2u8(const std::wstring& ws,
 
   for (rd = ws.size(); rd != 0; --rd) {
     BOOL UsedDefultChar = FALSE;
+#pragma warning(push)
+#pragma warning(disable : 4267)
     const auto write = WideCharToMultiByte(LOCALE_WS_U8, 0,
                                            ws.data(), rd,
                                            (char*)u8.data(), u8.size(),
                                            nullptr, &UsedDefultChar);
+#pragma warning(pop)
     if (write > 0) {
       if (nullptr != lpread && UsedDefultChar == TRUE) continue;
       read = rd;

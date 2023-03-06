@@ -45,34 +45,26 @@ namespace xlib {
     bswap((short)0x1234) == 0x3412;
   \endcode
 */
-template <typename T>
-inline std::enable_if_t<(std::is_integral_v<T> ||
-                         std::is_enum_v<T>)&&sizeof(T) == sizeof(uint8_t),
-                        T>
+template <typename T> inline
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint8_t), T>
 bswap(const T& values) {
   return values;
 }
 
-template <typename T>
-inline std::enable_if_t<(std::is_integral_v<T> ||
-                         std::is_enum_v<T>)&&sizeof(T) == sizeof(uint16_t),
-                        T>
+template <typename T> inline
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint16_t), T>
 bswap(const T& values) {
   return (T)xbswap16(values);
 }
 
-template <typename T>
-inline std::enable_if_t<(std::is_integral_v<T> ||
-                         std::is_enum_v<T>)&&sizeof(T) == sizeof(uint32_t),
-                        T>
+template <typename T> inline
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint32_t), T>
 bswap(const T& values) {
   return (T)xbswap32(values);
 }
 
-template <typename T>
-inline std::enable_if_t<(std::is_integral_v<T> ||
-                         std::is_enum_v<T>)&&sizeof(T) == sizeof(uint64_t),
-                        T>
+template <typename T> inline
+std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint64_t), T>
 bswap(const T& values) {
   return (T)xbswap64(values);
 }
@@ -93,8 +85,8 @@ bswap(const T& values) {
     seqswap(a, b); // 返回 true ，并且 a == 1，b == 5 。
   \endcode
 */
-template <typename T>
-inline bool seqswap(T& a, T& b) {
+template <typename T> inline
+bool seqswap(T& a, T& b) {
   if (std::max(a, b) == b) return false;
   std::swap(a, b);
   return true;

@@ -22,7 +22,7 @@ xlib::xsig operator"" _sig(const char* signature, std::size_t) {
   return s;
 }
 
-SHOW_TEST_INIT(XSIG)
+SHOW_TEST_INIT(xsig)
 
 xlib::xsig::dbglog = false;
 

@@ -2,7 +2,12 @@
 
 #include "xlib_test.h"
 
-SHOW_TEST_INIT(SWAP)
+enum xswap_test_enum {
+  xte_0,
+  xte_1,
+};
+
+SHOW_TEST_INIT(xswap)
 
 SHOW_TEST_HEAD(bswap int8_t);
 done = xlib::bswap((int8_t)0x12) == 0x12;
@@ -18,6 +23,10 @@ SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(bswap uint64_t);
 done = xlib::bswap((uint64_t)0x1234567812345678) == 0x7856341278563412;
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(bswap enum);
+done = xlib::bswap(xte_0) == xte_0;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(seqswap);

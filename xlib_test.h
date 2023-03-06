@@ -19,22 +19,25 @@
 #include <iostream>
 #include <string>
 
-using xlib_test_routine = void (*)(void);
+using xlib_test_routine = int (*)(void);
 
 bool xlib_test(xlib_test_routine);
 
 #define SHOW_TEST_INIT(name)            \
   static const auto gkxtb = xlib_test(  \
     [] {                                \
-      std::cout << std::endl << "======== " #name "_TEST ========" << std::endl; \
+      std::cout << std::endl << "================ test " #name << std::endl; \
+      int error_count = 0;              \
       auto done = false;
 #define SHOW_TEST_DONE                  \
       std::cout << std::endl;           \
+      return error_count;                   \
     }                                   \
     );
 #define SHOW_TEST_HEAD(head)            \
   std::cout << std::setiosflags(std::ios::left) << std::setw(41) << #head;
 #define SHOW_TEST_RESULT                \
+  if (!done) ++error_count;             \
   std::cout << " : " << (done ? "ok" : "fail !!!") << std::endl;
 
 #endif  // _XLIB_TEST_H_

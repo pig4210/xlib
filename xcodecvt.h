@@ -31,18 +31,28 @@
 #include <locale>
 #include <string>
 
-#include "xcompilerspecial.h"
+// 不支持 chat8_t 时，自制 char8_t 。
+#ifndef __cpp_char8_t
+using char8_t = unsigned char;
+#define XTEXT(__s) (const char8_t*)u8 ## __s
+#define XCHAR(__c) (char8_t)u8 ## __c
+#else // __cpp_char8_t
+#define XTEXT(__s) u8 ## __s
+#define XCHAR(__c) u8 ## __c
+#endif // __cpp_char8_t
 
-#if defined(XLIB_NOCXX20) && defined(_DLL) && !defined(XCODECVTHFILE)
-#error "VS2017 with MD, please #define XCODECVTHFILE "xcodecvt_win.h""
-// 或者可以添加编译选项： /DXCODECVTHFILE=\"xcodecvt_win.h\" 。（注意 \"）
+// 不支持 std::u8string 时，自制 std::u8string 。
+#ifndef __cpp_lib_char8_t
+// 违反规则，添加进 std ，以模拟实现。
+namespace std {
+using u8string = basic_string<char8_t, char_traits<char8_t>, allocator<char8_t>>;
+}
 #endif
 
-#ifdef XCODECVTHFILE
-
-#include XCODECVTHFILE
-
-#else  // XCODECVTHFILE
+// VS2017 对 codecvt 有各种局限，为了方便，干脆限制之，而使用 xcodecvt_win.h 。
+#if defined(_WIN32) && (_MSVC_LANG <= 202002L)
+#include "xcodecvt_win.h"
+#else
 
 namespace xlib {
 
@@ -203,7 +213,7 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
 #else
   using WCHART = char32_t;
 #endif
-#ifdef XLIB_NOCXX20
+#ifndef __cpp_lib_char8_t
   using U8CHART = char;
 #else
   using U8CHART = char8_t;
@@ -274,7 +284,7 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
 #else
   using WCHART = char32_t;
 #endif
-#ifdef XLIB_NOCXX20
+#ifndef __cpp_lib_char8_t
   using U8CHART = char;
 #else
   using U8CHART = char8_t;

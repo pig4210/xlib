@@ -20,9 +20,9 @@ class xxlog : public xlib::xlog {
 #undef xlog_do
 #define xlog_do(v) if constexpr ((v) <= xlog_static_lvl) xxlog()
 
-SHOW_TEST_INIT(XLOG)
+SHOW_TEST_INIT(xlog)
 
-xxlog() << u8"xlog msg";
+xxlog() << (const char8_t*)u8"xlog msg";
 
 SHOW_TEST_HEAD(xlog);
 done = true;

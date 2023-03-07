@@ -2,7 +2,7 @@
   \file  xcrc.h
   \brief 定义了 CRC 算法模板。支持 crc16 、 crc32 、 crc64 、crcccitt 。
 
-  \version    3.2.0.230224
+  \version    3.2.1.230307
 
   \author     triones
   \date       2013-03-19
@@ -59,6 +59,25 @@ T XCRC(const void* const data, const size_t size) {
   return R ? ~ret : ret;
 }
 
+/**
+  CRC 计算模板。用于 编译期计算。
+
+  注意到，const T* const 模板无法生成 constexpr 结果。
+*/
+template <typename TC, size_t size, typename T, T N, T V, bool R> constexpr
+T XCRC(TC const(&data)[size]) {
+  // 将在编译期生成 CRC 表。
+  constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
+  constexpr auto st = sizeof(TC);
+  T ret = V;
+  const size_t len = (size - 1) * st;
+  for (size_t i = 0; i < len; ++i) {
+    const auto ch = data[i / st] >> ((i % st) * CHAR_BIT);
+    ret = CrcTable[(ret & 0xFF) ^ (ch & 0xFF)] ^ (ret >> 8);
+  }
+  return R ? ~ret : ret;
+}
+
 //////////////////////////////////////////////////////////////////////////
 /**
   生成指定数据的 crc 。
@@ -83,17 +102,17 @@ T XCRC(const void* const data, const size_t size) {
     return XCRC<TT, NN, VV, RR>(data, size);                          \
   }                                                                   \
   template <typename T>                                               \
-  auto FUNC(const T* const data, const size_t size) {                 \
+  inline auto FUNC(const T* const data, const size_t size) {          \
     return FUNC((const void*)data, size * sizeof(T));                 \
   }                                                                   \
   template <typename T>                                               \
-  auto FUNC(const T& o)                                               \
+  inline auto FUNC(const T& o)                                        \
       ->std::enable_if_t<std::is_pointer_v<decltype(o.data())>, TT> { \
     return FUNC(o.data(), o.size());                                  \
   }                                                                   \
-  template <typename T, size_t size>                                  \
-  auto FUNC(T const(&data)[size]) {                                   \
-    return FUNC(data, size - 1);                                      \
+  template <typename T, size_t size> constexpr                        \
+  inline auto FUNC(T const(&data)[size]) {                            \
+    return XCRC<T, size, TT, NN, VV, RR>(data);                       \
   }
 
 CRCX(crc16,     uint16_t, 0xA001, 0, false);

@@ -44,6 +44,9 @@ namespace xlib {
     bswap(0x12345678) == 0x78563412;
     bswap((short)0x1234) == 0x3412;
   \endcode
+
+  \note
+    注意到：无法实现 constexpr 。
 */
 template <typename T> inline
 std::enable_if_t<(std::is_integral_v<T> || std::is_enum_v<T>) && sizeof(T) == sizeof(uint8_t), T>

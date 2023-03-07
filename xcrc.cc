@@ -30,4 +30,17 @@ done =
     0x2A2F0E859495CAED == xlib::crc64("1");
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(constexpr);
+constexpr auto c0 = xlib::crc32("1234567890");
+constexpr auto c1 = xlib::crc64(L"1");
+constexpr auto c2 = xlib::crc16(u8"1234567890");
+done = (c0 == 0x261DAEE5) &&
+#ifdef _WIN32
+       (c1 == 0x7635B8617CE753D8) &&
+#else
+       (c1 == 0x3D1B1331AA7B3B58) &&
+#endif
+       (c2 == 0xC57A);
+SHOW_TEST_RESULT;
+
 SHOW_TEST_DONE;

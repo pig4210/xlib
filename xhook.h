@@ -2,7 +2,7 @@
   \file  xhook.h
   \brief 用于 windows hook 。
 
-  \version    0.0.1.230228
+  \version    0.0.1.230317
   \note       only for windows .
 
   \author     triones
@@ -17,6 +17,7 @@
   - 2022-06-02 新建 xhook 。
   - 2023-02-27 修正 UEF 在 x86/x64 下的错误。
   - 2023-02-28 修正 x64 下 hook offset 时的 shellcode 错误。
+  - 2023-03-17 Opcodes 使用 vector ，避免 shellcode < 0x10 不申请内存的错误。 
 */
 #ifndef _XLIB_XHOOK_H_
 #define _XLIB_XHOOK_H_
@@ -24,7 +25,7 @@
 #ifdef _WIN32
 
 #include <memory>
-#include <string>
+#include <vector>
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -242,12 +243,7 @@ using HookRoutine = void(HookCalling*)(CPU_ST* lpcpu);
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-/**
-  shellcode 缓冲分配器。
-
-  \warning
-    注意到：当 size() < 0x10 时，不触发，不分配空间。
-*/
+/// shellcode 缓冲分配器。
 template <class T>
 struct ShellCodeAllocator {
   using value_type = T;
@@ -290,32 +286,37 @@ bool operator!=(const ShellCodeAllocator<T>&, const ShellCodeAllocator<U>&) {
   \endcode
 */
 template <class Allocator>
-class Opcodes
-    : public std::basic_string<char, std::char_traits<char>, Allocator> {
+class Opcodes : public std::vector<uint8_t, Allocator> {
  public:
-  using std::basic_string<char, std::char_traits<char>, Allocator>::basic_string;
-
+  Opcodes() {};
+ public:
+  template <typename T, size_t size>
+  Opcodes(T const (&data)[size]) {
+    this->operator<<(data);
+  }
  public:
   template <class T>
   auto operator<<(const T& v)
       -> std::enable_if_t<std::is_pointer_v<decltype(v.data())>, Opcodes&> {
-    this->append((const char*)v.data(), v.size() * sizeof(T::value_type));
+    this->insert(this->end(),
+        (const uint8_t*)v.data(), (const uint8_t*)(v.data() + v.size()));
     return *this;
   }
   template <class T>
   std::enable_if_t<!std::is_class_v<T>, Opcodes&> operator<<(const T& v) {
-    this->append((const char*)&v, sizeof(v));
+    this->insert(this->end(), (const uint8_t*)&v, (const uint8_t*)&v + sizeof(v));
     return *this;
   }
   template <typename T, size_t size>
   Opcodes& operator<<(T const (&data)[size]) {
-    this->append((const char*)data, sizeof(T) * (size - 1));
+    this->insert(this->end(),
+        (const uint8_t*)data, (const uint8_t*)(data + size - 1));
     return *this;
   }
 };
 
-using opcodes = Opcodes<std::allocator<char>>;
-using shellcodes = Opcodes<ShellCodeAllocator<char>>;
+using opcodes = Opcodes<std::allocator<uint8_t>>;
+using shellcodes = Opcodes<ShellCodeAllocator<uint8_t>>;
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
@@ -376,7 +377,7 @@ class xHook {
     _hookmem = hookmem;
     _hooksize = hooksize;
 
-    _oldcode.assign((const char*)hookmem, hooksize);
+    _oldcode.assign((const uint8_t*)hookmem, (const uint8_t*)hookmem + hooksize);
 
     return true;
   }

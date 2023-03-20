@@ -23,6 +23,12 @@ class xxstring : public std::u8string {
  public:
   // 开放 std::u8string 构造。 其他有默认构造。
   using std::u8string::u8string;
+ public:
+  xxstring() = default;
+  xxstring(const xxstring&) = default;
+  xxstring& operator=(const xxstring&) = default;
+  xxstring(xxstring&&) = default;
+  xxstring& operator=(xxstring&&) = default;
 
  public:
   // std::string 构造，视之为 UTF-8 编码，不进行编码转换。
@@ -66,7 +72,7 @@ class xxstring : public std::u8string {
 }  // namespace xlib
 
 /// 扩展支持 xmsg 。
-xlib::xmsg& operator<<(xlib::xmsg& msg, const xlib::xxstring& s) {
+inline xlib::xmsg& operator<<(xlib::xmsg& msg, const xlib::xxstring& s) {
   return msg << std::u8string(s);
 }
 

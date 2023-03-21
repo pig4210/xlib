@@ -31,6 +31,18 @@ class xxstring : public std::u8string {
   xxstring& operator=(xxstring&&) = default;
 
  public:
+  xxstring(const std::u8string& s) : std::u8string(s) {}
+  xxstring& operator=(const std::u8string& s) {
+    assign(s);
+    return *this;
+  }
+  xxstring(std::u8string&& s) : std::u8string(std::move(s)) {}
+  xxstring& operator=(std::u8string&& s) {
+    operator=(std::move(s));
+    return *this;
+  }
+
+ public:
   // std::string 构造，视之为 UTF-8 编码，不进行编码转换。
   xxstring(const std::string& s): xxstring(*(const xxstring*)&s) {}
   xxstring& operator=(const std::string& s) {
@@ -57,7 +69,7 @@ class xxstring : public std::u8string {
 
  public:
   bool operator==(const xxstring& v) {
-    return (std::u8string)(*this) == (std::u8string)(v);
+    return *(const std::u8string*)(this) == *(const std::u8string*)(&v);
   }
   bool operator!=(const xxstring& v) { return !operator==(v); }
 

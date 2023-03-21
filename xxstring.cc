@@ -9,11 +9,11 @@ const std::wstring  wsbuf(L"AA转换测试BB");
 const std::u8string u8buf((const char8_t*)u8"AA转换测试BB");
 
 SHOW_TEST_HEAD(string);
-done = xlib::xxstring(asbuf) == u8buf;
+done = xlib::xxstring(asbuf) == xlib::xxstring(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(wstring);
-done = xlib::xxstring(wsbuf) == u8buf;
+done = xlib::xxstring(wsbuf) == xlib::xxstring(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(operator string);
@@ -25,7 +25,7 @@ done = std::wstring(xlib::xxstring(u8buf)) == wsbuf;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xmsg);
-done = xlib::xxstring(xlib::xmsg() << u8buf) == u8buf;
+done = xlib::xxstring(xlib::xmsg() << u8buf) == xlib::xxstring(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xmsg <<);

@@ -38,7 +38,7 @@ class xxstring : public std::u8string {
   }
   xxstring(std::u8string&& s) : std::u8string(std::move(s)) {}
   xxstring& operator=(std::u8string&& s) {
-    operator=(std::move(s));
+    std::u8string::operator=(std::move(s));
     return *this;
   }
 

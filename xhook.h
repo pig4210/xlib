@@ -529,8 +529,7 @@ class xHook {
         HookRoutine   routine,
         const bool    routinefirst,
         void*         p_shellcode = nullptr) {
-    //////////////////////////////////////////////////////////////// 基本检查 及
-    ///初始化。
+    //////////////////////////////////////////////////////////////// 基本检查 及 初始化。
     if (!check_hookmem(hookmem, hooksize)) return;
     if (!check_routine(routine)) return;
 
@@ -538,8 +537,7 @@ class xHook {
     _lpshellcode = nullptr;
     _lpfixshellcode = (void*)ShellCodeNormal.data();
     _oldUEFHandling = (UEFRoutine)-1;
-    //////////////////////////////////////////////////////////////// 设计
-    ///shellcode 。
+    //////////////////////////////////////////////////////////////// 设计 shellcode 。
     _shellcode << '\xEB' << (char)sizeof(void*) << (void*)nullptr;
 
     if (!routinefirst) {
@@ -568,11 +566,9 @@ class xHook {
       _shellcode << "\xFF\x25" << (AddrDisp)0xFFFFFFD0;
     }
 #endif  // _WIN64
-    //////////////////////////////////////////////////////////////// 调整
-    ///shellcode 。
+    //////////////////////////////////////////////////////////////// 调整 shellcode 。
     if (!fix_shellcode(p_shellcode)) return;
-    //////////////////////////////////////////////////////////////// 计算
-    ///hookcode 。
+    //////////////////////////////////////////////////////////////// 计算 hookcode 。
     switch (_hooksize) {
       case 1:      case 2:      case 3:      case 4:
         mkuef(); break;
@@ -664,8 +660,7 @@ class xHook {
         const bool      routinefirst,
         void*           p_shellcode = nullptr,
         const intptr_t  expandargc = 0) {
-    //////////////////////////////////////////////////////////////// 基本检查 及
-    ///初始化。
+    //////////////////////////////////////////////////////////////// 基本检查 及  初始化。
     const size_t hooksize =
         calltable_offset ? sizeof(hookmem) : sizeof(AddrDisp);
     if (!check_hookmem(hookmem, hooksize)) return;
@@ -676,8 +671,7 @@ class xHook {
     _lpshellcode = nullptr;
     _lpfixshellcode = (void*)ShellCodeCtOff.data();
     _oldUEFHandling = (UEFRoutine)-1;
-    //////////////////////////////////////////////////////////////// 设计
-    ///shellcode 。
+    //////////////////////////////////////////////////////////////// 设计 shellcode 。
     constexpr intptr_t default_argc = 0x8;  // 默认参数 8 个。
     intptr_t hookargc = default_argc + expandargc;
     if (hookargc <= 0) hookargc = default_argc;  // 检测不让堆栈错误。
@@ -700,11 +694,9 @@ class xHook {
            "\xFF\x35\xD8\xFF\xFF\xFF\xFF\x35\xDA\xFF\xFF\xFF"
            "\x48\x87\x3C\x24\x48\x8B\x3F\x48\x87\x3C\x24\xC3";
 #endif
-    //////////////////////////////////////////////////////////////// 调整
-    ///shellcode 。
+    //////////////////////////////////////////////////////////////// 调整 shellcode 。
     if (!fix_shellcode(p_shellcode)) return;
-    //////////////////////////////////////////////////////////////// 计算
-    ///hookcode 。
+    //////////////////////////////////////////////////////////////// 计算 hookcode 。
     if (calltable_offset) {
       _hookcode << _lpshellcode;
     } else {
@@ -983,8 +975,7 @@ class xHook {
         {
         __asm
           {
-          push    qword ptr [rsp + 8 * 2]       // 参数 RIP 。      ->ret
-    routine
+          push    qword ptr [rsp + 8 * 2]       // 参数 RIP 。      ->ret routine
 
           pushfq
           push    r15
@@ -1253,7 +1244,7 @@ class xHook {
       "\x48\x50\x48\x89\xE6\x48\x89\xCA\x48\xC1\xE1\x03\x48\x2B\xE1\x48"
       "\x89\xE7\x48\x33\xC9\xB1\x07\xF3\x48\xA5\xB1\x07\xF3\x48\xAD\x48"
       "\x89\xD1\xF3\x48\xA5\x58\x58\x59\x5A\x5E\x5F\x9D\xFF\x54\x24\xC8"
-      "\x57\x56\x51\x9C\x48\x89\xE7\xEB\x02\xEB\x4E\x48\x83\xC4\x08\x48"
+      "\x57\x56\x51\x9C\x48\x89\xE7\xEB\x02\xEB\x4B\x48\x83\xC4\x08\x48"
       "\x81\x3C\x24\x10\x42\x10\x42\x75\xF2\x48\x39\x64\x24\x08\x75\xEB"
       "\x48\x81\x7C\x24\x10\x14\x08\x23\x01\x75\xE0\x48\x8D\x74\x24\x30"
       "\x48\x8B\x4C\x24\x18\x48\xC1\xE1\x03\x48\x83\xC1\x58\x48\x8D\x24"

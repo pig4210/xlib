@@ -2,7 +2,7 @@
   \file  xhook.h
   \brief 用于 windows hook 。
 
-  \version    0.0.1.230317
+  \version    0.0.1.230804
   \note       only for windows .
 
   \author     triones
@@ -18,6 +18,7 @@
   - 2023-02-27 修正 UEF 在 x86/x64 下的错误。
   - 2023-02-28 修正 x64 下 hook offset 时的 shellcode 错误。
   - 2023-03-17 Opcodes 使用 vector ，避免 shellcode < 0x10 不申请内存的错误。 
+  - 2023-08-04 修正 x64 下 hook normal 时，栈未对齐的错误。
 */
 #ifndef _XLIB_XHOOK_H_
 #define _XLIB_XHOOK_H_
@@ -495,20 +496,16 @@ class xHook {
 
     \code
       #include "hook.h"
-      void HookCalling Routine(CPU_ST* lpcpu)
-        {
-        return;
-        }
+      void HookCalling Routine(CPU_ST* lpcpu) { return; }
       // 在 0x401000 下 5 byte JMP XXX 钩子，代码先行。
       xHook node(0x401000, 5, Routine, false);
       // 在 0x401000 下6 byte JMP [XXX] 钩子，回调先行。
       xHook node(0x401000, 6, Routine, true);
       // 在 0x401000 下 1 byte UEF 钩子，回调先行。
       xHook node(0x401000, 1, Routine, true);
-      if(node)
-        {
+      if(node) {
         cout << "下钩子出错，错误码：" << node._e;
-        }
+      }
     \endcode
 
     \note
@@ -630,21 +627,16 @@ class xHook {
     \param  expandargc    覆盖函数可能存在参数过多的现象，以调整栈平衡。
 
     \code
-      int __stdcall Test(int a, int b)
-        {
-        return a+b;
-        }
+      int __stdcall Test(int a, int b) { return a + b; }
       using func = int (__stdcall *)(int a, int b);
       func oldfunc = Test;
-      void __stdcall Routine(CPU_ST* lpcpu)
-        {
-        ...
-        }
+      void __stdcall Routine(CPU_ST* lpcpu) {
+        // ...
+      }
       auto x = xHook((void*)&oldfunc, Routine, true, false);
-      if(!x.IsOK())
-        {
+      if(!x.IsOK()) {
         cout << "下钩子出错，错误码：" << x._e;
-        }
+      }
     \endcode
 
     \note
@@ -769,10 +761,8 @@ class xHook {
     \endcode
 
     ```c++
-    static __declspec(naked) void ShellCodeNormal()
-      {
-      __asm
-        {
+    static __declspec(naked) void ShellCodeNormal() {
+      __asm {
         push    dword ptr [esp + 4 * 2]       // 参数 EIP 。      ->ret routine
         pushfd
         pushad
@@ -798,8 +788,8 @@ class xHook {
         retn    4 * 2
 
         add     byte ptr [eax], al            // 做 0 结尾。
-        }
       }
+    }
     ```
   */
   static inline const shellcodes ShellCodeNormal{
@@ -819,10 +809,8 @@ class xHook {
     \endcode
 
     ```c++
-    static __declspec(naked) void ShellCodeCtOff()
-      {
-      __asm
-        {
+    static __declspec(naked) void ShellCodeCtOff() {
+      __asm {
         pushfd
 
         xchg    eax, dword ptr [esp]          // eax 为 fd ，原始值入栈。
@@ -933,8 +921,8 @@ class xHook {
         retn
 
         add     byte ptr [eax], al            // 做 0 结尾。
-        }
       }
+    }
     ```
   */
   static inline const shellcodes ShellCodeCtOff{
@@ -971,91 +959,96 @@ class xHook {
     \endcode
 
     ```c++
-      static __declspec(naked) void ShellCodeNormal()
-        {
-        __asm
-          {
-          push    qword ptr [rsp + 8 * 2]       // 参数 RIP 。      ->ret routine
+    static __declspec(naked) void ShellCodeNormal() {
+      __asm {
+        push    qword ptr [rsp + 8 * 2]       // 参数 RIP 。      ->ret routine
 
-          pushfq
-          push    r15
-          push    r14
-          push    r13
-          push    r12
-          push    r11
-          push    r10
-          push    rdi
-          push    rsi
-          push    rbp
-          lea     rbp, qword ptr [rsp + 8 * 10] // 指向参数 RIP 。  ->rbp rsi rdi r10-15 fq
-          lea     rsi, qword ptr [rbp + 8 * 4]  // 指向 ret 。      ->rip ret routin rip
-          push    rsi
-          push    rbx
-          push    rax
-          push    r9
-          push    r8
-          push    rdx
-          push    rcx
+        pushfq
+        push    r15
+        push    r14
+        push    r13
+        push    r12
+        push    r11
+        push    r10
+        push    rdi
+        push    rsi
+        push    rbp
+        lea     rbp, qword ptr [rsp + 8 * 10] // 指向参数 RIP 。  ->rbp rsi rdi r10-15 fq
+        lea     rsi, qword ptr [rbp + 8 * 4]  // 指向 ret 。      ->rip ret routin rip
+        push    rsi
+        push    rbx
+        push    rax
+        push    r9
+        push    r8
+        push    rdx
+        push    rcx
 
-          mov     rcx, rsp
-          push    r9
-          push    r8
-          push    rdx
-          push    rcx
-          mov     rax, qword ptr [rbp + 8 * 2]  // 提取 Routine 。  ->rip ret
-          push    rax
-          pop     rax
-          call    qword ptr [rsp - 8 * 1]       // 调用 Routine 。
-          pop     rcx                           // 弹出参数。
-          pop     rdx
-          pop     r8
-          pop     r9
+        mov     rcx, rsp
+        mov     rdi, rsp                      // 保存栈位。
+        push    rax
+        and     rsp, 0xFFFFFFFFFFFFFFF0       // 保证 call 前，栈以 0x10 对齐。
 
-          pop     rcx
-          pop     rdx
-          pop     r8
-          pop     r9
-          pop     rax
-          pop     rbx
-          pop     rbp                           // pop rsp
-          pop     rbp
-          pop     rsi
-          pop     rdi
-          pop     r10
-          pop     r11
-          pop     r12
-          pop     r13
-          pop     r14
-          pop     r15
+        push    r9
+        push    r8
+        push    rdx
+        push    rcx
+        mov     rax, qword ptr [rbp + 8 * 2]  // 提取 Routine 。  ->rip ret
+        push    rax
+        pop     rax
+        call    qword ptr [rsp - 8 * 1]       // 调用 Routine 。
+        pop     rcx                           // 弹出参数。
+        pop     rdx
+        pop     r8
+        pop     r9
 
-          xchg    rax, qword ptr [rsp + 8 * 1]  // 取出参数 RIP 。  ->fq
-          cmp     rax, qword ptr [rsp + 8 * 4]  // 检测是否修改。   ->fq rip ret routine
-          mov     qword ptr [rsp + 8 * 4], rax  // 修改 EIP 。      ->fq rip ret routine
-          xchg    rax, qword ptr [rsp + 8 * 1]  // 还原 rax 。
+        mov     rsp, rdi                      // 恢复栈位。
 
-          jz      HookShellCode_Normal_Next
-          popfq
-          lea     rsp, qword ptr [rsp + 8 * 3]  // 修改则跳过。     -> rip ret routine retn
+        pop     rcx
+        pop     rdx
+        pop     r8
+        pop     r9
+        pop     rax
+        pop     rbx
+        pop     rbp                           // pop rsp
+        pop     rbp
+        pop     rsi
+        pop     rdi
+        pop     r10
+        pop     r11
+        pop     r12
+        pop     r13
+        pop     r14
+        pop     r15
 
-        HookShellCode_Normal_Next :
-          popfq
-          lea     rsp, qword ptr [rsp + 8 * 1]  // 仅跳过 RIP ，返回执行可能存在的代码。
-          retn    8 * 2
+        xchg    rax, qword ptr [rsp + 8 * 1]  // 取出参数 RIP 。  ->fq
+        cmp     rax, qword ptr [rsp + 8 * 4]  // 检测是否修改。   ->fq rip ret routine
+        mov     qword ptr [rsp + 8 * 4], rax  // 修改 EIP 。      ->fq rip ret routine
+        xchg    rax, qword ptr [rsp + 8 * 1]  // 还原 rax 。
 
-          add     byte ptr [rax], al            // 做 0 结尾。
-          }
-        }
+        jz      HookShellCode_Normal_Next
+        popfq
+        lea     rsp, qword ptr [rsp + 8 * 3]  // 修改则跳过。     -> rip ret routine retn
+
+      HookShellCode_Normal_Next :
+        popfq
+        lea     rsp, qword ptr [rsp + 8 * 1]  // 仅跳过 RIP ，返回执行可能存在的代码。
+        retn    8 * 2
+
+        add     byte ptr [rax], al            // 做 0 结尾。
+      }
+    }
     ```
   */
   static inline const shellcodes ShellCodeNormal{
       "\xFF\x74\x24\x10\x9C\x41\x57\x41\x56\x41\x55\x41\x54\x41\x53\x41"
       "\x52\x57\x56\x55\x48\x8D\x6C\x24\x50\x48\x8D\x75\x20\x56\x53\x50"
-      "\x41\x51\x41\x50\x52\x51\x48\x89\xE1\x41\x51\x41\x50\x52\x51\x48"
-      "\x8B\x45\x10\x50\x58\xFF\x54\x24\xF8\x59\x5A\x41\x58\x41\x59\x59"
-      "\x5A\x41\x58\x41\x59\x58\x5B\x5D\x5D\x5E\x5F\x41\x5A\x41\x5B\x41"
-      "\x5C\x41\x5D\x41\x5E\x41\x5F\x48\x87\x44\x24\x08\x48\x3B\x44\x24"
-      "\x20\x48\x89\x44\x24\x20\x48\x87\x44\x24\x08\x74\x07\x9D\x48\x8D"
-      "\x64\x24\x18\xC3\x9D\x48\x8D\x64\x24\x08\xC2\x10\x00"};
+      "\x41\x51\x41\x50\x52\x51\x48\x89\xE1\x48\x8B\xFC\x50\x48\x83\xE4"
+      "\xF0\x41\x51\x41\x50\x52\x51\x48\x8B\x45\x10\x50\x58\xFF\x54\x24"
+      "\xF8\x59\x5A\x41\x58\x41\x59\x48\x8B\xE7\x59\x5A\x41\x58\x41\x59"
+      "\x58\x5B\x5D\x5D\x5E\x5F\x41\x5A\x41\x5B\x41\x5C\x41\x5D\x41\x5E"
+      "\x41\x5F\x48\x87\x44\x24\x08\x48\x3B\x44\x24\x20\x48\x89\x44\x24"
+      "\x20\x48\x87\x44\x24\x08\x74\x07\x9D\x48\x8D\x64\x24\x18\xC3\x9D"
+      "\x48\x8D\x64\x24\x08\xC2\x10\x00"};
   /**
     要求前置 shellcode 如下：
 
@@ -1079,10 +1072,8 @@ class xHook {
     \endcode
 
     ```c++
-    static __declspec(naked) void ShellCodeCtOff()
-      {
-      __asm
-        {
+    static __declspec(naked) void ShellCodeCtOff() {
+      __asm {
         pushfq
 
         xchg    rax, qword ptr [rsp]          // rax 为 fq ，原始值入栈。
@@ -1233,8 +1224,8 @@ class xHook {
         retn
 
         add     byte ptr [rax], al             // 做 0 结尾。
-        }
       }
+    }
     ```
   */
   static inline const shellcodes ShellCodeCtOff{

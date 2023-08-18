@@ -79,5 +79,6 @@
         "thread": "cpp",
         "any": "cpp",
         "regex": "cpp"
-    }
+    },
+    "C_Cpp.default.compilerPath": "cl.exe"
 }

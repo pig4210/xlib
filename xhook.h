@@ -2,7 +2,7 @@
   \file  xhook.h
   \brief 用于 windows hook 。
 
-  \version    0.0.1.230804
+  \version    0.0.2.230818
   \note       only for windows .
 
   \author     triones
@@ -19,6 +19,7 @@
   - 2023-02-28 修正 x64 下 hook offset 时的 shellcode 错误。
   - 2023-03-17 Opcodes 使用 vector ，避免 shellcode < 0x10 不申请内存的错误。 
   - 2023-08-04 修正 x64 下 hook normal 时，栈未对齐的错误。
+  - 2023-08-18 改进 x64 下中转实现。
 */
 #ifndef _XLIB_XHOOK_H_
 #define _XLIB_XHOOK_H_
@@ -52,7 +53,7 @@ enum HOOK_ERROR_ENUM {
   XHE_Restored,       //< Hook 已被第三方还原。
   XHE_BeCovered,      //< Hook 已被第三方覆盖。
   XHE_UnHooked,       //< 已 UnHook 。
-  XHE_Move,           //< 转移 shellcode 时写入失败。
+  XHE_SetTrans,       //< 中转位置写入失败。
   XHE_AddDisp,        //< x64 下，偏移无效。
 };
 
@@ -355,6 +356,9 @@ class xHook {
       }
     }
 
+    // 中转位置的数据，记得还原。
+    if (nullptr != _transfer) Crack(_transfer, _transferdata);
+
     _e = Crack(_hookmem, _oldcode);
     if (!IsOK()) return _e;
 
@@ -391,21 +395,37 @@ class xHook {
     _routine = routine;
     return true;
   }
-  /// 调整 shellcode 。
-  bool fix_shellcode(void* p_shellcode) {
-    _lpshellcode = _shellcode.data();
-    *(const void**)(_shellcode.data() + 2) = _lpshellcode;
-    // 如果指定了 shellcode 的空间，则转移之。
-    if (nullptr != p_shellcode) {
-      *(const void**)(_shellcode.data() + 2) = p_shellcode;
-      auto ret = Crack(p_shellcode, _shellcode);
-      if (!IsHookOK(ret)) {
-        _e = XHE_Move;
-        return false;
-      }
-      _lpshellcode = p_shellcode;
-    }
+  /// 设置中转 。
+  bool fix_transfer(void* p_transfer) {
+#ifndef _WIN64
+    // x86 下忽略中转。
+    UNREFERENCED_PARAMETER(p_transfer);
     return true;
+#else
+    if (nullptr == p_transfer) return true;
+    // 如果指定了 shellcode 的空间，则转移之。
+    const size_t addrdisp = CalcOffset((const char*)_hookmem, p_transfer);
+    if (!IsValidAddrDisp(addrdisp)) {
+      _e = XHE_AddDisp;
+      return false;
+    }
+    char tmp_shellcode[2 + sizeof(AddrDisp) + sizeof(void*)] = {
+        '\xFF', '\x25',
+        '\x00', '\x00', '\x00', '\x00',
+        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00'};
+
+    _transferdata.assign((const uint8_t*)p_transfer, (const uint8_t*)p_transfer + sizeof(void*));
+
+    memcpy(tmp_shellcode + 2 + sizeof(AddrDisp), &_lpshellcode, sizeof(_lpshellcode));
+
+    auto ret = Crack(p_transfer, (void*)tmp_shellcode, sizeof(tmp_shellcode));
+    if (!IsHookOK(ret)) {
+      _e = XHE_SetTrans;
+      return false;
+    }
+    _lpshellcode = _transfer;
+    return true;
+#endif  // _WIN64
   }
   /// UEF 回调。
   static inline LONG __cdecl UEFHandling(_EXCEPTION_POINTERS* ExceptionInfo,
@@ -480,19 +500,17 @@ class xHook {
     - x64 情况下：\n
       - 当 hooksize == 1 ~ 4 ：采用 UEF ，钩子不能被覆盖；
       - 5 ：采用 jmp XXX ，偏移超出采用 UEF 。钩子不能被覆盖；
-      - 6-13 ：采用 jmp qword ptr [XXX] ，允许钩子覆盖。偏移超出采用 UEF
-    ，钩子不能被覆盖；
+      - 6-13 ：采用 jmp qword ptr [XXX] ，允许钩子覆盖。偏移超出采用 UEF ，钩子不能被覆盖；
       - 14 以上：采用 jmp qword ptr [XXX] ，允许钩子覆盖。
 
     \param  hookmem       指定 hook 内存的位置。
     \param  hooksize      hook 长度 [1, 30] 。
     \param  routine       指定的回调函数（声明请参考 HookRoutine ）
     \param  routinefirst  true ：回调先行， false ：覆盖代码先行。
-    \param  p_shellcode   指定中转 shellcode 的存放位置。\n
+    \param  p_transfer    指定中转位置。\n
                           x64 下用于避免偏移超出而自动采用 UEF 。\n
-                          x86 下可忽略，为兼容而设计。但设置也不影响使用。\n
-                          x86 请提供至少 0x1C + hooksize 大小的空间。\n
-                          x64 请提供至少 0x3C + hooksize 大小的空间。
+                          x86 下忽略此参数。\n
+                          请提供 0xE 大小的空间。
 
     \code
       #include "hook.h"
@@ -525,7 +543,7 @@ class xHook {
         const size_t  hooksize,
         HookRoutine   routine,
         const bool    routinefirst,
-        void*         p_shellcode = nullptr) {
+        void*         p_transfer = nullptr) {
     //////////////////////////////////////////////////////////////// 基本检查 及 初始化。
     if (!check_hookmem(hookmem, hooksize)) return;
     if (!check_routine(routine)) return;
@@ -533,10 +551,9 @@ class xHook {
     _ip = (const void*)((const char*)hookmem + hooksize);
     _lpshellcode = nullptr;
     _lpfixshellcode = (void*)ShellCodeNormal.data();
+    _transfer = nullptr;
     _oldUEFHandling = (UEFRoutine)-1;
     //////////////////////////////////////////////////////////////// 设计 shellcode 。
-    _shellcode << '\xEB' << (char)sizeof(void*) << (void*)nullptr;
-
     if (!routinefirst) {
       _shellcode << _oldcode; // 代码前行需要先写原始代码。
     }
@@ -563,8 +580,9 @@ class xHook {
       _shellcode << "\xFF\x25" << (AddrDisp)0xFFFFFFD0;
     }
 #endif  // _WIN64
-    //////////////////////////////////////////////////////////////// 调整 shellcode 。
-    if (!fix_shellcode(p_shellcode)) return;
+    _lpshellcode = _shellcode.data();
+    //////////////////////////////////////////////////////////////// 设置中转 。
+    if (!fix_transfer(p_transfer)) return;
     //////////////////////////////////////////////////////////////// 计算 hookcode 。
     switch (_hooksize) {
       case 1:      case 2:      case 3:      case 4:
@@ -587,7 +605,7 @@ class xHook {
       case 6:      case 7:      case 8:      case 9:
       case 10:     case 11:     case 12:     case 13: {
         const size_t addrdisp = CalcOffset((const char*)_hookmem + 2,
-                                           (const char*)_lpshellcode + 2);
+                                           (const char*)_lpshellcode);
         if (!IsValidAddrDisp(addrdisp)) {
           mkuef();
           break;
@@ -619,11 +637,10 @@ class xHook {
     \param  routine       指定的回调函数（声明请参考 HookRoutine ）。
     \param  calltable_offset    指明是跳转表或 call 偏移。
     \param  routinefirst  true： 回调先行， false： 覆盖函数先行。
-    \param  p_shellcode   指定中转 shellcode 的存放位置。\n
+    \param  p_shellcode   指定中转位置。\n
                           x64 下用于避免偏移超出而无法 HOOK 。\n
-                          x86 下可忽略，为兼容而设计。但设置也不影响使用。\n
-                          x86 请提供至少 0x1D 空间。\n
-                          x64 请提供至少 0x5E 空间。
+                          x86 下忽略此参数。\n
+                          请提供 0xE 空间。
     \param  expandargc    覆盖函数可能存在参数过多的现象，以调整栈平衡。
 
     \code
@@ -643,14 +660,13 @@ class xHook {
     - 覆盖跳转表或 call 偏移位置时，无视覆盖函数的调用格式。
     - 注意， routinefirst == true 时， EIP/RIP 为覆盖函数地址， Routine 可选择改变之，但此时请特别注意原函数的调用格式，改变 EIP/RIP 可跳过原函数的执行。routinefirst == false 时， EIP/RIP 为返回地址， Routine 也可选择改变之。
     - routinefirst == true 时， Hook 保证寄存器前后一致。 routinefirst == false 时， Hook 保证除 Esp/Rsp 外的寄存器在原函数调用前一致，局部环境一致。 Routine 调用寄存器前后一致。出 Hook 时寄存器一致，局部环境一致。（不因 Hook 而造成任何寄存器变动及栈飘移。）
-    - 使用 MoveHookCallTableShellCode() 伪造返回地址。
     - 未特殊说明的情况，参考 Hook 函数声明。
   */
   xHook(void*           hookmem,
         HookRoutine     routine,
         const bool      calltable_offset,
         const bool      routinefirst,
-        void*           p_shellcode = nullptr,
+        void*           p_transfer = nullptr,
         const intptr_t  expandargc = 0) {
     //////////////////////////////////////////////////////////////// 基本检查 及  初始化。
     const size_t hooksize =
@@ -662,13 +678,12 @@ class xHook {
                            : (void*)(*(AddrDisp*)(hookmem) + (size_t)hookmem + sizeof(AddrDisp));
     _lpshellcode = nullptr;
     _lpfixshellcode = (void*)ShellCodeCtOff.data();
+    _transfer = p_transfer;
     _oldUEFHandling = (UEFRoutine)-1;
     //////////////////////////////////////////////////////////////// 设计 shellcode 。
     constexpr intptr_t default_argc = 0x8;  // 默认参数 8 个。
     intptr_t hookargc = default_argc + expandargc;
     if (hookargc <= 0) hookargc = default_argc;  // 检测不让堆栈错误。
-
-    _shellcode << '\xEB' << (char)sizeof(void*) << (void*)nullptr;
 
 #ifndef _WIN64
     _shellcode
@@ -686,8 +701,9 @@ class xHook {
            "\xFF\x35\xD8\xFF\xFF\xFF\xFF\x35\xDA\xFF\xFF\xFF"
            "\x48\x87\x3C\x24\x48\x8B\x3F\x48\x87\x3C\x24\xC3";
 #endif
-    //////////////////////////////////////////////////////////////// 调整 shellcode 。
-    if (!fix_shellcode(p_shellcode)) return;
+    _lpshellcode = _shellcode.data();
+    //////////////////////////////////////////////////////////////// 设置中转 。
+    if (!fix_transfer(p_transfer)) return;
     //////////////////////////////////////////////////////////////// 计算 hookcode 。
     if (calltable_offset) {
       _hookcode << _lpshellcode;
@@ -741,6 +757,8 @@ class xHook {
   shellcodes        _shellcode;       //< shellcode 缓冲。
   opcodes           _oldcode;         //< 覆盖前的数据（用于卸载时还原判定）。
   opcodes           _hookcode;        //< 覆盖后的数据（用于卸载时覆盖判定）。
+  void*             _transfer;        //< 中转位置。
+  opcodes           _transferdata;    //< 中转位置原数据。
   UEFRoutine        _oldUEFHandling;  //< UEF 旧回调。
   shellcodes        _uefshellcode;    //< UEF shellcode 。
  private:

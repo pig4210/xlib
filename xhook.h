@@ -443,37 +443,6 @@ class xHook {
     return true;
   }
 #endif  // _WIN64
-  bool fix_transfer(void* p_transfer) {
-#ifndef _WIN64
-    // x86 下忽略中转。
-    UNREFERENCED_PARAMETER(p_transfer);
-    return true;
-#else
-    if (nullptr == p_transfer) return true;
-    // 如果指定了 shellcode 的空间，则转移之。
-    const size_t addrdisp = CalcOffset((const char*)_hookmem, p_transfer);
-    if (!IsValidAddrDisp(addrdisp)) {
-      _e = XHE_AddDisp;
-      return false;
-    }
-    char tmp_shellcode[2 + sizeof(AddrDisp) + sizeof(void*)] = {
-        '\xFF', '\x25',
-        '\x00', '\x00', '\x00', '\x00',
-        '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00'};
-
-    _transferdata.assign((const uint8_t*)p_transfer, (const uint8_t*)p_transfer + sizeof(void*));
-
-    memcpy(tmp_shellcode + 2 + sizeof(AddrDisp), &_lpshellcode, sizeof(_lpshellcode));
-
-    auto ret = Crack(p_transfer, (void*)tmp_shellcode, sizeof(tmp_shellcode));
-    if (!IsHookOK(ret)) {
-      _e = XHE_SetTrans;
-      return false;
-    }
-    _lpshellcode = _transfer;
-    return true;
-#endif  // _WIN64
-  }
   /// UEF 回调。
   static inline LONG __cdecl UEFHandling(_EXCEPTION_POINTERS* ExceptionInfo,
                                          const xHook* o) {
@@ -520,7 +489,7 @@ class xHook {
     mov rdx, this
     mov rax, UEFHandling
     jmp rax
-    // 注意到，仿造 x86 的 push ，UEFHandling 内部会出现奇怪的异常。
+    // 注意到，仿造 x86 的 push ，UEFHandling 内部会出现奇怪的异常。（可能是 x64 栈对齐原因）
     */
     _uefshellcode
         << "\x48\xBA" << this
@@ -647,18 +616,23 @@ class xHook {
         break;
       default: break;
     }
-#endif
+#endif  // _WIN64
     //////////////////////////////////////////////////////////////// 计算 hookcode 。
     switch (_hooksize) {
       case 1:      case 2:      case 3:      case 4:
         mkuef(); break;
-      case 5: {
 #ifndef _WIN64
+      case 5: {
         const size_t addrdisp =
             CalcOffset((const char*)_hookmem + 1, _lpshellcode);
         _hookcode << '\xE9' << (AddrDisp)addrdisp;
         break;
-#else
+      }
+      default:
+        _hookcode << "\xFF\x25" << (AddrDisp)&_lpshellcode;
+        break;
+#else  // _WIN64
+      case 5: {
         const size_t addrdisp = CalcOffset(
             (const char*)_hookmem + 1,
             nullptr == _transfer ? _lpshellcode : _transfer);
@@ -669,13 +643,7 @@ class xHook {
         }
         _hookcode << '\xE9' << (AddrDisp)addrdisp;
         break;
-#endif  // _WIN64
       }
-#ifndef _WIN64
-      default:
-        _hookcode << "\xFF\x25" << (AddrDisp)&_lpshellcode;
-        break;
-#else
       case 6:      case 7:      case 8:      case 9:
       case 10:     case 11:     case 12:     case 13: {
         const size_t addrdisp = CalcOffset(
@@ -691,7 +659,7 @@ class xHook {
       default:
         _hookcode << "\xFF\x25" << (AddrDisp)0 << _lpshellcode;
         break;
-#endif
+#endif  // _WIN64
     }
     ////////////////////////////////////////////////////////////////
     _e = Crack(_hookmem, _hookcode);
@@ -703,7 +671,7 @@ class xHook {
         const bool    routinefirst,
         void*         p_transfer = nullptr)
       : xHook((void*)hookmem, hooksize, routine, routinefirst, p_transfer) {
-    // 注意，不能在这里 xHook 。
+    // 注意，不能在函数体 xHook ，性质不同。必须在初始化列表中初始化。
   }
   /**
     指定 跳转表 或 call 偏移位置，执行 Hook 操作。
@@ -715,7 +683,7 @@ class xHook {
     \param  p_transfer    指定中转位置。\n
                           x64 下用于避免偏移超出而无法 HOOK 。\n
                           x86 下仅兼容，忽略此参数。\n
-                          跳转表请提供 0x8 byte 空间；\n
+                          跳转表 忽略此参数；\n
                           call 偏移请提供 0xE byte 空间。
     \param  expandargc    覆盖函数可能存在参数过多的现象，以调整栈平衡。
 
@@ -783,11 +751,13 @@ class xHook {
     _lpshellcode = _shellcode.data();
     //////////////////////////////////////////////////////////////// 设置中转 。
 #ifdef _WIN64
-    if (!fix_transfer(p_transfer, calltable_offset)) return;
+    if (!calltable_offset) {
+      if (!fix_transfer(p_transfer, calltable_offset)) return;
+    }
 #endif  // _WIN64
     //////////////////////////////////////////////////////////////// 计算 hookcode 。
     if (calltable_offset) {
-      _hookcode << (nullptr == _transfer ? _lpshellcode : _transfer);
+      _hookcode << _lpshellcode;
     } else {
       const size_t addrdisp = CalcOffset(
           _hookmem,

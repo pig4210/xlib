@@ -8,7 +8,7 @@ xblk.o              : xlib_test.h xblk.h
 xcodecvt.o          : xlib_test.h xcodecvt_win.h xcodecvt.h
 xmsg.o              : xlib_test.h xcodecvt_win.h xcodecvt.h xmsg.h
 xlog.o              : xlib_test.h xcodecvt_win.h xcodecvt.h xmsg.h xlog.h
-xhexbin.o           : xlib_test.h xswap.h xcodecvt_win.h xcodecvt.h xmsg.h xlog.h xhexbin.h
+xhexbin.o           : xlib_test.h xswap.h xcodecvt_win.h xcodecvt.h xmsg.h xhexbin.h
 xvarint.o           : xlib_test.h xvarint.h
 xbin.o              : xlib_test.h xswap.h xvarint.h xbin.h
 xxstring.o          : xlib_test.h xcodecvt_win.h xcodecvt.h xmsg.h xxstring.h

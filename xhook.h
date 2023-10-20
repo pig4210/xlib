@@ -42,7 +42,7 @@ namespace xlib {
 /// Hook 错误码。
 enum HOOK_ERROR_ENUM {
   XHE_NoError,
-  XHE_ReCoverProtect,  //< Crack 还原页属性失败。
+  XHE_ReCoverProtect, //< Crack 还原页属性失败。
   XHE_OK,
   XHE_ModifyProtect,  //< Crack 修改页属性失败。
   XHE_Write,          //< Crack 修改内存失败。

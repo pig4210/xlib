@@ -19,7 +19,7 @@ int _tmain(int , _TCHAR*)
 #else
 int main()
 #endif
-  {
+{
   std::cout << std::endl << "xlib test done." << std::endl;
   return g_error_count;
-  }
+}

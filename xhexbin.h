@@ -507,16 +507,24 @@ xmsg showbin(
   auto check_unicode_visualization = [](const wchar_t wc) {
     // 控制字符一律输出 '.' 。
     if (wc < L' ' || (wc >= 0x7F && wc <= 0xA0)) {
-      return std::wstring(L".");
+      return std::wstring(1, L'.');
     }
 
-    // 尝试转换 可视化。
     const auto ch(std::wstring(1, wc));
+    if (wc == L'?') return ch;
+
+    // 尝试转换 可视化。
     size_t read;
     if constexpr (LocaleCheck()) {
-      return ws2as(ch, &read).empty() ? std::wstring() : ch;
+      const auto s = ws2as(ch, &read);
+      if (s.empty()) return std::wstring();
+      if (1 == s.size() && '?' == *s.begin()) return std::wstring();
+      return ch;
     } else {
-      return ws2u8(ch, &read).empty() ? std::wstring() : ch;
+      const auto s = ws2u8(ch, &read);
+      if (s.empty()) return std::wstring();
+      if (1 == s.size() && '?' == (char)(*s.begin())) return std::wstring();
+      return ch;
     }
   };
 

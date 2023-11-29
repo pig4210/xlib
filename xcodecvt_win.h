@@ -2,7 +2,7 @@
   \file  xcodecvt_win.h
   \brief 用于 ANSI 与 UNICODE 及 UTF8 等编码的本地化转换，使用 WindowsAPI 。
 
-  \version    0.0.1.230224
+  \version    0.0.2.231129
 
   \author     triones
   \date       2022-08-24
@@ -10,6 +10,7 @@
   \section history 版本记录
 
   - 2022-08-24 新建 。 0.0.1 。
+  - 2022-11-29 修正 旧系统 编码转换失败的问题。 0.0.2 。
 */
 #ifndef _XLIB_XCODECVT_WIN_H_
 #define _XLIB_XCODECVT_WIN_H_
@@ -100,18 +101,18 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
 
   std::string as;
   as.resize(need, '\0');
+  
+  const DWORD dwFlags = (nullptr == lpread) ? 0 : WC_NO_BEST_FIT_CHARS;
 
   for (rd = ws.size(); rd != 0; --rd) {
-    BOOL UsedDefultChar = FALSE;
 #pragma warning(push)
 #pragma warning(disable : 4267)
-    const auto write = WideCharToMultiByte(LOCALE_AS_WS, 0,
+    const auto write = WideCharToMultiByte(LOCALE_AS_WS, dwFlags,
                                            ws.data(), rd,
                                            as.data(), as.size(),
-                                           nullptr, &UsedDefultChar);
+                                           nullptr, nullptr);
 #pragma warning(pop)
     if (write > 0) {
-      if (nullptr != lpread && UsedDefultChar == TRUE) continue;
       read = rd;
       as.resize(write);
       return as;
@@ -185,18 +186,18 @@ inline std::u8string ws2u8(const std::wstring& ws,
 
   std::u8string u8;
   u8.resize(need, '\0');
+  
+  const DWORD dwFlags = (nullptr == lpread) ? 0 : WC_NO_BEST_FIT_CHARS;
 
   for (rd = ws.size(); rd != 0; --rd) {
-    BOOL UsedDefultChar = FALSE;
 #pragma warning(push)
 #pragma warning(disable : 4267)
-    const auto write = WideCharToMultiByte(LOCALE_WS_U8, 0,
+    const auto write = WideCharToMultiByte(LOCALE_WS_U8, dwFlags,
                                            ws.data(), rd,
                                            (char*)u8.data(), u8.size(),
-                                           nullptr, &UsedDefultChar);
+                                           nullptr, nullptr);
 #pragma warning(pop)
     if (write > 0) {
-      if (nullptr != lpread && UsedDefultChar == TRUE) continue;
       read = rd;
       u8.resize(write);
       return u8;

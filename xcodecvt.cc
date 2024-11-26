@@ -10,8 +10,14 @@
 #pragma message("xlib define std::u8string")
 #endif
 
+#if __has_include(<iconv.h>)
+#pragma message("xlib use xcodecvt_iconv.h")
+#else
 #if defined(_WIN32) && _MSVC_LANG <= 202002L
 #pragma message("xlib use xcodecvt_win.h")
+#else
+#pragma message("xlib use xcodecvt_std.h")
+#endif
 #endif
 
 SHOW_TEST_INIT(xcodecvt)

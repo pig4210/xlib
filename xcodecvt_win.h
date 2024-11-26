@@ -50,16 +50,13 @@ namespace xlib {
   \endcode
 */
 inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr) {
-  if (as.empty()) return std::wstring();
+  if (as.empty()) return {};
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
   read = 0;
 
-  const auto need = as.size();
-
-  std::wstring ws;
-  ws.resize(need, L'\0');
+  std::wstring ws(as.size(), L'\0');
 
   const DWORD dwFlags = (nullptr == lpread) ? 0 : MB_ERR_INVALID_CHARS;
 
@@ -77,7 +74,7 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
     }
   }
   read = 0;
-  return std::wstring();
+  return {};
 }
 
 /**
@@ -91,16 +88,13 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
   \endcode
 */
 inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr) {
-  if (ws.empty()) return std::string();
+  if (ws.empty()) return {};
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
   read = 0;
 
-  const auto need = ws.size() * 2;
-
-  std::string as;
-  as.resize(need, '\0');
+  std::string as(ws.size() * sizeof(wchar_t), '\0');
   
   const DWORD dwFlags = (nullptr == lpread) ? 0 : WC_NO_BEST_FIT_CHARS;
 
@@ -120,7 +114,7 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
   }
 
   read = 0;
-  return std::string();
+  return {};
 }
 
 /**
@@ -134,16 +128,13 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
   \endcode
 */
 inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullptr) {
-  if (u8.empty()) return std::wstring();
+  if (u8.empty()) return {};
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
   read = 0;
 
-  const auto need = u8.size();
-
-  std::wstring ws;
-  ws.resize(need, L'\0');
+  std::wstring ws(u8.size(), L'\0');
 
   const DWORD dwFlags = (nullptr == lpread) ? 0 : MB_ERR_INVALID_CHARS;
 
@@ -161,7 +152,7 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
     }
   }
   read = 0;
-  return std::wstring();
+  return {};
 }
 
 /**
@@ -176,16 +167,13 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
 */
 inline std::u8string ws2u8(const std::wstring& ws,
                            size_t* const lpread = nullptr) {
-  if (ws.empty()) return std::u8string();
+  if (ws.empty()) return {};
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
   read = 0;
 
-  const auto need = ws.size() * 4;
-
-  std::u8string u8;
-  u8.resize(need, '\0');
+  std::u8string u8(ws.size() * 6, '\0');
   
   const DWORD dwFlags = (nullptr == lpread) ? 0 : WC_NO_BEST_FIT_CHARS;
 
@@ -205,7 +193,7 @@ inline std::u8string ws2u8(const std::wstring& ws,
   }
 
   read = 0;
-  return std::u8string();
+  return {};
 }
 
 /**

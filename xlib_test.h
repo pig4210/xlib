@@ -31,9 +31,10 @@ bool xlib_test(xlib_test_routine);
       auto done = false;
 #define SHOW_TEST_DONE                  \
       std::cout << std::endl;           \
-      return error_count;                   \
+      return error_count;               \
     }                                   \
     );
+// SHOW_TEST_HEAD 在测试项执行前输出测试项名称。执行 (name, bool) 无意义，而执行 (name, [&]{}) 则繁琐。
 #define SHOW_TEST_HEAD(head)            \
   std::cout << std::setiosflags(std::ios::left) << std::setw(41) << #head;
 #define SHOW_TEST_RESULT                \

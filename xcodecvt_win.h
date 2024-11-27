@@ -112,7 +112,6 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
       return as;
     }
   }
-
   read = 0;
   return {};
 }
@@ -191,7 +190,6 @@ inline std::u8string ws2u8(const std::wstring& ws,
       return u8;
     }
   }
-
   read = 0;
   return {};
 }

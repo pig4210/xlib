@@ -1,8 +1,8 @@
 ﻿/**
   \file  xcodecvt_iconv.h
-  \brief 用于 ANSI 与 UNICODE 及 UTF8 等编码的本地化转换。使用 iconv 库。
+  \brief 用于 ANSI 与 UNICODE 及 UTF8 等编码的本地化转换。使用 gnu libiconv 库。
 
-  \version    0.0.0.241126
+  \version    0.0.1.241126
 
   \author     triones
   \date       2024-11-26
@@ -47,7 +47,7 @@ using iconv_from_type = char**;
   \endcode
 */
 inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr) {
-  if (as.empty()) return std::wstring();
+  if (as.empty()) return {};
 
   size_t rd;
   size_t& read = (lpread == nullptr) ? rd : *lpread;
@@ -62,21 +62,20 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
 #endif
   if (cvt == (iconv_t)-1) return {};
 
-  std::wstring ws;
-  ws.resize(as.size(), L'\0');
+  std::wstring ws(as.size(), L'\0');
 
   while (read < as.size()) {
-    auto        from        = as.data() + read;
-    size_t      from_left   = as.size() - read;
-    const auto  from_next   = from_left;
+    auto        from      = as.data() + read;
+    size_t      from_left = as.size() - read;
+    const auto  from_next = from_left;
 
-    auto        to          = ws.data() + write;
-    size_t      to_left     = (ws.size() - write) * sizeof(wchar_t);
-    const auto  to_next     = to_left;
+    auto        to        = ws.data() + write;
+    size_t      to_left   = (ws.size() - write) * sizeof(wchar_t);
+    const auto  to_next   = to_left;
 
     const auto result = iconv(cvt, (iconv_from_type)&from, &from_left, (char**)&to, &to_left);
 
-    read += from_next - from_left;
+    read  += from_next - from_left;
     write += (to_next - to_left) / sizeof(wchar_t);
 
     if (nullptr != lpread) break;
@@ -90,7 +89,6 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
   iconv_close(cvt);
 
   ws.resize(write);
-  
   return ws;
 }
 
@@ -105,7 +103,7 @@ inline std::wstring as2ws(const std::string& as, size_t* const lpread = nullptr)
   \endcode
 */
 inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr) {
-  if (ws.empty()) return std::string();
+  if (ws.empty()) return {};
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
@@ -119,10 +117,7 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
   auto cvt = iconv_open(LOCALE_AS_WS, "WCHAR_T");
 #endif
 
-  const auto need = ws.size() * 6;
-
-  std::string as;
-  as.resize(need, '\0');
+  std::string as(ws.size() * 6, '\0');
 
   while (read < ws.size()) {
     auto           from       = ws.data() + read;
@@ -135,7 +130,7 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
 
     const auto result = iconv(cvt, (iconv_from_type)&from, &from_left, &to, &to_left);
 
-    read += (from_next - from_left) / sizeof(wchar_t);
+    read  += (from_next - from_left) / sizeof(wchar_t);
     write += to_next - to_left;
     
     if (nullptr != lpread) break;
@@ -149,7 +144,6 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
   iconv_close(cvt);
 
   as.resize(write);
-
   return as;
 }
 
@@ -164,7 +158,7 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
   \endcode
 */
 inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullptr) {
-  if (u8.empty()) return std::wstring();
+  if (u8.empty()) return {};
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
@@ -178,10 +172,7 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
   auto cvt = iconv_open("WCHAR_T", LOCALE_WS_U8);
 #endif
 
-  const auto need = u8.size();
-
-  std::wstring ws;
-  ws.resize(need, L'\0');
+  std::wstring ws(u8.size(), L'\0');
 
   while (read < u8.size()) {
     auto        from       = u8.data() + read;
@@ -194,7 +185,7 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
 
     const auto result = iconv(cvt, (iconv_from_type)&from, &from_left, (char**)&to, &to_left);
 
-    read += from_next - from_left;
+    read  += from_next - from_left;
     write += (to_next - to_left) / sizeof(wchar_t);
 
     if (nullptr != lpread) break;
@@ -208,7 +199,6 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
   iconv_close(cvt);
 
   ws.resize(write);
-
   return ws;
 }
 
@@ -223,7 +213,7 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
   \endcode
   */
 inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullptr) {
-  if (ws.empty()) return std::u8string();
+  if (ws.empty()) return {};
 
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
@@ -237,10 +227,7 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
   auto cvt = iconv_open(LOCALE_WS_U8, "WCHAR_T");
 #endif
 
-  const auto need = ws.size() * 6;
-
-  std::u8string u8;
-  u8.resize(need, char8_t('\0'));
+  std::u8string u8(ws.size() * 6, char8_t('\0'));
 
   while (read < ws.size()) {
     auto           from       = ws.data() + read;
@@ -253,7 +240,7 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
     
     const auto result = iconv(cvt, (iconv_from_type)&from, &from_left, (char**)&to, &to_left);
     
-    read += (from_next - from_left) / sizeof(wchar_t);
+    read  += (from_next - from_left) / sizeof(wchar_t);
     write += to_next - to_left;
 
     if (nullptr != lpread) break;
@@ -267,7 +254,6 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
   iconv_close(cvt);
 
   u8.resize(write);
-
   return u8;
 }
 
@@ -318,4 +304,4 @@ inline std::string u82as(const std::u8string& u8, size_t* const lpread = nullptr
 
 }  // namespace xlib
 
-#endif  // _XLIB_XCODECVT_H_
+#endif  // _XLIB_XCODECVT_ICONV_H_

@@ -35,6 +35,7 @@ class xblk {
  public:
   /// 默认构造表示非法块。
   constexpr xblk() : _beg(nullptr), _end(nullptr), _size(0) {}
+  // 没有复杂对象，不需要额外定义拷贝构造移动构造。
   /// 允许设置起始与结束位置初始化，自动识别起始与结束。
   template <typename T>
   constexpr xblk(const T* const a, const T* const b)

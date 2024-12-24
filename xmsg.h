@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.1.3.230224
+  \version    5.1.4.241224
   \note       For All
 
   \author     triones
@@ -58,6 +58,25 @@ class xmsg : public std::u8string {
   xmsg(const std::string& as)   : std::u8string(XMSGAS(as)) {}
   xmsg(const std::wstring& ws)  : std::u8string(XMSGWS(ws)) {}
   xmsg(const std::u8string& u8) : std::u8string(XMSGU8(u8)) {}
+  xmsg& operator=(const std::u8string& u8) {
+    std::u8string::operator=(u8);
+    return *this;
+  }
+  xmsg(std::u8string&& u8) : std::u8string(std::move(u8)) {}
+  xmsg& operator=(std::u8string&& u8) {
+    std::u8string::operator=(std::move(u8));
+    return *this;
+  }
+
+  // 注意：u8 = std::move(xmsg); / std::u8string(std::move(xmsg)); 移动语义都不成立。
+  // std::u8string u8 = std::move(xmsg); 定义时，移动语义成立。
+  // return std::move(xmsg); 返回时，移动语义成立。
+  // 注意：转换基类无需额外定义 operator std::u8string() 。
+ public:
+  xmsg(const xmsg&) = default;
+  xmsg& operator=(const xmsg&) = default;
+  xmsg(xmsg&&) = default;
+  xmsg& operator=(xmsg&&) = default;
 
  public:
   /// 指定格式输出。

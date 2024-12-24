@@ -275,7 +275,7 @@ inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
   read = as.size();
-  return std::u8string((const char8_t*)as.c_str(), as.size());
+  return std::u8string((const char8_t*)as.data(), as.size());
 }
 
 /**
@@ -296,7 +296,7 @@ inline std::string u82as(const std::u8string& u8, size_t* const lpread = nullptr
   size_t rd;
   size_t& read = (nullptr == lpread) ? rd : *lpread;
   read = u8.size();
-  return std::string((const char*)u8.c_str(), u8.size());
+  return std::string((const char*)u8.data(), u8.size());
 }
 
 #undef LOCALE_AS_WS

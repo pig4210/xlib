@@ -62,8 +62,10 @@ class xxstring : public std::u8string {
   }
 
  public:
-  // 转换成 std::string ，强转，而不进行编码转换。
-  operator std::string() const { return *(const std::string*)this; }
+  // 转换成 std::string ，强转，而不进行编码转换。返回引用，避免复制。
+  operator std::string() const & { return *(const std::string*)this; }
+  // 允许带 移动语义 的强转。
+  operator std::string() && { return std::move(*(std::string*)this); }
   // 转换成 std::wstring ，有编码转换。
   operator std::wstring() const { return xlib::u82ws(*this); }
 

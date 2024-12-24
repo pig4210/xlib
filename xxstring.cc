@@ -32,4 +32,9 @@ SHOW_TEST_HEAD(xmsg <<);
 done = xlib::xmsg() << xlib::xxstring(u8buf) == u8buf;
 SHOW_TEST_RESULT;
 
+xlib::xxstring x(asbuf);
+SHOW_TEST_HEAD(operator string&&);
+done = (std::string(std::move(x)) == asbuf) && x.empty();
+SHOW_TEST_RESULT;
+
 SHOW_TEST_DONE;

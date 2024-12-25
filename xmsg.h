@@ -188,21 +188,7 @@ class xmsg : public std::u8string {
     push(buffer);
     return *this;
   }
-  xmsg& prt(const wchar_t* const fmt, ...) {
-    if (nullptr == fmt) return *this;
-    va_list ap;
-    va_start(ap, fmt);
-    const auto need = std::vswprintf(nullptr, 0, fmt, ap);
-    va_end(ap);
-    if (0 >= need) return *this;
-    std::wstring buffer;
-    buffer.resize(need);
-    va_start(ap, fmt);
-    std::vswprintf(buffer.data(), buffer.size() + 1, fmt, ap);
-    va_end(ap);
-    push(buffer);
-    return *this;
-  }
+  // 因为 vswprintf 在 unix 下有些问题，干脆不支持。为记。
   /// 输出 dec 值。
   template <typename T> std::enable_if_t<sizeof(T) == sizeof(int8_t) && std::is_signed_v<T>, xmsg&>
   operator<<(const T& v) {

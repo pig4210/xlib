@@ -77,7 +77,7 @@ class xlog : public xmsg {
   virtual ~xlog() { do_out(); }
   virtual void raw_out(const xmsg& msg) {
 #ifdef _WIN32
-    OutputDebugStringA(msg.toas().c_str());
+    OutputDebugStringA(msg.toas().data());
 #else
     std::wcout << msg.tows() << std::endl;
 #endif

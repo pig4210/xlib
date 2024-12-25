@@ -43,6 +43,22 @@ using u8string_view = basic_string_view<char8_t, char_traits<char8_t>>;
 }
 #endif
 
+namespace xlib {
+// 因为 isprint 与 isspace 不是 constexpr ，所以自制。
+constexpr bool inline is_easy_transcoding(const unsigned long c) {
+  return (c >= 0x20 && c <= 0x7E) || (c >= 0x9 && c <= 0xD);
+}
+constexpr bool inline is_easy_transcoding(const char& c) {
+  return is_easy_transcoding((unsigned long)c);
+}
+constexpr bool inline is_easy_transcoding(const char8_t& c) {
+  return is_easy_transcoding((unsigned long)c);
+}
+constexpr bool inline is_easy_transcoding(const wchar_t& c) {
+  return is_easy_transcoding((unsigned long)c);
+}
+}  // namespace xlib
+
 // 如果有 iconv.h ，则使用 iconv 。
 #if __has_include(<iconv.h>)
 #include "xcodecvt_iconv.h"

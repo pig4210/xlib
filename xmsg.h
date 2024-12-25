@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.1.4.241224
+  \version    5.2.0.241225
   \note       For All
 
   \author     triones
@@ -27,6 +27,7 @@
   - 2020-11-12 改变基类可选，改变数值输出为模板 。 4.0 。
   - 2021-06-20 基类固定为 u8string 。 5.0 。
   - 2022-01-05 向下兼容 c++17 。
+  - 2024-12-25 增加移动语义支持，优化特定情况下高效转换。 5.2 。
 */
 #ifndef _XLIB_XMSG_H_
 #define _XLIB_XMSG_H_
@@ -79,7 +80,82 @@ class xmsg : public std::u8string {
   xmsg& operator=(xmsg&&) = default;
 
  public:
-  /// 指定格式输出。
+   xmsg& push_me(const char8_t& v) {
+    push_back(v);
+    return *this;
+   }
+  xmsg& push_me(const char8_t* v) {
+    if (nullptr != v) append(v);
+    return *this;
+  }
+  xmsg& push_me(const std::u8string& v) {
+    append(v);
+    return *this;
+  }
+
+ public:
+  xmsg& push(const char8_t& u8) { return push_me(u8); }
+  xmsg& push(const char8_t* u8) { return push_me(u8); }
+  xmsg& push(const std::u8string& u8) { return push_me(u8); }
+
+  xmsg& push(const char& as) {
+    if (!is_easy_transcoding(as)) {
+      return push_me(XMSGAS(std::string(1, as)));
+    }
+    return push_me((char8_t)as);
+  }
+  xmsg& push(const char* as) {
+    if (nullptr == as) return *this;
+    for (auto p = as; '\0' != *p; ++p) {
+      if (!is_easy_transcoding(*p)) {
+        return push_me(XMSGAS(as));
+      }
+    }
+    return push_me((const char8_t*)as);
+  }
+  xmsg& push(const std::string& as) {
+    for (const auto& c : as) {
+      if (!is_easy_transcoding(c)) {
+        return push_me(XMSGAS(as));
+      }
+    }
+    return push_me(*(const std::u8string*)&as);
+  }
+
+  xmsg& push(const wchar_t& ws) {
+    if (!is_easy_transcoding(ws)) {
+      return push_me(XMSGWS(std::wstring(1, ws)));
+    }
+    return push_me((char8_t)ws);
+  }
+  xmsg& push(const wchar_t* ws) {
+    if (nullptr == ws) return *this;
+    for (auto p = ws; L'\0' != *p; ++p) {
+      if (!is_easy_transcoding(*p)) {
+        return push_me(XMSGWS(ws));
+      }
+    }
+    std::u8string buf;
+    for (auto p = ws; L'\0' != *p; ++p) {
+      buf.push_back((char8_t)*p);
+    }
+    return push_me(buf);
+  }
+  xmsg& push(const std::wstring& ws) {
+    for (const auto& c : ws) {
+      if (!is_easy_transcoding(c)) {
+        return push_me(XMSGWS(ws));
+      }
+    }
+    std::u8string buf(ws.size(), (char8_t)u8'0');
+    for (size_t i = 0; i < ws.size(); ++i) {
+      buf[i] = (char8_t)ws[i];
+    }
+    return push_me(buf);
+  }
+
+ public:
+  /// 指定格式输出。UTF-8 ，格式化最高效。
   xmsg& prt(const char8_t* const fmt, ...) {
     if (nullptr == fmt) return *this;
     va_list ap;
@@ -87,12 +163,12 @@ class xmsg : public std::u8string {
     const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
     va_end(ap);
     if (0 >= need) return *this;
-    std::u8string buffer;
-    buffer.resize(need);
+    // 直接写进本对象缓冲，效率最高。
+    const auto now = size();
+    resize(now + need);
     va_start(ap, fmt);
-    std::vsnprintf((char*)buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
+    std::vsnprintf((char*)data() + now, need + 1, (const char*)fmt, ap);
     va_end(ap);
-    append(buffer);
     return *this;
   }
   /// 针对 UTF-8 对齐问题， %s 格式化建议使用 char* 。
@@ -103,12 +179,28 @@ class xmsg : public std::u8string {
     const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
     va_end(ap);
     if (0 >= need) return *this;
+    // 注意，因为需要编码转换，所以不能直接写进本对象缓冲。
     std::string buffer;
     buffer.resize(need);
     va_start(ap, fmt);
     std::vsnprintf(buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
     va_end(ap);
-    append(XMSGAS(buffer));
+    push(buffer);
+    return *this;
+  }
+  xmsg& prt(const wchar_t* const fmt, ...) {
+    if (nullptr == fmt) return *this;
+    va_list ap;
+    va_start(ap, fmt);
+    const auto need = std::vswprintf(nullptr, 0, fmt, ap);
+    va_end(ap);
+    if (0 >= need) return *this;
+    std::wstring buffer;
+    buffer.resize(need);
+    va_start(ap, fmt);
+    std::vswprintf(buffer.data(), buffer.size() + 1, fmt, ap);
+    va_end(ap);
+    push(buffer);
     return *this;
   }
   /// 输出 dec 值。
@@ -160,52 +252,25 @@ class xmsg : public std::u8string {
     return operator<<(v ? XMSGT("true") : XMSGT("false"));
   }
   /// 输出 ANSI 字符 转换。
-  xmsg& operator<<(const char& v) {
-    append(XMSGAS(std::string(1, v)));
-    return *this;
-  }
+  xmsg& operator<<(const char& v)           { return push(v); }
   /// 输出 ANSI 字符串 转换。
-  xmsg& operator<<(const char* const v) {
-    if (nullptr != v) append(XMSGAS(v));
-    return *this;
-  }
+  xmsg& operator<<(const char* const v)     { return push(v); }
   /// 输出 ASNI 字符串 转换。
-  xmsg& operator<<(const std::string& v) {
-    append(XMSGAS(v));
-    return *this;
-  }
+  xmsg& operator<<(const std::string& v)    { return push(v); }
   /// 输出 UNICCODE 字符 转换。
-  xmsg& operator<<(const wchar_t& v) {
-    append(XMSGWS(std::wstring(1, v)));
-    return *this;
-  }
+  xmsg& operator<<(const wchar_t& v)        { return push(v); }
   /// 输出 UNICCODE 字符串 转换。
-  xmsg& operator<<(const wchar_t* const v) {
-    if (nullptr != v) append(XMSGWS(v));
-    return *this;
-  }
+  xmsg& operator<<(const wchar_t* const v)  { return push(v); }
   /// 输出 UNICCODE 字符串 转换。
-  xmsg& operator<<(const std::wstring& v) {
-    append(XMSGWS(v));
-    return *this;
-  }
+  xmsg& operator<<(const std::wstring& v)   { return push(v); }
 #ifdef __cpp_char8_t
   /// 输出 UTF-8 字符 转换。
-  xmsg& operator<<(const char8_t& v) {
-    append(XMSGU8(std::u8string(1, v)));
-    return *this;
-  }
+  xmsg& operator<<(const char8_t& v)        { return push(v); }
 #endif
   /// 输出 UTF-8 字符串 转换。
-  xmsg& operator<<(const char8_t* v) {
-    if (nullptr != v) append(XMSGU8(v));
-    return *this;
-  }
+  xmsg& operator<<(const char8_t* v)        { return push(v); }
   /// 输出 UTF-8 字符串 转换。
-  xmsg& operator<<(const std::u8string& v) {
-    append(XMSGU8(v));
-    return *this;
-  }
+  xmsg& operator<<(const std::u8string& v)  { return push(v); }
   /// 输出 dec 浮点数。
   xmsg& operator<<(const float& v) {
     return prt(XMSGT("%f"), v);

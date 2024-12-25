@@ -293,6 +293,8 @@ template <class Allocator>
 class Opcodes : public std::vector<uint8_t, Allocator> {
  public:
   Opcodes() {};
+  Opcodes(const Opcodes&) = delete;
+  Opcodes& operator=(const Opcodes&) = delete;
  public:
   template <typename T, size_t size>
   Opcodes(T const (&data)[size]) {

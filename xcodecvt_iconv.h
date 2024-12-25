@@ -268,8 +268,7 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
   */
 inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr) {
   for (const auto& c : as) {
-    const uint8_t ch = (uint8_t)c;
-    if (!(isprint(ch) || isspace(ch))) return ws2u8(as2ws(as, lpread));
+    if (!is_easy_transcoding(c)) return ws2u8(as2ws(as, lpread));
   }
   // 纯英文字符，无需转换。
   size_t rd;
@@ -289,8 +288,7 @@ inline std::u8string as2u8(const std::string& as, size_t* const lpread = nullptr
 */
 inline std::string u82as(const std::u8string& u8, size_t* const lpread = nullptr) {
   for (const auto& c : u8) {
-    const uint8_t ch = (uint8_t)c;
-    if (!(isprint(ch) || isspace(ch))) return ws2as(u82ws(u8, lpread));
+    if (!is_easy_transcoding(c)) return ws2as(u82ws(u8, lpread));
   }
   // 纯英文字符，无需转换。
   size_t rd;

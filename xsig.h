@@ -163,7 +163,7 @@ class xsig {
     /// 尝试重新组织并输出特征串。
     xmsg sig() const {
       // 1 范围不输出。
-      if (*this == Range(1, 1)) return xmsg();
+      if (*this == Range(1, 1)) return {};
       if (*this == Range(0, 1)) return xmsg() << '?';
       if (*this == Range(0, MaxType)) return xmsg() << '*';
       if (*this == Range(1, MaxType)) return xmsg() << '+';
@@ -225,9 +225,7 @@ class xsig {
         返回空时，无需操作。
         返回非空时，当前结点应替换成新的返回结果。
       */
-      virtual std::shared_ptr<Base> optimize() {
-        return std::shared_ptr<Base>();
-      }
+      virtual std::shared_ptr<Base> optimize() { return {}; }
       /// 匹配重置。
       void reset_match() {
         match_count = Range::InitType;
@@ -306,7 +304,7 @@ class xsig {
      public:
       End() : Base(LT_End, {0, 0}) {};
       End(vbin&) : End() {};
-      virtual xmsg sig() const { return xmsg(); }
+      virtual xmsg sig() const { return {}; }
       virtual void bin(vbin&) const {}
       virtual bool test(const xblk&) const { return true; }
     };
@@ -319,13 +317,13 @@ class xsig {
 #ifdef xsig_need_debug
         return xmsg() << '.' << range.sig();
 #else
-        return xmsg();
+        return {};
 #endif
       }
       virtual void bin(vbin& bs) const { bs << range.Min << range.Max; }
       virtual std::shared_ptr<Base> optimize() {
-        if (!child) return std::shared_ptr<Base>();
-        if (child->type != LT_Dot) return std::shared_ptr<Base>();
+        if (!child) return {};
+        if (child->type != LT_Dot) return {};
 
         // 同是 . ，直接融合，无需构造新对象。
         range += child->range;
@@ -333,7 +331,7 @@ class xsig {
         child = child->child;
         child->parent = shared_from_this();
 
-        return std::shared_ptr<Base>();
+        return {};
       }
       virtual bool test(const xblk&) const { return true; }
     };
@@ -376,7 +374,7 @@ class xsig {
         ss << '>';
         return ss;
 #else
-        return xmsg();
+        return {};
 #endif
       }
       virtual void bin(vbin& bs) const {
@@ -458,13 +456,13 @@ class xsig {
 #ifdef xsig_need_debug
         return xmsg() << bin2hex(str, true);
 #else
-        return xmsg();
+        return {};
 #endif
       }
       virtual void bin(vbin& bs) const { bs << str.size() << str; }
       virtual std::shared_ptr<Base> optimize() {
-        if (!child) return std::shared_ptr<Base>();
-        if (child->type != LT_Hexs) return std::shared_ptr<Base>();
+        if (!child) return {};
+        if (child->type != LT_Hexs) return {};
 
         const auto& o = *(const Hexs*)child.get();
         str.append(o.str);
@@ -473,7 +471,7 @@ class xsig {
         child = child->child;
         child->parent = shared_from_this();
 
-        return std::shared_ptr<Base>();
+        return {};
       }
       virtual bool test(const xblk& blk) const {
         xsdbg << "    matching string : \r\n"
@@ -712,12 +710,12 @@ class xsig {
         }
       } catch (...) {
         xserr << *sig << " : " << v << " stoull error !";
-        return std::shared_ptr<Lexical::Sets>();
+        return {};
       }
     }
     if (0 != (bs.size() % 2)) {
       xserr << *sig << " : blks no pair !";
-      return std::shared_ptr<Lexical::Sets>();
+      return {};
     }
     return sets;
   }
@@ -990,9 +988,9 @@ class xsig {
     const std::string _pattern;
 
    private:
-    std::shared_ptr<intptr_t> _bad_char;
-    std::shared_ptr<intptr_t> _suffix;
-    std::shared_ptr<bool>     _prefix;
+    std::unique_ptr<intptr_t> _bad_char;
+    std::unique_ptr<intptr_t> _suffix;
+    std::unique_ptr<bool>     _prefix;
   };
 
  public:

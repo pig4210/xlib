@@ -77,10 +77,10 @@ SHOW_TEST_HEAD(showbin ws);
 #ifdef _WIN32
 const std::wstring ws0(L"1234567");
 const std::wstring ws1(L"拿转换测试");
-const std::string was = std::string((const char*)ws0.c_str(), ws0.size() * sizeof(wchar_t)) +
-  std::string("\xFF", 1) + std::string((const char*)ws1.c_str(), ws1.size() * sizeof(wchar_t)) +
+const std::string was = std::string((const char*)ws0.data(), ws0.size() * sizeof(wchar_t)) +
+  std::string("\xFF", 1) + std::string((const char*)ws1.data(), ws1.size() * sizeof(wchar_t)) +
   std::string("\0", 1);
-const std::wstring ws((const wchar_t*)was.c_str(), was.size() / sizeof(wchar_t));
+const std::wstring ws((const wchar_t*)was.data(), was.size() / sizeof(wchar_t));
 const auto lpws0 = xlib::bswap((size_t)ws.data());
 const auto lpws1 = xlib::bswap((size_t)ws.data() + 0x10);
 const auto wsshowbin =

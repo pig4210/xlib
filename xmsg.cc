@@ -2,6 +2,8 @@
 
 #include "xlib_test.h"
 
+#include "xhexbin.h"
+
 #define XMSGS(text) std::u8string((const char8_t*)u8 ## text)
 #define XMSGWS(v) xlib::ws2u8(v)
 
@@ -19,7 +21,11 @@ SHOW_TEST_HEAD(constructor u8);
 done = xlib::xmsg(XMSGS("AA转换测试BB")) == XMSGWS(L"AA转换测试BB");
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(prt);
+SHOW_TEST_HEAD(prt u8);
+done = xlib::xmsg().prt((const char8_t*)u8"%s", (const char8_t*)u8"AA转换测试BB") == XMSGWS(L"AA转换测试BB");
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(prt as);
 done = xlib::xmsg().prt("%s", "AA\xD7\xAA\xBB\xBB\xB2\xE2\xCA\xD4\x42\x42") == XMSGWS(L"AA转换测试BB");
 SHOW_TEST_RESULT;
 

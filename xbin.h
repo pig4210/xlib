@@ -169,7 +169,7 @@ class xbin : public std::basic_string<uint8_t> {
   */
   template <typename T>
   xbin& operator<<(const std::basic_string<T>& s) {
-    append((xbin::const_pointer)s.c_str(), s.size() * sizeof(T));
+    append((xbin::const_pointer)s.data(), s.size() * sizeof(T));
     return *this;
   }
   /**
@@ -230,7 +230,7 @@ class xbin : public std::basic_string<uint8_t> {
   */
   template <typename T>
   xbin& operator>>(T* str) {
-    const T* lpstr = (const T*)c_str();
+    const T* lpstr = (const T*)data();
 
     size_t strlen = 0;
     while (lpstr[strlen]) ++strlen;
@@ -279,7 +279,7 @@ class xbin : public std::basic_string<uint8_t> {
       return *this;
     }
 
-    bin.assign(c_str(), nlen);
+    bin.assign((xbin::const_pointer)data(), nlen);
     erase(0, nlen);
 
     return *this;
@@ -293,7 +293,7 @@ class xbin : public std::basic_string<uint8_t> {
   */
   template <typename T>
   xbin& operator>>(std::basic_string<T>& s) {
-    s.assign((const T*)c_str(), size() / sizeof(T));
+    s.assign((const T*)data(), size() / sizeof(T));
     clear();
     return *this;
   }
@@ -314,7 +314,7 @@ class xbin : public std::basic_string<uint8_t> {
         throw std::runtime_error("xbin >> T& not enough data");
       }
 #endif
-      memcpy(&argvs, c_str(), sizeof(T));
+      memcpy(&argvs, data(), sizeof(T));
       erase(0, sizeof(T));
       argvs = bigendian ? bswap(argvs) : argvs;
     } else {

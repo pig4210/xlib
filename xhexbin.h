@@ -88,13 +88,13 @@ struct HEX_VALUE_STRUCT {
 inline std::string bin2hex(const void* const  bin,
                            const size_t       size,
                            const bool         isup = false) {
-  std::string hex;
+  std::string hex(size * 2, '\0');
   auto s = (const BIN_VALUE_STRUCT*)bin;
-  const auto e = (const BIN_VALUE_STRUCT*)((size_t)bin + size);
+  const auto e = s + size;
   const auto fmt = isup ? "0123456789ABCDEF" : "0123456789abcdef";
-  for (; s < e; ++s) {
-    hex.push_back(fmt[s->high]);
-    hex.push_back(fmt[s->low]);
+  for (auto p = hex.data(); s < e; ++s) {
+    *p = fmt[s->high]; ++p;
+    *p = fmt[s->low];  ++p;
   }
   return hex;
 }
@@ -337,8 +337,7 @@ std::basic_string<T> escape(const T* const str, const size_t size) {
       case 'r':  ret.push_back('\r'); break;
       case 't':  ret.push_back('\t'); break;
       case 'v':  ret.push_back('\v'); break;
-      case '0':      case '1':      case '2':      case '3':
-      case '4':      case '5':      case '6':      case '7': {
+      case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
         uint32_t tmpC = 0;
         for (auto i = 0; i < 3; ++i) {
           if ((s >= e) || (*s < '0') || (*s > '7')) break;
@@ -504,26 +503,26 @@ xmsg showbin(
   };
 
   // 使 UNICODE 字符输出可视化，返回 true 表示接受字符，否则不接受，一律输出 '.' 。
-  auto check_unicode_visualization = [](const wchar_t wc) {
+  auto check_unicode_visualization = [](const wchar_t wc) -> std::wstring {
     // 控制字符一律输出 '.' 。
     if (wc < L' ' || (wc >= 0x7F && wc <= 0xA0)) {
       return std::wstring(1, L'.');
     }
 
-    const auto ch(std::wstring(1, wc));
+    const std::wstring ch(1, wc);
     if (wc == L'?') return ch;
 
     // 尝试转换 可视化。
     size_t read;
     if constexpr (LocaleCheck()) {
       const auto s = ws2as(ch, &read);
-      if (s.empty()) return std::wstring();
-      if (1 == s.size() && '?' == *s.begin()) return std::wstring();
+      if (s.empty()) return {};
+      if (1 == s.size() && '?' == *s.begin()) return {};
       return ch;
     } else {
       const auto s = ws2u8(ch, &read);
-      if (s.empty()) return std::wstring();
-      if (1 == s.size() && '?' == (char)(*s.begin())) return std::wstring();
+      if (s.empty()) return {};
+      if (1 == s.size() && '?' == (char)(*s.begin())) return {};
       return ch;
     }
   };
@@ -537,24 +536,24 @@ xmsg showbin(
   fixfunc fix_unicode = [](const void* const  data,
                            size_t&            used,
                            const size_t       size,
-                           checkfunc          check) {
+                           checkfunc          check) -> xmsg {
     // 无法进行向后匹配完整字符。
     if ((used + sizeof(wchar_t)) > size) {
-      return xmsg();
+      return {};
     }
 
     const auto ws = check(*(wchar_t*)((const uint8_t*)data + used));
 
-    if (ws.empty()) return xmsg();
+    if (ws.empty()) return {};
 
     used += sizeof(wchar_t);
-    return xmsg(ws);
+    return ws;
   };
 
   fixfunc fix_ansi = [](const void* const  data,
                         size_t&            used,
                         const size_t       size,
-                        checkfunc          check) {
+                        checkfunc          check) -> xmsg {
     for (size_t i = 1; i <= 2; ++i) {
       // 无法进行向后匹配完整字符。
       if (used + i > size) break;
@@ -567,15 +566,15 @@ xmsg showbin(
       // 可视化失败，返回。
       if (s.empty()) break;
       used += i;
-      return xmsg(s);
+      return s;
     }
-    return xmsg();
+    return {};
   };
 
   auto fix_utf8 = [](const void* const  data,
                      size_t&            used,
                      const size_t       size,
-                     checkfunc          check) {
+                     checkfunc          check) -> xmsg {
     for (size_t i = 1; i <= 6; ++i) {
       // 无法进行向后匹配完整字符。
       if (used + i > size) break;
@@ -587,9 +586,9 @@ xmsg showbin(
       // 可视化失败，返回。
       if (s.empty()) break;
       used += i;
-      return xmsg(s);
+      return s;
     }
-    return xmsg();
+    return {};
   };
 
   fixfunc fix = (SBC_UNICODE == code) ? fix_unicode : ((SBC_UTF8 == code) ? fix_utf8 : fix_ansi);

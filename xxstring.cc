@@ -29,7 +29,7 @@ done = xlib::xxstring(xlib::xmsg() << u8buf) == xlib::xxstring(u8buf);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xmsg <<);
-done = xlib::xmsg() << xlib::xxstring(u8buf) == u8buf;
+done = (xlib::xmsg() << xlib::xxstring(u8buf)) == u8buf;
 SHOW_TEST_RESULT;
 
 xlib::xxstring x(asbuf);

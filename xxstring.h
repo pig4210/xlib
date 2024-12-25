@@ -81,13 +81,14 @@ class xxstring : public std::u8string {
   xxstring& operator=(const xlib::xmsg& s) { return operator=(s); }
   xxstring(xlib::xmsg&& s): std::u8string(std::move(s)) {}
   xxstring& operator=(xlib::xmsg&& s) { return operator=(std::move(s)); }
+
+ public:
+  // 扩展支持 xmsg 输出。好像不需要。
+  //friend xmsg& operator<<(xmsg& msg, const xxstring& s) {
+  //  return msg << std::u8string(s);
+  //}
 };
 
 }  // namespace xlib
 
-/// 扩展支持 xmsg 。
-inline xlib::xmsg& operator<<(xlib::xmsg& msg, const xlib::xxstring& s) {
-  return msg << std::u8string(s);
-}
-
-#endif  // _XLIB_XRAND_H_
+#endif  // _XLIB_XXSTRING_H_

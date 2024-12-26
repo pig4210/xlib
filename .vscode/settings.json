@@ -78,7 +78,8 @@
         "stop_token": "cpp",
         "thread": "cpp",
         "any": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "codecvt": "cpp"
     },
     "C_Cpp.default.compilerPath": "cl.exe"
 }

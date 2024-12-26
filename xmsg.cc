@@ -123,7 +123,7 @@ SHOW_TEST_HEAD(xmsg);
 done = (xlib::xmsg() << xlib::xmsg("123")) == XMSGS("123");
 SHOW_TEST_RESULT;
 
-std::u8string u8move(u8"123");
+std::u8string u8move((const char8_t*)u8"123");
 xlib::xmsg msgmove(std::move(u8move));
 SHOW_TEST_HEAD(u8&&);
 done = msgmove == XMSGS("123") && u8move.empty();

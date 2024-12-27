@@ -65,6 +65,7 @@ class xxstring : public std::u8string {
   // 返回引用，强转，而不进行编码转换。
   operator const std::string&() const { return *(const std::string*)this; }
   operator std::string&() { return *(std::string*)this; }
+  std::string to_string() const { return std::string(*this); }
   /*
     下面的一些转换已经尝试过，但都存在一些冲突。
     其中， 不能与上面共存，编译无冲突，但使用有冲突。

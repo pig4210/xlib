@@ -68,11 +68,12 @@ class xxstring : public std::u8string {
   std::string toas() const { return *(const std::string*)this; }
   operator const std::string&() const { return *(const std::string*)this; }
   operator std::string&() { return *(std::string*)this; }
+  std::string&& move_as() { return std::move(*(std::string*)this); }
   /*
     下面的一些转换已经尝试过，但都存在一些冲突。
     其中， 不能与上面共存，编译无冲突，但使用有冲突。
     explicit std::string&&() 不冲突了，但 move 无效。
-    实在需要 move 时，使用 move_me() 。
+    实在需要 move 时，使用 move_as() 。
     注：std::move<std::string> 与 std::move<std::string&&> 都不行。
   */
   //operator std::string() const & { return *(const std::string*)this; }
@@ -81,9 +82,6 @@ class xxstring : public std::u8string {
   // 转换成 std::wstring ，有编码转换。
   std::wstring tows() const { return xlib::u82ws(*this); }
   operator std::wstring() const { return xlib::u82ws(*this); }
-
- public:
-  std::string&& move_as() { return std::move(*(std::string*)this); }
 
  public:
   bool operator==(const xxstring& v) {
@@ -97,6 +95,13 @@ class xxstring : public std::u8string {
   xxstring& operator=(const xlib::xmsg& s) { return operator=(s); }
   xxstring(xlib::xmsg&& s): std::u8string(std::move(s)) {}
   xxstring& operator=(xlib::xmsg&& s) { return operator=(std::move(s)); }
+
+  const xlib::xmsg& bexmsg() const { return *(const xlib::xmsg*)this; }
+  xlib::xmsg& bexmsg() { return *(xlib::xmsg*)this; }
+  xlib::xmsg tomsg() const { return *(const xlib::xmsg*)this; }
+  operator const xlib::xmsg&() const { return *(const xlib::xmsg*)this; }
+  operator xlib::xmsg&() { return *(xlib::xmsg*)this; }
+  xlib::xmsg&& move_xmsg() { return std::move(*(xlib::xmsg*)this); }
 
  public:
   // 扩展支持 xmsg 输出。好像不需要。因为基类是 std::u8string 。

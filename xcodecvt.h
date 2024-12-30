@@ -59,7 +59,7 @@ constexpr bool inline is_easy_transcoding(const wchar_t& c) {
 }
 }  // namespace xlib
 
-// 如果有 iconv.h ，则使用 iconv 。
+// c++20 中，codecvt 被弃用。如果有 iconv.h ，则使用 iconv 。
 #if __has_include(<iconv.h>)
 #include "xcodecvt_iconv.h"
 #else

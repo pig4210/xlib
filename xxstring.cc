@@ -65,5 +65,4 @@ SHOW_TEST_HEAD(xmsg <<);
 done = (xlib::xmsg() << xlib::xxstring(u8buf)) == u8buf;
 SHOW_TEST_RESULT;
 
-
 SHOW_TEST_DONE;

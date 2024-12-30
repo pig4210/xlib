@@ -24,6 +24,10 @@ SHOW_TEST_INIT(xlog)
 
 xxlog() << (const char8_t*)u8"xlog msg";
 
+xxlog log;
+log << "xlog msg 200";
+log.do_out(200);
+
 SHOW_TEST_HEAD(xlog);
 done = true;
 SHOW_TEST_RESULT;

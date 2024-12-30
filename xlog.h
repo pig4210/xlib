@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.4.0.230224
+  \version    2.4.0.241230
 
   \author     triones
   \date       2011-07-22
@@ -100,7 +100,10 @@ class xlog : public xmsg {
     size_t ll = 0;
     for (size_t i = ss; i < size();) {
       if (ll >= line_max) {
-        raw_out(std::u8string(begin() + ss, begin() + i));
+        // raw_out(std::u8string(begin() + ss, begin() + i));
+        // raw_out(substr(begin() + ss, begin() + i));
+        // 以上两种写法，都会因为 std::u8string 转换 xmsg，多一层移动构造与一层析构。
+        raw_out(xmsg(begin() + ss, begin() + i));
         ss = i;
         ll = 0;
       }
@@ -118,7 +121,7 @@ class xlog : public xmsg {
       ++i;     ++ll;
     }
     if (ss < size()) {
-      raw_out(std::u8string(begin() + ss, end()));
+      raw_out(xmsg(begin() + ss, end()));
     }
     clear();
     return *this;

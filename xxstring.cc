@@ -54,7 +54,7 @@ SHOW_TEST_RESULT;
 
 xlib::xxstring x(asbuf);
 SHOW_TEST_HEAD(string&&);
-done = (std::string(x.move_me()) == asbuf) && x.empty();
+done = (std::string(x.move_as()) == asbuf) && x.empty();
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(xmsg);

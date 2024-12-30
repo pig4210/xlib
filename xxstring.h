@@ -2,7 +2,7 @@
   \file  xxstring.h
   \brief 对于 存放 UTF-8 编码的 std::string ，用 xxstring 替换会方便一些。
 
-  \version    0.0.1.230317
+  \version    0.0.2.241230
 
   \author     triones
   \date       2023-03-17
@@ -63,9 +63,11 @@ class xxstring : public std::u8string {
 
  public:
   // 返回引用，强转，而不进行编码转换。
+  const std::string& beas() const { return *(const std::string*)this; }
+  std::string& beas() { return *(std::string*)this; }
+  std::string toas() const { return *(const std::string*)this; }
   operator const std::string&() const { return *(const std::string*)this; }
   operator std::string&() { return *(std::string*)this; }
-  std::string to_string() const { return std::string(*this); }
   /*
     下面的一些转换已经尝试过，但都存在一些冲突。
     其中， 不能与上面共存，编译无冲突，但使用有冲突。
@@ -77,10 +79,11 @@ class xxstring : public std::u8string {
   //operator const std::string() & { return *(const std::string*)this; }
   //operator std::string&&() { return std::move(*(std::string*)this); }
   // 转换成 std::wstring ，有编码转换。
+  std::wstring tows() const { return xlib::u82ws(*this); }
   operator std::wstring() const { return xlib::u82ws(*this); }
 
  public:
-  std::string&& move_me() { return std::move(*(std::string*)this); }
+  std::string&& move_as() { return std::move(*(std::string*)this); }
 
  public:
   bool operator==(const xxstring& v) {
@@ -96,7 +99,7 @@ class xxstring : public std::u8string {
   xxstring& operator=(xlib::xmsg&& s) { return operator=(std::move(s)); }
 
  public:
-  // 扩展支持 xmsg 输出。好像不需要。
+  // 扩展支持 xmsg 输出。好像不需要。因为基类是 std::u8string 。
   //friend xmsg& operator<<(xmsg& msg, const xxstring& s) {
   //  return msg << std::u8string(s);
   //}

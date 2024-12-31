@@ -33,6 +33,7 @@
 #define _XLIB_XMSG_H_
 
 #include <climits>
+#include <cstdint>
 #include <cstdarg>
 #include <cstdio>
 #include <string>
@@ -48,7 +49,6 @@ namespace xlib {
 #endif
 #define XMSGAS(__v) xlib::as2u8(__v)
 #define XMSGWS(__v) xlib::ws2u8(__v)
-#define XMSGU8(__v) __v
 
 class xmsg : public std::u8string {
  public:
@@ -58,7 +58,7 @@ class xmsg : public std::u8string {
   xmsg() {}
   xmsg(const std::string& as)   : std::u8string(XMSGAS(as)) {}
   xmsg(const std::wstring& ws)  : std::u8string(XMSGWS(ws)) {}
-  xmsg(const std::u8string& u8) : std::u8string(XMSGU8(u8)) {}
+  xmsg(const std::u8string& u8) : std::u8string(u8) {}
   xmsg& operator=(const std::u8string& u8) {
     std::u8string::operator=(u8);
     return *this;
@@ -283,7 +283,6 @@ class xmsg : public std::u8string {
 #undef XMSGT
 #undef XMSGAS
 #undef XMSGWS
-#undef XMSGU8
 
 }  // namespace xlib
 

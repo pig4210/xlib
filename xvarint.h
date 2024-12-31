@@ -19,8 +19,9 @@
 #ifndef _XLIB_XVARINT_H_
 #define _XLIB_XVARINT_H_
 
-#include <array>
 #include <climits>
+#include <cstdint>
+#include <array>
 #include <string>
 
 namespace xlib {

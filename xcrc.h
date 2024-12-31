@@ -23,8 +23,9 @@
 #ifndef _XLIB_XCRC_H_
 #define _XLIB_XCRC_H_
 
-#include <array>
 #include <climits>
+#include <cstdint>
+#include <array>
 #include <string>
 
 namespace xlib {
@@ -97,6 +98,7 @@ T XCRC(TC const(&data)[size]) {
     auto x = crc(L"12");
   \endcode
 */
+
 #define CRCX(FUNC, TT, NN, VV, RR)                                    \
   inline auto FUNC(const void* const data, const size_t size) {       \
     return XCRC<TT, NN, VV, RR>(data, size);                          \

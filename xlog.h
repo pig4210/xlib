@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.4.1.250115
+  \version    2.4.0.241230
 
   \author     triones
   \date       2011-07-22
@@ -60,6 +60,9 @@ namespace xlib {
   - 一般不直接使用，而是通过宏定义间接使用。\n
   - **注意** 类本身没有输出控制（节省资源，加快运行），需要通过宏完成。（宏的具体操作参见之后说明）
   - 如果需要扩展功能，如输出到文件等，可选择继承之，或仿造实现之。
+
+  - 全部不使用虚函数，无法复用 do_out(#) 。
+  - do_out 没必要做成虚函数。
 */
 class xlog : public xmsg {
  public:
@@ -82,14 +85,14 @@ class xlog : public xmsg {
     std::wcout << msg.tows() << std::endl;
 #endif
   }
-  virtual xlog& do_out() {
+  xlog& do_out() {
     if (empty()) return *this;
     raw_out(*this);
     clear();
     return *this;
   }
   // 分行输出请重载 xlog 后调用此函数用于输出。
-  virtual xlog& do_out(const size_t line_max) {
+  xlog& do_out(const size_t line_max) {
     if (empty()) return *this;
     if (line_max >= size()) {
       raw_out(*this);

@@ -14,6 +14,11 @@
       - 安装 UTF8 中文： `sudo apt-get install language-pack-zh-hans` 。
   - g++ 默认编码为 UTF8 ，如需以 ANSI 编译，需加入编译参数如： `-fexec-charset=GB2312` 。
   - 需要 gcc-9.2.0 及以上支持。
+  - 当 iconv.h 存在时，优先使用 iconv 。
+  - Windows 默认使用 Windows API 进行编码转换。
+    - VS2017 对 codecvt 有各种局限 。
+    - 在实际应用中发现，windows 下，codecvt 转换修改 crt 的 locale 环境，虽然多线程安全，但并非并发。
+    - NT HOOK 回调中涉及 locale 时，目前发现在 Windows Defender 介入时，会因 locale 导致死锁。
 
   \section history 版本记录
 
@@ -63,8 +68,7 @@ constexpr bool inline is_easy_transcoding(const wchar_t& c) {
 #if __has_include(<iconv.h>)
 #include "xcodecvt_iconv.h"
 #else
-// VS2017 对 codecvt 有各种局限，为了方便，干脆限制之，而使用 xcodecvt_win.h 。
-#if defined(_WIN32) && (_MSVC_LANG <= 202002L)
+#if defined(_WIN32)
 #include "xcodecvt_win.h"
 #else
 #include "xcodecvt_std.h"

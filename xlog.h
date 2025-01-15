@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.4.0.241230
+  \version    2.4.1.250115
 
   \author     triones
   \date       2011-07-22
@@ -82,14 +82,14 @@ class xlog : public xmsg {
     std::wcout << msg.tows() << std::endl;
 #endif
   }
-  xlog& do_out() {
+  virtual xlog& do_out() {
     if (empty()) return *this;
     raw_out(*this);
     clear();
     return *this;
   }
   // 分行输出请重载 xlog 后调用此函数用于输出。
-  xlog& do_out(const size_t line_max) {
+  virtual xlog& do_out(const size_t line_max) {
     if (empty()) return *this;
     if (line_max >= size()) {
       raw_out(*this);

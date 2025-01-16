@@ -1,11 +1,9 @@
 ﻿#include "xlib_test.h"
 #include "xlog.h"
 
-class xxlog : public xlib::xlog {
+class xxlog : public xlib::xmsg, public xlib::xlog_out {
  public:
-  virtual ~xxlog() {
-    do_out();
-  }
+  ~xxlog() { do_out(*this); }
   virtual void raw_out(const xlib::xmsg& msg) {
     std::cout << msg.toas() << std::endl;
   }

@@ -2,7 +2,7 @@
   \file  xvarint.h
   \brief 定义了 zig 、 zag 、 varint 相关操作。
 
-  \version    2.0.0.230227
+  \version    2.0.1.250116
   \note       For All
 
   \author     triones
@@ -62,8 +62,7 @@ class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
 
  public:
   constexpr xvarint(const T& value)
-      : std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>(),
-        _value(value) {
+      : base(), _value(value) {
     // g++ 这里有 will be initialized after 警告，可忽略。
     using U = typename std::make_unsigned_t<T>;
     auto v = (U)xzig(value);
@@ -84,7 +83,6 @@ class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
     size_t n = 0;
     for (const auto& v : *this) {
       ++n;
-      // g++ 这里有 may be used uninitialized in this function 警告，可忽略。
       if (0 == (v & 0x80)) break;
     }
     return n;
@@ -95,7 +93,7 @@ class xvarint : public std::array<uint8_t, sizeof(T) / CHAR_BIT + 1 + sizeof(T)>
   constexpr T operator()() const noexcept {
     return _value;
   }
-  constexpr xvarint(const char* p) : _value(T()) {
+  constexpr xvarint(const char* p) : base(), _value(T()) {
     using U = typename std::make_unsigned_t<T>;
     U v = 0;
     size_t count = 0;

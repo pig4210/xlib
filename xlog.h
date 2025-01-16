@@ -2,7 +2,7 @@
   \file  xlog.h
   \brief 定义了日志组织与输出相关的类。
 
-  \version    2.4.0.241230
+  \version    2.5.0.250116
 
   \author     triones
   \date       2011-07-22
@@ -30,18 +30,11 @@
   - 2020-11-12 适配 xmsg 升级。 2.2 。
   - 2021-08-05 分段输出改进。 2.3 。
   - 2023-02-08 改进输出，使重载后的输出更加灵活。 2.4 。
+  - 2025-01-16 从 xlog 分离出 xlog_out ，以便重载输出。 2.5 。
 */
 #ifndef _XLIB_XLOG_H_
 #define _XLIB_XLOG_H_
 
-#include "xmsg.h"
-
-/*
-  放弃 XLOGOUT 外部预定义 void XLogout(const xmsg& msg) 行为，
-  因可能多处包含 xlog.h ，但 XLOGOUT 可能不全局，将导致多为 .o 文件默认定义。
-  也可能导致不同 .o 的 xlog 行为不一致。
-  所以改变 xlog 行为建议重载 xlog 实现。
-*/
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
   #define NOMINMAX
@@ -52,65 +45,55 @@
   #include <iostream>
 #endif
 
+#include "xmsg.h"
+
+/*
+  放弃 XLOGOUT 外部预定义 void XLogout(const xmsg& msg) 行为，
+  因可能多处包含 xlog.h ，但 XLOGOUT 可能不全局，将导致多处 .o 文件默认定义。
+  也可能导致不同 .o 的 xlog 行为不一致。
+  所以改变 xlog 行为建议重载 xlog 实现。
+*/
 namespace xlib {
 
 /**
-  xlog 用于基本的调试信息输出。
+  xlog_out 用于 输出控制。
   
-  - 一般不直接使用，而是通过宏定义间接使用。\n
-  - **注意** 类本身没有输出控制（节省资源，加快运行），需要通过宏完成。（宏的具体操作参见之后说明）
-  - 如果需要扩展功能，如输出到文件等，可选择继承之，或仿造实现之。
-
-  - 全部不使用虚函数，无法复用 do_out(#) 。
-  - do_out 没必要做成虚函数。
+  - 重载 raw_out 以实现输出重定向。
+  - 重载 do_out  以实现输出行为控制。
+  - do_out 不采用虚函数形式。节省虚表。
+  - do_out 不分离 line_max 未设置的情况，实际编译后的代码没有更优，反而额外重写 vft ，额外有判断分支。
 */
-class xlog : public xmsg {
+class xlog_out {
  public:
-  enum xlog_level {
-    off,    ///< 屏蔽输出。
-    fatal,  ///< 致命错误，程序无法继续执行。
-    error,  ///< 反映错误，例如一些 API 的调用失败。
-    warn,   ///< 反映某些需要注意的可能有潜在危险的情况，可能会造成崩溃或逻辑错误之类。
-    info,   ///< 表示程序进程的信息。
-    debug,  ///< 普通的调试信息，这类信息发布时一般不输出。
-    trace,  ///< 最精细的调试信息，多用于定位错误，查看某些变量的值。
-    on,     ///< 全输出。
-  };
- public:
-  virtual ~xlog() { do_out(); }
   virtual void raw_out(const xmsg& msg) {
 #ifdef _WIN32
     OutputDebugStringA(msg.toas().data());
 #else
     std::wcout << msg.tows() << std::endl;
 #endif
-  }
-  xlog& do_out() {
-    if (empty()) return *this;
-    raw_out(*this);
-    clear();
-    return *this;
-  }
-  // 分行输出请重载 xlog 后调用此函数用于输出。
-  xlog& do_out(const size_t line_max) {
-    if (empty()) return *this;
-    if (line_max >= size()) {
-      raw_out(*this);
-      clear();
-      return *this;
+  };
+  void do_out(xmsg& msg, const size_t line_max = 0) {
+    const auto size = msg.size();
+    if (0 == size) return;
+    if (0 == line_max || size <= line_max) {
+      raw_out(msg);
+      msg.clear();
+      return;
     }
+    const auto begin = msg.begin();
+    const auto end   = msg.end();
     size_t ss = 0;
     size_t ll = 0;
-    for (size_t i = ss; i < size();) {
+    for (size_t i = ss; i < size;) {
       if (ll >= line_max) {
         // raw_out(std::u8string(begin() + ss, begin() + i));
         // raw_out(substr(begin() + ss, begin() + i));
         // 以上两种写法，都会因为 std::u8string 转换 xmsg，多一层移动构造与一层析构。
-        raw_out(xmsg(begin() + ss, begin() + i));
+        raw_out(xmsg(begin + ss, begin + i));
         ss = i;
         ll = 0;
       }
-      const uint8_t ch = *(begin() + i);
+      const uint8_t ch = *(begin + i);
       // 如果内部自带换行，则避免过多切分。
       if(ch == '\n') { ++i;     ll = 0;   continue; }
       if(ch <= 0x7F) { ++i;     ++ll;     continue; }
@@ -123,12 +106,34 @@ class xlog : public xmsg {
       if(ch < 0xFE)  { i += 6;  ll += 6;  continue; }
       ++i;     ++ll;
     }
-    if (ss < size()) {
-      raw_out(xmsg(begin() + ss, end()));
+    if (ss < size) {
+      raw_out(xmsg(begin + ss, end));
     }
-    clear();
-    return *this;
+    msg.clear();
   }
+};
+
+/**
+  xlog 用于基本的调试信息输出。
+  
+  - 一般不直接使用，而是通过宏定义间接使用。\n
+  - **注意** 类本身没有输出控制（节省资源，加快运行），需要通过宏完成。（宏的具体操作参见之后说明）
+  - 如果需要扩展功能，如输出到文件等，可选择继承之。建议仿造实现之。
+*/
+class xlog : public xmsg, public xlog_out {
+ public:
+  enum level {
+    off,    ///< 屏蔽输出。
+    fatal,  ///< 致命错误，程序无法继续执行。
+    error,  ///< 反映错误，例如一些 API 的调用失败。
+    warn,   ///< 反映某些需要注意的可能有潜在危险的情况，可能会造成崩溃或逻辑错误之类。
+    info,   ///< 表示程序进程的信息。
+    debug,  ///< 普通的调试信息，这类信息发布时一般不输出。
+    trace,  ///< 最精细的调试信息，多用于定位错误，查看某些变量的值。
+    on,     ///< 全输出。
+  };
+ public:
+  ~xlog() { do_out(*this); }
 };
 
 /**

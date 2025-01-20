@@ -63,6 +63,7 @@ class xxstring : public std::u8string {
 
  public:
   // 返回引用，强转，而不进行编码转换。
+  // 因为 xxstring 的初衷就是灵活在 std::string 与 std::u8string 之间转换。所以隐式转换是必要的。
   const std::string& beas() const { return *(const std::string*)this; }
   std::string& beas() { return *(std::string*)this; }
   std::string toas() const { return *(const std::string*)this; }
@@ -80,6 +81,7 @@ class xxstring : public std::u8string {
   //operator const std::string() & { return *(const std::string*)this; }
   //operator std::string&&() { return std::move(*(std::string*)this); }
   // 转换成 std::wstring ，有编码转换。
+  // 因为转 std::wstring 不可避免地会有编码转换，所以隐式转换无谓临时对象。
   std::wstring tows() const { return xlib::u82ws(*this); }
   operator std::wstring() const { return xlib::u82ws(*this); }
 
@@ -98,7 +100,7 @@ class xxstring : public std::u8string {
 
   const xlib::xmsg& bexmsg() const { return *(const xlib::xmsg*)this; }
   xlib::xmsg& bexmsg() { return *(xlib::xmsg*)this; }
-  xlib::xmsg tomsg() const { return *(const xlib::xmsg*)this; }
+  xlib::xmsg toxmsg() const { return *(const xlib::xmsg*)this; }
   operator const xlib::xmsg&() const { return *(const xlib::xmsg*)this; }
   operator xlib::xmsg&() { return *(xlib::xmsg*)this; }
   xlib::xmsg&& move_xmsg() { return std::move(*(xlib::xmsg*)this); }

@@ -1,4 +1,10 @@
 {
+    "files.exclude": {
+        "**/.git": true,
+        "**/x64": true,
+        "**/x86": true,
+        "**/gcc": true,
+    },
     "files.associations": {
         "*.luax": "lua",
         "*.rc": "cpp",

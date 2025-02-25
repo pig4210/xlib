@@ -4,7 +4,7 @@
 #CFLAGS += /I"$(SRCPATH)/../work/gnu/iconv/include"
 #LDFLAGS += /LIBPATH:"$(SRCPATH)/../work/gnu/iconv/$(ARCH)" iconv.lib
 
-all : test.exe
+all_make : test.exe
 	@echo make done.
 
 test.exe : $(OBJS)| $(DSTPATH)

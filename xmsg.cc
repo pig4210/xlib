@@ -134,6 +134,13 @@ std::u8string u8move2 = std::move(msgmove);
 done = u8move2 == XMSGS("123") && msgmove.empty();
 SHOW_TEST_RESULT;
 
+SHOW_TEST_HEAD(prt check);
+xlib::xmsg prtchk;
+prtchk.prt("123456781234567");
+prtchk.prt("123456781234567");
+done = prtchk == XMSGS("123456781234567123456781234567");
+SHOW_TEST_RESULT;
+
 SHOW_TEST_DONE;
 
 #undef XMSGS

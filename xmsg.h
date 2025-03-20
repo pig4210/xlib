@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.2.0.241225
+  \version    5.3.0.250320
   \note       For All
 
   \author     triones
@@ -28,6 +28,7 @@
   - 2021-06-20 基类固定为 u8string 。 5.0 。
   - 2022-01-05 向下兼容 c++17 。
   - 2024-12-25 增加移动语义支持，优化特定情况下高效转换。 5.2 。
+  - 2025-03-25 优化格式化输出。 5.3 。
 */
 #ifndef _XLIB_XMSG_H_
 #define _XLIB_XMSG_H_
@@ -55,9 +56,17 @@ class xmsg : public std::u8string {
   using std::u8string::u8string;
 
  public:
-  xmsg() {}
-  xmsg(const std::string& as)   : std::u8string(XMSGAS(as)) {}
-  xmsg(const std::wstring& ws)  : std::u8string(XMSGWS(ws)) {}
+  xmsg() = default;
+  xmsg(const xmsg&) = default;
+  xmsg& operator=(const xmsg&) = default;
+  xmsg(xmsg&&) = default;
+  xmsg& operator=(xmsg&&) = default;
+
+  // 注意：u8 = std::move(xmsg); / std::u8string(std::move(xmsg)); 移动语义都不成立。
+  // std::u8string u8 = std::move(xmsg); 定义时，移动语义成立。
+  // return std::move(xmsg); 返回时，移动语义成立。
+  // 注意：转换基类无需额外定义 operator std::u8string() 。
+ public:
   xmsg(const std::u8string& u8) : std::u8string(u8) {}
   xmsg& operator=(const std::u8string& u8) {
     std::u8string::operator=(u8);
@@ -69,15 +78,9 @@ class xmsg : public std::u8string {
     return *this;
   }
 
-  // 注意：u8 = std::move(xmsg); / std::u8string(std::move(xmsg)); 移动语义都不成立。
-  // std::u8string u8 = std::move(xmsg); 定义时，移动语义成立。
-  // return std::move(xmsg); 返回时，移动语义成立。
-  // 注意：转换基类无需额外定义 operator std::u8string() 。
  public:
-  xmsg(const xmsg&) = default;
-  xmsg& operator=(const xmsg&) = default;
-  xmsg(xmsg&&) = default;
-  xmsg& operator=(xmsg&&) = default;
+  xmsg(const std::string& as)   : std::u8string(XMSGAS(as)) {}
+  xmsg(const std::wstring& ws)  : std::u8string(XMSGWS(ws)) {}
 
  public:
    xmsg& push_me(const char8_t& v) {
@@ -135,9 +138,9 @@ class xmsg : public std::u8string {
         return push_me(XMSGWS(ws));
       }
     }
-    std::u8string buf;
-    for (auto p = ws; L'\0' != *p; ++p) {
-      buf.push_back((char8_t)*p);
+    std::u8string buf(wcslen(ws), (char8_t)u8'0');
+    for (size_t i = 0; i < buf.size(); ++i) {
+      buf[i] = (char8_t)ws[i];
     }
     return push_me(buf);
   }
@@ -148,24 +151,41 @@ class xmsg : public std::u8string {
       }
     }
     std::u8string buf(ws.size(), (char8_t)u8'0');
-    for (size_t i = 0; i < ws.size(); ++i) {
+    for (size_t i = 0; i < buf.size(); ++i) {
       buf[i] = (char8_t)ws[i];
     }
     return push_me(buf);
   }
 
  public:
-  /// 指定格式输出。UTF-8 ，格式化最高效。
+  /// 
+  /** 指定格式输出。UTF-8 ，格式化最高效。
+    \details 设计思路：
+    - 直接写进本对象缓冲，效率最高。
+    - 如果缓冲区未满，则用缓冲区剩余空间尝试。争取一次完成格式化。
+    - 因 capacity() 不包含结尾 0 ， vsnprintf 返回值 不包含结尾 0 ，但 参数 count 需要包含结尾 0 ，所以 remain + 1 ，没有溢出风险。
+        - 比如 vsnprintf(p, 2, "AA"); 返回 2 ，但实际写入 1 个字符，所以需要 + 1 。vsnprintf(p, 3, "AA"); 才能正确写入 2 个字符。
+    - 首次格式化，预先 resize 的方法，没有更优。因为 resize 剩余缓冲可能比格式化的数据更多，此时 resize 有多余的写入。
+    - 二次格式化时，resize 更优。
+  */
   xmsg& prt(const char8_t* const fmt, ...) {
     if (nullptr == fmt) return *this;
-    va_list ap;
-    va_start(ap, fmt);
-    const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
-    va_end(ap);
-    if (0 >= need) return *this;
     // 直接写进本对象缓冲，效率最高。
     const auto now = size();
+    const auto remain = capacity() - now + 1;
+    va_list ap;
+    va_start(ap, fmt);
+    const auto need = std::vsnprintf((char*)data() + now, remain, (const char*)fmt, ap);
+    va_end(ap);
+    if (0 >= need) return *this;
+    if ((size_t)need < remain) {
+      // 一次完成格式化。用简单覆写代替二次复杂格式化。注意不能用 resize 。
+      append(data() + now, need);
+      return *this;
+    }
+    // 如果缓冲区不足，则直接用 resize ，这样格式化后无需覆写。采用重写最少，最优的方案。
     resize(now + need);
+    // 缓冲区不足时，写入被截断，才需要第二次格式化。
     va_start(ap, fmt);
     std::vsnprintf((char*)data() + now, need + 1, (const char*)fmt, ap);
     va_end(ap);
@@ -174,21 +194,37 @@ class xmsg : public std::u8string {
   /// 针对 UTF-8 对齐问题， %s 格式化建议使用 char* 。
   xmsg& prt(const char* const fmt, ...) {
     if (nullptr == fmt) return *this;
-    va_list ap;
-    va_start(ap, fmt);
-    const auto need = std::vsnprintf(nullptr, 0, (const char*)fmt, ap);
-    va_end(ap);
-    if (0 >= need) return *this;
     // 注意，因为需要编码转换，所以不能直接写进本对象缓冲。
     std::string buffer;
-    buffer.resize(need);
+    const auto remain = buffer.capacity() + 1;
+    va_list ap;
     va_start(ap, fmt);
-    std::vsnprintf(buffer.data(), buffer.size() + 1, (const char*)fmt, ap);
+    const auto need = std::vsnprintf(buffer.data(), remain, fmt, ap);
     va_end(ap);
+    if (0 >= need) return *this;
+    if ((size_t)need < remain) {
+      buffer.append(buffer.data(), need);
+    } else {
+      buffer.resize(need);
+      va_start(ap, fmt);
+      std::vsnprintf(buffer.data(), need + 1, fmt, ap);
+      va_end(ap);
+    }
     push(buffer);
     return *this;
   }
   // 因为 vswprintf 在 unix 下有些问题，干脆不支持。为记。
+
+ public:
+  void need_remain(const size_t need) {
+    const auto x = size() + need;
+    if (x > capacity()) {
+      reserve(x);
+    }
+  }
+
+  // 对于不定长的格式化，不预先 reserve 。
+ public:
   /// 输出 dec 值。
   template <typename T> std::enable_if_t<sizeof(T) == sizeof(int8_t) && std::is_signed_v<T>, xmsg&>
   operator<<(const T& v) {
@@ -197,6 +233,7 @@ class xmsg : public std::u8string {
   /// 输出 hex(XX)。
   template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint8_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
   operator<<(const T& v) {
+    need_remain(2);
     return prt(XMSGT("%02X"), v);
   }
   /// 输出 dec 值。
@@ -207,6 +244,7 @@ class xmsg : public std::u8string {
   /// 输出 hex(XXXX)。
   template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint16_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
   operator<<(const T& v) {
+    need_remain(4);
     return prt(XMSGT("%04X"), v);
   }
   /// 输出 dec 值。
@@ -217,6 +255,7 @@ class xmsg : public std::u8string {
   /// 输出 hex(XXXXXXXX)。
   template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint32_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
   operator<<(const T& v) {
+    need_remain(8);
     return prt(XMSGT("%08X"), v);
   }
   /// 输出 dec 值。
@@ -227,6 +266,7 @@ class xmsg : public std::u8string {
   /// 输出 hex(XXXXXXXXXXXXXXXX)。
   template <typename T> std::enable_if_t<sizeof(T) == sizeof(uint64_t) && (std::is_unsigned_v<T> || std::is_enum_v<T>), xmsg&>
   operator<<(const T& v) {
+    need_remain(16);
     return prt(XMSGT("%08X%08X"), (uint32_t)(v >> (CHAR_BIT * sizeof(uint32_t))), (uint32_t)v);
   }
   /// 输出 hex 指针。

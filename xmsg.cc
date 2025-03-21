@@ -2,8 +2,6 @@
 
 #include "xlib_test.h"
 
-#include "xhexbin.h"
-
 #define XMSGS(text) std::u8string((const char8_t*)u8 ## text)
 #define XMSGWS(v) xlib::ws2u8(v)
 

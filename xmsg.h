@@ -167,6 +167,9 @@ class xmsg : public std::u8string {
         - 比如 vsnprintf(p, 2, "AA"); 返回 2 ，但实际写入 1 个字符，所以需要 + 1 。vsnprintf(p, 3, "AA"); 才能正确写入 2 个字符。
     - 首次格式化，预先 resize 的方法，没有更优。因为 resize 剩余缓冲可能比格式化的数据更多，此时 resize 有多余的写入。
     - 二次格式化时，resize 更优。
+    - 经简单测试，优化后的格式化：
+        - 在缓冲区足够的情况下，性能提升显著。
+        - 在缓冲区不足的情况下，性能或提升或下降，但与之前差异不大。
   */
   xmsg& prt(const char8_t* const fmt, ...) {
     if (nullptr == fmt) return *this;

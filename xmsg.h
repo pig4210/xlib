@@ -2,7 +2,7 @@
   \file  xmsg.h
   \brief 定义了信息组织的基本类，类似标准库的 ostreamstring 。
 
-  \version    5.3.0.250320
+  \version    5.3.1.250421
   \note       For All
 
   \author     triones
@@ -95,11 +95,16 @@ class xmsg : public std::u8string {
     append(v);
     return *this;
   }
+  xmsg& push_me(const std::u8string_view& v) {
+    append(v);
+    return *this;
+  }
 
  public:
   xmsg& push(const char8_t& u8) { return push_me(u8); }
   xmsg& push(const char8_t* u8) { return push_me(u8); }
   xmsg& push(const std::u8string& u8) { return push_me(u8); }
+  xmsg& push(const std::u8string_view& u8) { return push_me(u8); }
 
   xmsg& push(const char& as) {
     if (!is_easy_transcoding(as)) {
@@ -123,6 +128,15 @@ class xmsg : public std::u8string {
       }
     }
     return push_me(*(const std::u8string*)&as);
+  }
+  xmsg& push(const std::string_view& as) {
+    for (const auto& c : as) {
+      if (!is_easy_transcoding(c)) {
+        return push_me(XMSGAS(std::string(as)));
+      }
+    }
+
+    return push_me(*(const std::u8string_view*)&as);
   }
 
   xmsg& push(const wchar_t& ws) {
@@ -148,6 +162,18 @@ class xmsg : public std::u8string {
     for (const auto& c : ws) {
       if (!is_easy_transcoding(c)) {
         return push_me(XMSGWS(ws));
+      }
+    }
+    std::u8string buf(ws.size(), (char8_t)u8'0');
+    for (size_t i = 0; i < buf.size(); ++i) {
+      buf[i] = (char8_t)ws[i];
+    }
+    return push_me(buf);
+  }
+  xmsg& push(const std::wstring_view& ws) {
+    for (const auto& c : ws) {
+      if (!is_easy_transcoding(c)) {
+        return push_me(XMSGWS(std::wstring(ws)));
       }
     }
     std::u8string buf(ws.size(), (char8_t)u8'0');
@@ -281,25 +307,31 @@ class xmsg : public std::u8string {
     return operator<<(v ? XMSGT("true") : XMSGT("false"));
   }
   /// 输出 ANSI 字符 转换。
-  xmsg& operator<<(const char& v)           { return push(v); }
+  xmsg& operator<<(const char& v)               { return push(v); }
   /// 输出 ANSI 字符串 转换。
-  xmsg& operator<<(const char* const v)     { return push(v); }
+  xmsg& operator<<(const char* const v)         { return push(v); }
   /// 输出 ASNI 字符串 转换。
-  xmsg& operator<<(const std::string& v)    { return push(v); }
+  xmsg& operator<<(const std::string& v)        { return push(v); }
+  /// 输出 ASNI 字符串 转换。
+  xmsg& operator<<(const std::string_view& v)   { return push(v); }
   /// 输出 UNICCODE 字符 转换。
-  xmsg& operator<<(const wchar_t& v)        { return push(v); }
+  xmsg& operator<<(const wchar_t& v)            { return push(v); }
   /// 输出 UNICCODE 字符串 转换。
-  xmsg& operator<<(const wchar_t* const v)  { return push(v); }
+  xmsg& operator<<(const wchar_t* const v)      { return push(v); }
   /// 输出 UNICCODE 字符串 转换。
-  xmsg& operator<<(const std::wstring& v)   { return push(v); }
+  xmsg& operator<<(const std::wstring& v)       { return push(v); }
+  /// 输出 UNICCODE 字符串 转换。
+  xmsg& operator<<(const std::wstring_view& v)  { return push(v); }
 #ifdef __cpp_char8_t
   /// 输出 UTF-8 字符 转换。
-  xmsg& operator<<(const char8_t& v)        { return push(v); }
+  xmsg& operator<<(const char8_t& v)            { return push(v); }
 #endif
   /// 输出 UTF-8 字符串 转换。
-  xmsg& operator<<(const char8_t* v)        { return push(v); }
+  xmsg& operator<<(const char8_t* v)            { return push(v); }
   /// 输出 UTF-8 字符串 转换。
-  xmsg& operator<<(const std::u8string& v)  { return push(v); }
+  xmsg& operator<<(const std::u8string& v)      { return push(v); }
+  /// 输出 UTF-8 字符串 转换。
+  xmsg& operator<<(const std::u8string_view& v) { return push(v); }
   /// 输出 dec 浮点数。
   xmsg& operator<<(const float& v) {
     return prt(XMSGT("%f"), v);

@@ -90,7 +90,8 @@ bswap(const T& values) {
 */
 template <typename T> inline
 bool seqswap(T& a, T& b) {
-  if (std::max(a, b) == b) return false;
+  // 避免 max 宏干扰。
+  if (std::minmax(a, b).second == b) return false;
   std::swap(a, b);
   return true;
 }

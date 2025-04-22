@@ -979,7 +979,7 @@ class xsig {
         if (x < 0 || y < 0)
           xsdbg << "=== " << (uint64_t)pat_pos << " " << (uint64_t)mem_pos
                 << " " << x << " " << y;
-        mem_pos += std::max(x, y);
+        mem_pos += std::minmax(x, y).second;  // 避免 max 宏干扰。
       }
       return (intptr_t)-1;
     }

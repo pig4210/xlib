@@ -595,7 +595,8 @@ xmsg showbin(
 
   do {
     prefix();
-    const size_t fix_len = std::min(size, k_max_line_byte);
+    // 用 std::minmax 而不是 std::min ，避免 min 宏的干扰。
+    const size_t fix_len = std::minmax(size, k_max_line_byte).first;
 
     while (used < fix_len) {
       const auto s = fix(data, used, size, check_unicode_visualization);

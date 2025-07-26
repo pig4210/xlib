@@ -2,7 +2,7 @@
   \file  xcrc.h
   \brief 定义了 CRC 算法模板。支持 crc16 、 crc32 、 crc64 、crcccitt 。
 
-  \version    3.2.1.230307
+  \version    3.2.2.250726
 
   \author     triones
   \date       2013-03-19
@@ -50,7 +50,8 @@ constexpr auto inline XCrcTable(std::index_sequence<I...>) noexcept {
 template <typename T, T N, T V, bool R>
 T XCRC(const void* const data, const size_t size) {
   // 将在编译期生成 CRC 表。
-  constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
+  // 这里将访问全局变量，没有局部变量复制。对于 crc 场景，相对复制整个全局变量后计算，直接访问更高效。
+  static constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
   T ret = V;
   const size_t len = (nullptr == data) ? 0 : size;
   const uint8_t* const p = (const uint8_t*)data;
@@ -68,6 +69,7 @@ T XCRC(const void* const data, const size_t size) {
 template <typename TC, size_t size, typename T, T N, T V, bool R> constexpr
 T XCRC(TC const(&data)[size]) {
   // 将在编译期生成 CRC 表。
+  // 这里因为需要整个函数可以编译期计算，所以不能使用 static 引入存储。但这将导致从全局变量中复制一份局部变量。
   constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
   constexpr auto st = sizeof(TC);
   T ret = V;

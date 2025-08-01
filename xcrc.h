@@ -51,6 +51,7 @@ template <typename T, T N, T V, bool R>
 T XCRC(const void* const data, const size_t size) {
   // 将在编译期生成 CRC 表。
   // 这里将访问全局变量，没有局部变量复制。对于 crc 场景，相对复制整个全局变量后计算，直接访问更高效。
+  // 如果不加 static ，则会创建局部变量，从全局变量中复制一份表，多此一举。
   static constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
   T ret = V;
   const size_t len = (nullptr == data) ? 0 : size;
@@ -69,7 +70,8 @@ T XCRC(const void* const data, const size_t size) {
 template <typename TC, size_t size, typename T, T N, T V, bool R> constexpr
 T XCRC(TC const(&data)[size]) {
   // 将在编译期生成 CRC 表。
-  // 这里因为需要整个函数可以编译期计算，所以不能使用 static 引入存储。但这将导致从全局变量中复制一份局部变量。
+  // 这里因为需要整个函数可以编译期计算，所以不能使用 static 引入存储。
+  // 而且因为模板是肯定在编译期计算的，所以无需计较局部变量。
   constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
   constexpr auto st = sizeof(TC);
   T ret = V;

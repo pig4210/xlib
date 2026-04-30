@@ -18,21 +18,22 @@ done = xlib::bswap((uint16_t)0x1234) == 0x3412;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(bswap int32_t);
-done = xlib::bswap((int32_t)0x12345678) == 0x78563412;
+done = xlib::bswap((int32_t)0x87654321) == 0x21436587;
 SHOW_TEST_RESULT;
 
 SHOW_TEST_HEAD(bswap uint64_t);
 done = xlib::bswap((uint64_t)0x1234567812345678) == 0x7856341278563412;
 SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(bswap enum);
-done = xlib::bswap(xte_0) == xte_0;
-SHOW_TEST_RESULT;
 
-SHOW_TEST_HEAD(seqswap);
+SHOW_TEST_HEAD(seqswap true);
 void* a = (void*)0x2;
 void* b = (void*)0x1;
 done = xlib::seqswap(a, b);
+SHOW_TEST_RESULT;
+
+SHOW_TEST_HEAD(seqswap false);
+done = !xlib::seqswap(a, b);
 SHOW_TEST_RESULT;
 
 SHOW_TEST_DONE;

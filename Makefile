@@ -67,7 +67,7 @@ make_direct_pre :
 .PHONY : make_direct
 make_direct : make_direct_pre all_make
 	@echo.
-	@echo ==== ==== ==== ====      Done      ==== ==== ==== ====
+	@echo ==== ==== ==== ====   Done ($(ARCH))   ==== ==== ==== ====
 
 ################################################################ make_x64_new & make_x86_new
 # 已在 x64/x86 编译环境下，新建编译环境编译。
@@ -78,6 +78,7 @@ make_direct : make_direct_pre all_make
 #     - 注意到，直接 start 会有问题，所以需要先 echo 一下。
 #     - 因为是 start 新环境，所以无法得知新环境的 make 结果。
 #     - 所以新开环境的 make 如果成功，则会默认直接退出。make 失败，则会暂停。
+#     - 注意到，新开环境时，不继承并发。而识别并发有困难，且新开环境的情况较少，所以目前搁置这个问题。
 .PHONY : make_x64_new
 make_x64_new :
 	@echo.
@@ -161,7 +162,7 @@ LINK        := link.exe
 AR          := lib.exe
 
 ######## CFLAGS
-CFLAGS      = /c /MP /GS- /Qpar /GL /analyze- /W4 /Gy /Zc:wchar_t /Zi /Gm- /Ox /Zc:inline /fp:precise /DWIN32 /DNDEBUG /D_UNICODE /DUNICODE /fp:except- /errorReport:none /GF /WX /Zc:forScope /GR- /Gd /Oy /Oi /MT /EHa /nologo /std:c++latest
+CFLAGS      = /c /MP /GS- /Qpar /GL /analyze- /W4 /Gy /Zc:wchar_t /Zi /FS /Gm- /Ox /Zc:inline /fp:precise /DWIN32 /DNDEBUG /D_UNICODE /DUNICODE /fp:except- /errorReport:none /GF /WX /Zc:forScope /GR- /Gd /Oy /Oi /MT /EHa /nologo /std:c++latest
 CFLAGS      += /I"$(SRCPATH)"
 
 ifeq "$(ARCH)" "x86"

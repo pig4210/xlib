@@ -15,6 +15,14 @@
 #ifndef _XLIB_XCODECVT_WIN_H_
 #define _XLIB_XCODECVT_WIN_H_
 
+#ifndef XLIB_XCODECVT_INCLUDE_GATE
+#error "Please include xcodecvt.h instead"
+#endif
+
+#ifndef _WIN32
+#error "xcodecvt_win.h only for windows !"
+#endif
+
 #include <string>
 
 #define WIN32_LEAN_AND_MEAN
@@ -22,10 +30,6 @@
 #include <windows.h>
 #undef NOMINMAX
 #undef WIN32_LEAN_AND_MEAN
-
-#ifndef _WIN32
-#error "xcodecvt_win.h only for windows !"
-#endif
 
 namespace xlib {
 

@@ -15,7 +15,7 @@
   - g++ 默认编码为 UTF8 ，如需以 ANSI 编译，需加入编译参数如： `-fexec-charset=GB2312` 。
   - 需要 gcc-9.2.0 及以上支持。
   - 当 iconv.h 存在时，优先使用 iconv 。
-  - Windows 默认使用 Windows API 进行编码转换。
+  - 若无 iconv.h ，则 Windows 默认使用 Windows API 进行编码转换。
     - VS2017 对 codecvt 有各种局限 。
     - 在实际应用中发现，windows 下，codecvt 转换修改 crt 的 locale 环境，虽然多线程安全，但并非并发。
     - NT HOOK 回调中涉及 locale 时，目前发现在 Windows Defender 介入时，会因 locale 导致死锁。
@@ -65,6 +65,7 @@ constexpr bool inline is_easy_transcoding(const wchar_t& c) {
 }  // namespace xlib
 
 // c++20 中，codecvt 被弃用。如果有 iconv.h ，则使用 iconv 。
+#define XLIB_XCODECVT_INCLUDE_GATE 1
 #if __has_include(<iconv.h>)
 #include "xcodecvt_iconv.h"
 #else
@@ -74,5 +75,6 @@ constexpr bool inline is_easy_transcoding(const wchar_t& c) {
 #include "xcodecvt_std.h"
 #endif
 #endif
+#undef XLIB_XCODECVT_INCLUDE_GATE
 
 #endif  // _XLIB_XCODECVT_H_

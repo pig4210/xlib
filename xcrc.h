@@ -2,7 +2,7 @@
   \file  xcrc.h
   \brief 定义了 CRC 算法模板。支持 crc16 、 crc32 、 crc64 、crcccitt 。
 
-  \version    3.2.2.250726
+  \version    4.0.0.260430
 
   \author     triones
   \date       2013-03-19
@@ -19,22 +19,26 @@
   - 2019-09-29 引入新特性重构，解决线程安全的问题。 3.0 。
   - 2020-03-06 引入可变参数模板，表的生成重新设计。 3.1 。
   - 2020-05-09 扩大模板匹配，匹配多数顺序容器。优化接口 3.2 。
+  - 2026-04-30 替换宏，升级定义。 4.0 。
 */
-#ifndef _XLIB_XCRC_H_
-#define _XLIB_XCRC_H_
+#ifndef _xlib_xcrc_H_
+#define _xlib_xcrc_H_
 
 #include <climits>
 #include <cstdint>
+#include <cstddef>
 #include <array>
-#include <string>
+#include <type_traits>
+#include <utility>
 
 namespace xlib {
 
+//////////////////////////////////////////////////////////////// CRC Table 实现。
 /// 用于编译期计算 CRC 表单个值。
 template <typename T, T N>
-constexpr T inline XCrcTableValue(const T i) noexcept {
+inline constexpr T XCrcTableValue(const T i) noexcept {
   T crc = i;
-  for (size_t j = 0; j < CHAR_BIT; ++j) {
+  for (std::size_t j = 0; j < CHAR_BIT; ++j) {
     crc = (crc >> 1) ^ ((crc & 1) ? N : 0);
   }
   return crc;
@@ -42,48 +46,69 @@ constexpr T inline XCrcTableValue(const T i) noexcept {
 
 /// 用于编译期生成 CRC 表。
 template <typename T, T N, std::size_t... I>
-constexpr auto inline XCrcTable(std::index_sequence<I...>) noexcept {
+inline constexpr auto XCrcTable(std::index_sequence<I...>) noexcept {
   return std::array<T, sizeof...(I)>{XCrcTableValue<T, N>(I)...};
 }
 
+//////////////////////////////////////////////////////////////// CRC 通用计算。
 /// CRC 计算模板。
 template <typename T, T N, T V, bool R>
-T XCRC(const void* const data, const size_t size) {
+T XCRC(const void* const data, const std::size_t size) {
   // 将在编译期生成 CRC 表。
   // 这里将访问全局变量，没有局部变量复制。对于 crc 场景，相对复制整个全局变量后计算，直接访问更高效。
   // 如果不加 static ，则会创建局部变量，从全局变量中复制一份表，多此一举。
   static constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
   T ret = V;
-  const size_t len = (nullptr == data) ? 0 : size;
-  const uint8_t* const p = (const uint8_t*)data;
-  for (size_t i = 0; i < len; ++i) {
+  const std::size_t len = (nullptr == data) ? 0 : size;
+  const auto p = reinterpret_cast<const std::uint8_t*>(data);
+  for (std::size_t i = 0; i < len; ++i) {
     ret = CrcTable[(ret & 0xFF) ^ p[i]] ^ (ret >> 8);
   }
   return R ? ~ret : ret;
 }
 
+//////////////////////////////////////////////////////////////// CRC 字符串字面量编译期计算。
+template <typename T> struct IsCrcChar  : std::false_type {};
+template <> struct IsCrcChar<char>      : std::true_type  {};
+template <> struct IsCrcChar<wchar_t>   : std::true_type  {};
+template <> struct IsCrcChar<char16_t>  : std::true_type  {};
+template <> struct IsCrcChar<char32_t>  : std::true_type  {};
+#ifdef __cpp_char8_t
+template <> struct IsCrcChar<char8_t>   : std::true_type  {};
+#else
+// 兼容 xlib 自适应的 char8_t 。
+template <> struct IsCrcChar<unsigned char> : std::true_type {};
+#endif
+
 /**
-  CRC 计算模板。用于 编译期计算。
+  CRC 计算模板。用于 字符串字面量编译期计算。
+
+  - data 必须是字符串字面量，且最后一个字符必须是 '\0' 。
+  - 计算忽略最后一个 '\0' 。
+  - 小端序。
 
   注意到，const T* const 模板无法生成 constexpr 结果。
 */
-template <typename TC, size_t size, typename T, T N, T V, bool R> constexpr
-T XCRC(TC const(&data)[size]) {
+template <typename TC, std::size_t size, typename T, T N, T V, bool R>
+constexpr std::enable_if_t<IsCrcChar<std::remove_cv_t<TC>>::value, T>
+XCRC(TC const(&data)[size]) {
   // 将在编译期生成 CRC 表。
   // 这里因为需要整个函数可以编译期计算，所以不能使用 static 引入存储。
   // 而且因为模板是肯定在编译期计算的，所以无需计较局部变量。
+  // data 必须直接访问，不能通过指针间接访问，否则 无法编译期计算。
   constexpr auto CrcTable = XCrcTable<T, N>(std::make_index_sequence<0x100>{});
   constexpr auto st = sizeof(TC);
   T ret = V;
-  const size_t len = (size - 1) * st;
-  for (size_t i = 0; i < len; ++i) {
-    const auto ch = data[i / st] >> ((i % st) * CHAR_BIT);
+  const std::size_t len = (size - 1) * st;  // 忽略最后一个 '\0' 。
+  for (std::size_t i = 0; i < len; ++i) {
+    const auto u = static_cast<std::make_unsigned_t<std::remove_cv_t<TC>>>(data[i / st]);
+    const auto ch = u >> ((i % st) * CHAR_BIT);
     ret = CrcTable[(ret & 0xFF) ^ (ch & 0xFF)] ^ (ret >> 8);
   }
   return R ? ~ret : ret;
 }
 
-//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////// CRC 接口内核。
 /**
   生成指定数据的 crc 。
   \param    data    指定需要计算 crc 的数据。
@@ -103,31 +128,42 @@ T XCRC(TC const(&data)[size]) {
   \endcode
 */
 
-#define CRCX(FUNC, TT, NN, VV, RR)                                    \
-  inline auto FUNC(const void* const data, const size_t size) {       \
-    return XCRC<TT, NN, VV, RR>(data, size);                          \
-  }                                                                   \
-  template <typename T>                                               \
-  inline auto FUNC(const T* const data, const size_t size) {          \
-    return FUNC((const void*)data, size * sizeof(T));                 \
-  }                                                                   \
-  template <typename T>                                               \
-  inline auto FUNC(const T& o)                                        \
-      ->std::enable_if_t<std::is_pointer_v<decltype(o.data())>, TT> { \
-    return FUNC(o.data(), o.size());                                  \
-  }                                                                   \
-  template <typename T, size_t size> constexpr                        \
-  inline auto FUNC(T const(&data)[size]) {                            \
-    return XCRC<T, size, TT, NN, VV, RR>(data);                       \
+template <typename TT, TT NN, TT VV, bool RR>
+class XCRCCore {
+ private:
+  static TT bytes(const void* data, std::size_t size) {
+    return XCRC<TT, NN, VV, RR>(data, size);
   }
 
-CRCX(crc16,     uint16_t, 0xA001, 0, false);
-CRCX(crc32,     uint32_t, 0xEDB88320, 0xFFFFFFFF, true);
-CRCX(crc64,     uint64_t, 0xC96C5795D7870F42, 0xFFFFFFFFFFFFFFFF, true);
-CRCX(crcccitt,  uint16_t, 0x8408, 0xFFFF, false);
+  template <typename T>
+  static TT bytes(const T* data, std::size_t size) {
+    return bytes(static_cast<const void*>(data), size * sizeof(T));
+  }
 
-#undef CRCX
+  template <typename T,
+            typename = decltype(std::declval<T>().data(), std::declval<T>().size())>
+  static auto bytes(const T& o) -> TT {
+    return bytes(o.data(), o.size());
+  }
+
+  template <typename T, std::size_t N>
+  static constexpr TT bytes(T const (&data)[N]) {
+    return XCRC<T, N, TT, NN, VV, RR>(data);
+  }
+
+ public:
+  template <typename... Args>
+  constexpr auto operator()(Args&&... args) const {
+    return bytes(std::forward<Args>(args)...);
+  }
+};
+
+//////////////////////////////////////////////////////////////// crc16 、 crc32 、 crc64 、crcccitt
+constexpr XCRCCore<uint16_t, 0xA001,             0,                  false> crc16{};
+constexpr XCRCCore<uint32_t, 0xEDB88320,         0xFFFFFFFF,         true>  crc32{};
+constexpr XCRCCore<uint64_t, 0xC96C5795D7870F42, 0xFFFFFFFFFFFFFFFF, true>  crc64{};
+constexpr XCRCCore<uint16_t, 0x8408,             0xFFFF,             false> crcccitt{};
 
 }  // namespace xlib
 
-#endif  // _XLIB_XCRC_H_
+#endif  // _xlib_xcrc_H_

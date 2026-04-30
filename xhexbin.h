@@ -47,6 +47,7 @@
 #define _XLIB_XHEXBIN_H_
 
 #include <climits>
+#include <algorithm>
 #include <string>
 
 #include "xmsg.h"

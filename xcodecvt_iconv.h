@@ -14,6 +14,10 @@
 #ifndef _XLIB_XCODECVT_ICONV_H_
 #define _XLIB_XCODECVT_ICONV_H_
 
+#ifndef XLIB_XCODECVT_INCLUDE_GATE
+#error "Please include xcodecvt.h instead"
+#endif
+
 #include <string>
 
 #include <iconv.h>
@@ -116,6 +120,7 @@ inline std::string ws2as(const std::wstring& ws, size_t* const lpread = nullptr)
 #else
   auto cvt = iconv_open(LOCALE_AS_WS, "WCHAR_T");
 #endif
+  if (cvt == (iconv_t)-1) return {};
 
   std::string as(ws.size() * 6, '\0');
 
@@ -171,6 +176,7 @@ inline std::wstring u82ws(const std::u8string& u8, size_t* const lpread = nullpt
 #else
   auto cvt = iconv_open("WCHAR_T", LOCALE_WS_U8);
 #endif
+  if (cvt == (iconv_t)-1) return {};
 
   std::wstring ws(u8.size(), L'\0');
 
@@ -226,6 +232,7 @@ inline std::u8string ws2u8(const std::wstring& ws, size_t* const lpread = nullpt
 #else
   auto cvt = iconv_open(LOCALE_WS_U8, "WCHAR_T");
 #endif
+  if (cvt == (iconv_t)-1) return {};
 
   std::u8string u8(ws.size() * 6, char8_t('\0'));
 
